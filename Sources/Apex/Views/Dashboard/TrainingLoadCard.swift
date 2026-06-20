@@ -34,7 +34,7 @@ struct TrainingLoadCard: View {
                 )
                 LoadPill(
                     title: "TSB",
-                    subtitle: "Forma",
+                    subtitle: "Apex",
                     value: load.tsb,
                     color: load.tsb >= 0 ? .green : .orange
                 )

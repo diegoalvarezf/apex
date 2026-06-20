@@ -1,4 +1,4 @@
-name: Forma
+name: Apex
 options:
   bundleIdPrefix: com.diegoalvarezfrancos
   deploymentTarget:
@@ -14,32 +14,32 @@ settings:
     MARKETING_VERSION: "1.0.0"
     CURRENT_PROJECT_VERSION: "1"
 targets:
-  Forma:
+  Apex:
     type: application
     platform: iOS
     sources:
-      - path: Sources/Forma
+      - path: Sources/Apex
     resources:
-      - path: Sources/Forma/Resources
+      - path: Sources/Apex/Resources
     info:
-      path: Sources/Forma/App/Info.plist
+      path: Sources/Apex/App/Info.plist
       properties:
-        CFBundleName: Forma
-        CFBundleDisplayName: Forma
+        CFBundleName: Apex
+        CFBundleDisplayName: Apex
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         UILaunchScreen:
           UIColorName: ""
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
-        NSHealthShareUsageDescription: "Forma uses Health data to calculate your recovery score, analyze sleep quality and track fitness trends."
-        NSHealthUpdateUsageDescription: "Forma may write workout summaries to Apple Health."
+        NSHealthShareUsageDescription: "Apex uses Health data to calculate your recovery score, analyze sleep quality and track fitness trends."
+        NSHealthUpdateUsageDescription: "Apex may write workout summaries to Apple Health."
         CFBundleURLTypes:
           - CFBundleURLSchemes:
-              - forma-strava
-            CFBundleURLName: com.diegoalvarezfrancos.forma.strava
+              - apex-strava
+            CFBundleURLName: com.diegoalvarezfrancos.apex.strava
     entitlements:
-      path: Sources/Forma/App/Forma.entitlements
+      path: Sources/Apex/App/Apex.entitlements
       properties:
         com.apple.security.app-sandbox: false
         com.apple.developer.healthkit: true
@@ -47,7 +47,7 @@ targets:
           - health-records
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.diegoalvarezfrancos.forma
+        PRODUCT_BUNDLE_IDENTIFIER: com.diegoalvarezfrancos.apex
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
         INFOPLIST_KEY_UIStatusBarStyle: UIStatusBarStyleDarkContent

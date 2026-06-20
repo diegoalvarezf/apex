@@ -18,7 +18,7 @@ struct OnboardingView: View {
                         )
 
                     VStack(spacing: 8) {
-                        Text("Forma")
+                        Text("Apex")
                             .font(.system(size: 48, weight: .black, design: .rounded))
                             .foregroundColor(.white)
 

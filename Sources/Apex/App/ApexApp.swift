@@ -1,7 +1,7 @@
 import SwiftUI
 
 @main
-struct FormaApp: App {
+struct ApexApp: App {
     @StateObject private var stravaAuth = StravaAuthManager()
     @StateObject private var healthKit = HealthKitManager()
 

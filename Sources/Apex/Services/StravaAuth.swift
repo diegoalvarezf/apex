@@ -5,7 +5,7 @@ enum StravaConfig {
     // Crea tu app en https://www.strava.com/settings/api
     static let clientID = "YOUR_STRAVA_CLIENT_ID"
     static let clientSecret = "YOUR_STRAVA_CLIENT_SECRET"
-    static let redirectURI = "forma-strava://oauth"
+    static let redirectURI = "apex-strava://oauth"
     static let scopes = "read,activity:read_all,profile:read_all"
 }
 
@@ -37,7 +37,7 @@ final class StravaAuthManager: NSObject, ObservableObject, ASWebAuthenticationPr
 
         authSession = ASWebAuthenticationSession(
             url: components.url!,
-            callbackURLScheme: "forma-strava"
+            callbackURLScheme: "apex-strava"
         ) { [weak self] callbackURL, error in
             guard let self, let url = callbackURL, error == nil else { return }
             self.handleCallback(url: url)

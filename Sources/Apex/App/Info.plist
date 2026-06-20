@@ -5,7 +5,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Forma</string>
+	<string>Apex</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -13,7 +13,7 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>Forma</string>
+	<string>Apex</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
@@ -22,19 +22,19 @@
 	<array>
 		<dict>
 			<key>CFBundleURLName</key>
-			<string>com.diegoalvarezfrancos.forma.strava</string>
+			<string>com.diegoalvarezfrancos.apex.strava</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>forma-strava</string>
+				<string>apex-strava</string>
 			</array>
 		</dict>
 	</array>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>NSHealthShareUsageDescription</key>
-	<string>Forma uses Health data to calculate your recovery score, analyze sleep quality and track fitness trends.</string>
+	<string>Apex uses Health data to calculate your recovery score, analyze sleep quality and track fitness trends.</string>
 	<key>NSHealthUpdateUsageDescription</key>
-	<string>Forma may write workout summaries to Apple Health.</string>
+	<string>Apex may write workout summaries to Apple Health.</string>
 	<key>UILaunchScreen</key>
 	<dict>
 		<key>UIColorName</key>
