@@ -38,6 +38,8 @@ targets:
           - CFBundleURLSchemes:
               - apex-strava
             CFBundleURLName: com.diegoalvarezfrancos.apex.strava
+        LSApplicationQueriesSchemes:
+          - strava
     entitlements:
       path: Sources/Apex/App/Apex.entitlements
       properties:

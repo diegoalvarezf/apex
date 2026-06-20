@@ -9,62 +9,32 @@ struct TrainingLoadCard: View {
                 Text("Carga de entrenamiento")
                     .font(.headline)
                 Spacer()
-                Label(load.formStatus.rawValue, systemImage: formIcon)
+                Label(load.formStatus.rawValue, systemImage: load.formStatus.systemImage)
                     .font(.caption)
                     .fontWeight(.semibold)
-                    .foregroundColor(formColor)
+                    .foregroundColor(load.formStatus.color)
                     .padding(.horizontal, 10)
                     .padding(.vertical, 4)
-                    .background(formColor.opacity(0.15))
-                    .clipShape(Capsule())
+                    .background(.thinMaterial, in: Capsule())
             }
 
-            HStack(spacing: 24) {
-                LoadPill(
-                    title: "ATL",
-                    subtitle: "Última semana",
-                    value: load.atl,
-                    color: .red
-                )
-                LoadPill(
-                    title: "CTL",
-                    subtitle: "6 semanas",
-                    value: load.ctl,
-                    color: .blue
-                )
+            HStack(spacing: 0) {
+                LoadPill(title: "ATL", subtitle: "Última semana", value: load.atl, color: .red)
+                Divider().frame(height: 40)
+                LoadPill(title: "CTL", subtitle: "6 semanas", value: load.ctl, color: .blue)
+                Divider().frame(height: 40)
                 LoadPill(
                     title: "TSB",
-                    subtitle: "Apex",
+                    subtitle: "Forma",
                     value: load.tsb,
-                    color: load.tsb >= 0 ? .green : .orange
+                    color: load.tsb >= 5 ? .green : load.tsb >= -10 ? .orange : .red
                 )
             }
 
             LoadBar(atl: load.atl, ctl: load.ctl)
         }
         .padding(16)
-        .background(Color(.secondarySystemGroupedBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 14))
-    }
-
-    private var formColor: Color {
-        switch load.formStatus {
-        case .fresh: return .blue
-        case .optimal: return .green
-        case .neutral: return .yellow
-        case .tired: return .orange
-        case .overreached: return .red
-        }
-    }
-
-    private var formIcon: String {
-        switch load.formStatus {
-        case .fresh: return "arrow.up.circle.fill"
-        case .optimal: return "checkmark.circle.fill"
-        case .neutral: return "minus.circle.fill"
-        case .tired: return "exclamationmark.circle.fill"
-        case .overreached: return "xmark.circle.fill"
-        }
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 }
 
@@ -98,18 +68,16 @@ private struct LoadBar: View {
     var body: some View {
         GeometryReader { geo in
             ZStack(alignment: .leading) {
-                RoundedRectangle(cornerRadius: 4)
-                    .fill(Color(.systemFill))
+                RoundedRectangle(cornerRadius: 4, style: .continuous)
+                    .fill(Color.primary.opacity(0.06))
                     .frame(height: 8)
-
-                let maxVal = max(atl, ctl, 100)
-                RoundedRectangle(cornerRadius: 4)
-                    .fill(Color.blue.opacity(0.5))
-                    .frame(width: geo.size.width * CGFloat(ctl / maxVal), height: 8)
-
-                RoundedRectangle(cornerRadius: 4)
-                    .fill(Color.red)
-                    .frame(width: geo.size.width * CGFloat(atl / maxVal), height: 4)
+                let maxVal = max(atl, ctl, 1)
+                RoundedRectangle(cornerRadius: 4, style: .continuous)
+                    .fill(Color.blue.opacity(0.4))
+                    .frame(width: geo.size.width * CGFloat(min(ctl / maxVal, 1)), height: 8)
+                RoundedRectangle(cornerRadius: 4, style: .continuous)
+                    .fill(Color.red.opacity(0.8))
+                    .frame(width: geo.size.width * CGFloat(min(atl / maxVal, 1)), height: 4)
                     .offset(y: 2)
             }
         }

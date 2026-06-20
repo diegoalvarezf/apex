@@ -51,8 +51,7 @@ struct ActivityRowView: View {
             Text(activity.sportEmoji)
                 .font(.title2)
                 .frame(width: 44, height: 44)
-                .background(Color.orange.opacity(0.15))
-                .clipShape(RoundedRectangle(cornerRadius: 10))
+                .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(activity.name)

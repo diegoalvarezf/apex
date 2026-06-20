@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 
 struct StravaActivity: Identifiable, Codable {
     let id: Int
@@ -121,13 +122,23 @@ struct TrainingLoad {
         case tired = "Cansado"
         case overreached = "Sobreentrenado"
 
-        var color: String {
+        var color: Color {
             switch self {
-            case .fresh: return "blue"
-            case .optimal: return "green"
-            case .neutral: return "yellow"
-            case .tired: return "orange"
-            case .overreached: return "red"
+            case .fresh: return .blue
+            case .optimal: return .green
+            case .neutral: return .yellow
+            case .tired: return .orange
+            case .overreached: return .red
+            }
+        }
+
+        var systemImage: String {
+            switch self {
+            case .fresh: return "arrow.up.circle.fill"
+            case .optimal: return "checkmark.circle.fill"
+            case .neutral: return "minus.circle.fill"
+            case .tired: return "exclamationmark.circle.fill"
+            case .overreached: return "xmark.circle.fill"
             }
         }
     }

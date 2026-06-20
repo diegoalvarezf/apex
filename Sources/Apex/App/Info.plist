@@ -31,6 +31,10 @@
 	</array>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>strava</string>
+	</array>
 	<key>NSHealthShareUsageDescription</key>
 	<string>Apex uses Health data to calculate your recovery score, analyze sleep quality and track fitness trends.</string>
 	<key>NSHealthUpdateUsageDescription</key>

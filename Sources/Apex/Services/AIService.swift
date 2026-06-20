@@ -2,7 +2,7 @@ import Foundation
 
 enum ClaudeConfig {
     // Añade tu API key de Anthropic
-    static let apiKey = "YOUR_ANTHROPIC_API_KEY"
+    static let apiKey = "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"
     static let model = "claude-sonnet-4-6"
 }
 

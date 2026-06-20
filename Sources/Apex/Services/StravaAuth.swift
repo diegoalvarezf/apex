@@ -1,11 +1,12 @@
 import AuthenticationServices
 import Foundation
+import UIKit
 
 enum StravaConfig {
     // Crea tu app en https://www.strava.com/settings/api
-    static let clientID = "YOUR_STRAVA_CLIENT_ID"
-    static let clientSecret = "YOUR_STRAVA_CLIENT_SECRET"
-    static let redirectURI = "apex-strava://oauth"
+    static let clientID = "259817"
+    static let clientSecret = "9a94220e7da8a3baa02461063c10f65e52cf27d3"
+    static let redirectURI = "apex-strava://localhost/oauth"
     static let scopes = "read,activity:read_all,profile:read_all"
 }
 
@@ -26,8 +27,7 @@ final class StravaAuthManager: NSObject, ObservableObject, ASWebAuthenticationPr
     }
 
     func authorize() {
-        var components = URLComponents(string: "https://www.strava.com/oauth/mobile/authorize")!
-        components.queryItems = [
+        var queryItems: [URLQueryItem] = [
             .init(name: "client_id", value: StravaConfig.clientID),
             .init(name: "redirect_uri", value: StravaConfig.redirectURI),
             .init(name: "response_type", value: "code"),
@@ -35,8 +35,19 @@ final class StravaAuthManager: NSObject, ObservableObject, ASWebAuthenticationPr
             .init(name: "scope", value: StravaConfig.scopes)
         ]
 
+        // Intentar abrir la app de Strava directamente si está instalada
+        var stravaAppComponents = URLComponents(string: "strava://oauth/mobile/authorize")!
+        stravaAppComponents.queryItems = queryItems
+        if let stravaAppURL = stravaAppComponents.url, UIApplication.shared.canOpenURL(stravaAppURL) {
+            UIApplication.shared.open(stravaAppURL)
+            return
+        }
+
+        // Fallback: navegador web si Strava no está instalada
+        var webComponents = URLComponents(string: "https://www.strava.com/oauth/mobile/authorize")!
+        webComponents.queryItems = queryItems
         authSession = ASWebAuthenticationSession(
-            url: components.url!,
+            url: webComponents.url!,
             callbackURLScheme: "apex-strava"
         ) { [weak self] callbackURL, error in
             guard let self, let url = callbackURL, error == nil else { return }
