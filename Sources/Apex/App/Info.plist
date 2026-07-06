@@ -39,6 +39,8 @@
 	<string>Apex uses Health data to calculate your recovery score, analyze sleep quality and track fitness trends.</string>
 	<key>NSHealthUpdateUsageDescription</key>
 	<string>Apex may write workout summaries to Apple Health.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Apex uses your location to track your route during outdoor activities like running, cycling or hiking.</string>
 	<key>UILaunchScreen</key>
 	<dict>
 		<key>UIColorName</key>

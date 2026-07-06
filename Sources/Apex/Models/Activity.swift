@@ -1,5 +1,12 @@
 import Foundation
 import SwiftUI
+import CoreLocation
+
+// Nested map object from Strava response
+private struct ActivityMap: Codable {
+    let summaryPolyline: String?
+    enum CodingKeys: String, CodingKey { case summaryPolyline = "summary_polyline" }
+}
 
 struct StravaActivity: Identifiable, Codable {
     let id: Int
@@ -18,12 +25,53 @@ struct StravaActivity: Identifiable, Codable {
     let averageWatts: Double?
     let weightedAverageWatts: Int?
     let kilojoules: Double?
+    let calories: Double?        // calorías estimadas (disponible para todos los deportes)
     let sufferScore: Int?
     let kudosCount: Int
     let hasHeartrate: Bool
+    private let map: ActivityMap?
+
+    var summaryPolyline: String? { map?.summaryPolyline }
+    // Usa calories si está disponible (todos los deportes), si no kilojoules * 0.239 (ciclismo con potenciómetro)
+    var kcal: Double? { calories ?? kilojoules.map { $0 * 0.239 } }
+
+    // kcal garantizadas: medidas > Keytel HR-ajustada > MET × 70kg
+    var displayKcal: Double {
+        if let k = kcal, k > 1 { return k }
+        let hours = Double(movingTime) / 3600.0
+        let durationMin = hours * 60.0
+
+        // Fórmula Keytel 2005 (hombre 70kg): más precisa que MET cuando hay FC
+        // kcal/min = (-55.0969 + 0.6309×HR + 0.1988×70) / 4.184
+        if let hr = averageHeartrate, hr > 80 {
+            let kcalPerMin = max(0, (-41.18 + 0.6309 * hr)) / 4.184
+            if kcalPerMin > 0 { return kcalPerMin * durationMin }
+        }
+
+        // Fallback: MET × peso × h
+        let weight = UserProfile.weightKg
+        let met: Double
+        switch sportType.lowercased() {
+        case "run", "trail_run", "virtualrun":
+            let kmh = averageSpeed * 3.6
+            met = max(7.0, min(18.0, kmh * 1.05))
+        case "ride", "virtualride":
+            let kmh = averageSpeed * 3.6
+            met = max(5.0, min(15.0, kmh * 0.45))
+        case "ebikeride":             met = 4.0
+        case "swim":                  met = 7.0
+        case "hike":                  met = 6.0
+        case "walk":                  met = 3.8
+        case "weighttraining", "crossfit", "workout": met = 5.0
+        case "yoga", "pilates":       met = 2.5
+        default:                      met = 6.0
+        }
+        return met * weight * hours
+    }
+    var kcalIsEstimated: Bool { kcal == nil || (kcal ?? 0) <= 1 }
 
     enum CodingKeys: String, CodingKey {
-        case id, name, type
+        case id, name, type, map
         case sportType = "sport_type"
         case startDate = "start_date"
         case distance
@@ -37,6 +85,7 @@ struct StravaActivity: Identifiable, Codable {
         case averageWatts = "average_watts"
         case weightedAverageWatts = "weighted_average_watts"
         case kilojoules
+        case calories
         case sufferScore = "suffer_score"
         case kudosCount = "kudos_count"
         case hasHeartrate = "has_heartrate"
@@ -70,6 +119,7 @@ struct StravaActivity: Identifiable, Codable {
     var sportEmoji: String {
         switch sportType.lowercased() {
         case "run", "virtualrun": return "🏃"
+        case "trail_run": return "🏃"
         case "ride", "virtualride": return "🚴"
         case "swim": return "🏊"
         case "hike": return "🥾"
@@ -77,6 +127,20 @@ struct StravaActivity: Identifiable, Codable {
         case "weighttraining": return "🏋️"
         case "yoga": return "🧘"
         default: return "⚡️"
+        }
+    }
+
+    var sportLabel: String {
+        switch sportType.lowercased() {
+        case "run", "virtualrun":   return "Carrera"
+        case "trail_run":           return "Trail"
+        case "ride", "virtualride": return "Ciclismo"
+        case "swim":                return "Natación"
+        case "walk":                return "Caminata"
+        case "hike":                return "Senderismo"
+        case "weighttraining":      return "Fuerza"
+        case "yoga":                return "Yoga"
+        default:                    return sportType
         }
     }
 }
@@ -100,45 +164,47 @@ struct StravaAthlete: Codable {
     var fullName: String { "\(firstname) \(lastname)" }
 }
 
-struct TrainingLoad {
-    let atl: Double  // Acute Training Load (7 days)
-    let ctl: Double  // Chronic Training Load (42 days)
-    var tsb: Double { ctl - atl }  // Training Stress Balance (form)
+struct TrainingLoad: Equatable {
+    let atl: Double  // Acute Training Load  (7-day EMA)
+    let ctl: Double  // Chronic Training Load (42-day EMA)
+
+    // ACWR = ATL/CTL — misma métrica que PeakWatch "TSB"
+    // Óptimo: 0.8-1.3 · Elevado: 1.3-1.5 · Riesgo: >1.5 · Subentrenado: <0.8
+    var acwr: Double { ctl > 0 ? atl / ctl : 1.0 }
+
+    // Mantenemos tsb como alias para compatibilidad con Watch y notificaciones
+    var tsb: Double { acwr }
 
     var formStatus: FormStatus {
-        switch tsb {
-        case 25...: return .fresh
-        case 5..<25: return .optimal
-        case -10..<5: return .neutral
-        case -30 ..< -10: return .tired
-        default: return .overreached
+        switch acwr {
+        case ..<0.8:       return .undertrained
+        case 0.8..<1.3:    return .optimal
+        case 1.3..<1.5:    return .elevated
+        default:            return .overreached
         }
     }
 
     enum FormStatus: String {
-        case fresh = "Fresco"
-        case optimal = "Óptimo"
-        case neutral = "Neutral"
-        case tired = "Cansado"
-        case overreached = "Sobreentrenado"
+        case undertrained = "Subentrenado"
+        case optimal      = "Óptimo"
+        case elevated     = "Elevado"
+        case overreached  = "Riesgo"
 
         var color: Color {
             switch self {
-            case .fresh: return .blue
-            case .optimal: return .green
-            case .neutral: return .yellow
-            case .tired: return .orange
-            case .overreached: return .red
+            case .undertrained: return .blue
+            case .optimal:      return .green
+            case .elevated:     return .yellow
+            case .overreached:  return .red
             }
         }
 
         var systemImage: String {
             switch self {
-            case .fresh: return "arrow.up.circle.fill"
-            case .optimal: return "checkmark.circle.fill"
-            case .neutral: return "minus.circle.fill"
-            case .tired: return "exclamationmark.circle.fill"
-            case .overreached: return "xmark.circle.fill"
+            case .undertrained: return "arrow.down.circle.fill"
+            case .optimal:      return "checkmark.circle.fill"
+            case .elevated:     return "exclamationmark.circle.fill"
+            case .overreached:  return "xmark.circle.fill"
             }
         }
     }

@@ -4,6 +4,22 @@ import Charts
 struct TrainingLoadDetailView: View {
     let load: TrainingLoad
     let activities: [StravaActivity]
+    let loadHistory: [DashboardViewModel.LoadSample]
+
+    // Flatten history into series points for the chart
+    private struct FitnessPoint: Identifiable {
+        let id = UUID()
+        let date: Date
+        let value: Double
+        let series: String
+    }
+
+    private var chartPoints: [FitnessPoint] {
+        loadHistory.flatMap { s in [
+            FitnessPoint(date: s.date, value: s.ctl, series: "Fitness (CTL)"),
+            FitnessPoint(date: s.date, value: s.atl, series: "Fatiga (ATL)")
+        ]}
+    }
 
     var body: some View {
         ScrollView {
@@ -26,17 +42,56 @@ struct TrainingLoadDetailView: View {
                 .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
                 .padding(.horizontal)
 
-                // ATL / CTL / TSB
+                // ATL / CTL / ACWR
                 HStack(spacing: 0) {
-                    LoadStat(label: "ATL", subtitle: "Fatiga", value: load.atl, color: .red)
+                    LoadStat(label: "ATL", subtitle: "7 días", value: load.atl, color: .orange)
                     Divider().frame(height: 50)
-                    LoadStat(label: "CTL", subtitle: "Fitness", value: load.ctl, color: .blue)
+                    LoadStat(label: "CTL", subtitle: "42 días", value: load.ctl, color: .blue)
                     Divider().frame(height: 50)
-                    LoadStat(label: "TSB", subtitle: "Forma", value: load.tsb,
-                             color: load.tsb >= 5 ? .green : load.tsb >= -10 ? .orange : .red)
+                    LoadStat(label: "ACWR", subtitle: "Ratio", value: load.acwr,
+                             color: load.formStatus.color, decimals: 2)
                 }
                 .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
                 .padding(.horizontal)
+
+                // Fitness chart — historial ATL + CTL
+                if !loadHistory.isEmpty {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Evolución últimos 6 meses")
+                            .font(.headline)
+                            .padding(.horizontal, 16)
+                            .padding(.top, 16)
+
+                        Chart(chartPoints) { point in
+                            LineMark(
+                                x: .value("Fecha", point.date, unit: .day),
+                                y: .value("Valor", point.value)
+                            )
+                            .foregroundStyle(by: .value("Serie", point.series))
+                            .interpolationMethod(.catmullRom)
+                            .lineStyle(StrokeStyle(lineWidth: 2))
+                        }
+                        .chartForegroundStyleScale([
+                            "Fitness (CTL)": Color.blue,
+                            "Fatiga (ATL)": Color.orange
+                        ])
+                        .chartXAxis {
+                            AxisMarks(values: .stride(by: .month)) { _ in
+                                AxisValueLabel(format: .dateTime.month(.abbreviated))
+                                AxisGridLine()
+                            }
+                        }
+                        .chartYAxis {
+                            AxisMarks(position: .leading)
+                        }
+                        .chartLegend(position: .bottom, alignment: .center)
+                        .frame(height: 200)
+                        .padding(.horizontal, 16)
+                        .padding(.bottom, 16)
+                    }
+                    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    .padding(.horizontal)
+                }
 
                 // Actividades recientes con suffer score
                 if !activities.isEmpty {
@@ -76,11 +131,11 @@ struct TrainingLoadDetailView: View {
                     .padding(.horizontal)
                 }
 
-                // Explicación
+                // Explanation
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Cómo funciona")
                         .font(.headline)
-                    Text("**ATL** (Carga aguda, 7 días) mide la fatiga reciente. **CTL** (Carga crónica, 42 días) mide tu nivel de fitness. **TSB** = CTL - ATL y representa tu forma actual.\n\nTSB positivo alto → fresco pero posiblemente desentrenado. TSB muy negativo → sobreentrenado, alto riesgo de lesión.")
+                    Text("**ATL** (Carga aguda, 7 días) refleja la fatiga acumulada esta semana. **CTL** (Carga crónica, 42 días) refleja tu fitness general.\n\n**ACWR** = ATL / CTL. <0.8 subentrenado · 0.8–1.3 óptimo · 1.3–1.5 elevado · >1.5 riesgo de lesión.")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                 }
@@ -98,11 +153,10 @@ struct TrainingLoadDetailView: View {
 
     private var tsbDescription: String {
         switch load.formStatus {
-        case .fresh: return "Descansado y listo. Buen momento para una competición o test."
-        case .optimal: return "En tu punto óptimo. El entrenamiento está dando frutos."
-        case .neutral: return "Balance equilibrado entre carga y recuperación."
-        case .tired: return "Acumulando fatiga. Considera una sesión de recuperación."
-        case .overreached: return "Sobrecarga alta. Prioriza el descanso para evitar lesiones."
+        case .undertrained: return "Baja carga reciente. Puedes aumentar la intensidad o volumen."
+        case .optimal:      return "Ratio óptimo. El entrenamiento y la recuperación están en equilibrio."
+        case .elevated:     return "Carga elevada. Vigila señales de fatiga y prioriza el descanso."
+        case .overreached:  return "Sobrecarga alta. Alto riesgo de lesión — reduce la carga esta semana."
         }
     }
 
@@ -122,11 +176,14 @@ private struct LoadStat: View {
     let subtitle: String
     let value: Double
     let color: Color
+    var decimals: Int = 0
 
     var body: some View {
         VStack(spacing: 2) {
             Text(label).font(.caption2).foregroundColor(.secondary)
-            Text(String(format: "%.0f", value))
+            Text(decimals == 0
+                 ? String(format: "%.0f", value)
+                 : String(format: "%.2f", value))
                 .font(.system(.title2, design: .rounded)).fontWeight(.bold).foregroundColor(color)
             Text(subtitle).font(.caption2).foregroundColor(.secondary)
         }

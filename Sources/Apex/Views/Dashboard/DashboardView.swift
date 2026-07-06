@@ -5,67 +5,194 @@ struct DashboardView: View {
     @EnvironmentObject var healthKit: HealthKitManager
     @EnvironmentObject var stravaAuth: StravaAuthManager
 
+    @State private var showProfile = false
+
+    private var smartTips: [SmartTip] {
+        SmartTipsEngine.compute(
+            recovery: healthKit.recoveryScore,
+            sleep: healthKit.sleepHistory.first,
+            sleepHistory: healthKit.sleepHistory,
+            hourlyHR: healthKit.recentHourlyHR,
+            rhr: healthKit.todaySummary?.restingHR,
+            rhrHistory: healthKit.restingHRHistory,
+            hrvHistory: healthKit.hrvHistory,
+            activities: dashVM.activities
+        )
+    }
+
+    private func refreshWidget() {
+        guard let score = healthKit.recoveryScore else { return }
+        let battery = BodyBatteryStore.shared.currentBattery(
+            recoveryScore: score,
+            sleep: healthKit.sleepHistory.first,
+            hourlyHR: healthKit.recentHourlyHR,
+            restingHR: healthKit.todaySummary?.restingHR
+        )
+        UserProfileManager.shared.updateWidget(
+            battery: battery,
+            recovery: score.value,
+            label: score.label,
+            effort: dashVM.todayEffortScore,
+            sleep: healthKit.sleepHistory.first?.score ?? 0
+        )
+    }
+
+    private func sendToWatch() {
+        let activities = dashVM.activities.prefix(5).map { act -> WatchActivity in
+            let emoji: String
+            switch act.sportType.lowercased() {
+            case "run", "trail_run": emoji = "🏃"
+            case "ride", "virtualride": emoji = "🚴"
+            case "swim": emoji = "🏊"
+            case "walk": emoji = "🚶"
+            case "hike": emoji = "🥾"
+            case "weighttraining", "workout": emoji = "🏋️"
+            case "yoga": emoji = "🧘"
+            default: emoji = "⚡"
+            }
+            return WatchActivity(
+                id: String(act.id),
+                name: act.name,
+                emoji: emoji,
+                durationSeconds: act.movingTime,
+                distanceMeters: act.distance,
+                date: act.startDate
+            )
+        }
+        let dash = WatchDashboardData(
+            battery: healthKit.recoveryScore?.value ?? 0,
+            recovery: healthKit.recoveryScore?.value ?? 0,
+            recoveryLabel: healthKit.recoveryScore?.label ?? "--",
+            sleepHours: healthKit.sleepHistory.first.map { $0.totalSleep / 3600 } ?? 0,
+            sleepScore: healthKit.sleepHistory.first?.score ?? 0,
+            hrv: healthKit.hrvHistory.first?.sdnn ?? 0,
+            rhr: healthKit.todaySummary?.restingHR ?? 0,
+            kcal: healthKit.todaySummary?.activeCalories ?? 0,
+            atl: dashVM.trainingLoad?.atl ?? 0,
+            ctl: dashVM.trainingLoad?.ctl ?? 0,
+            tsb: dashVM.trainingLoad?.tsb ?? 0,
+            recentActivities: Array(activities),
+            updatedAt: Date()
+        )
+        PhoneConnectivityManager.shared.send(dash)
+    }
+
     var body: some View {
         NavigationStack {
             ScrollView {
-                LazyVStack(spacing: 16) {
-                    // Hero: Body Battery
-                    BodyBatteryCard(
-                        score: healthKit.recoveryScore,
-                        summary: healthKit.todaySummary
-                    )
-                    .padding(.horizontal)
-
-                    // Training load
-                    if let load = dashVM.trainingLoad {
-                        NavigationLink(destination: TrainingLoadDetailView(load: load, activities: dashVM.activities)) {
-                            TrainingLoadCard(load: load)
-                                .padding(.horizontal)
-                        }
-                        .buttonStyle(.plain)
-                    }
-
-                    // Quick metrics grid
-                    QuickMetricsGrid(
-                        summary: healthKit.todaySummary,
-                        hrvHistory: healthKit.hrvHistory,
-                        vo2MaxData: healthKit.vo2MaxData,
-                        respiratoryData: healthKit.respiratoryData,
-                        wristTempData: healthKit.wristTempData,
-                        daylightData: healthKit.daylightData
-                    )
-                    .padding(.horizontal)
-
-                    // Recent activities
-                    if !dashVM.activities.isEmpty {
-                        RecentActivitiesCard(activities: Array(dashVM.activities.prefix(3)))
-                            .padding(.horizontal)
-                    }
-
-                    if dashVM.isLoadingActivities {
-                        ProgressView().padding()
-                    }
-                }
-                .padding(.top)
-                .padding(.bottom, 32)
+                dashboardContent()
             }
             .background(Color(.systemGroupedBackground))
-            .navigationTitle("Apex")
+            .navigationTitle(Date.now.formatted(.dateTime.weekday(.wide).day().month(.wide)))
             .navigationBarTitleDisplayMode(.large)
+            .onChange(of: dashVM.trainingLoad) { _, load in
+                if let load = load { healthKit.updateStravaTrainingLoad(load) }
+                sendToWatch()
+            }
+            .onChange(of: dashVM.activities.count) { _, _ in
+                let cutoff = Calendar.current.date(byAdding: .day, value: -28, to: Date()) ?? Date()
+                let recent = dashVM.activities.filter { $0.startDate >= cutoff }
+                let weeklyMins = recent.reduce(0.0) { $0 + Double($1.movingTime) } / 60.0 / 4.0
+                healthKit.updateBiologicalAgeActivity(weeklyMinutes: weeklyMins)
+                refreshWidget()
+            }
+            .onChange(of: healthKit.recoveryScore?.value) { _, _ in
+                refreshWidget()
+                sendToWatch()
+            }
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    if let athlete = stravaAuth.athlete {
-                        AsyncImage(url: URL(string: athlete.profile)) { img in
-                            img.resizable().scaledToFill()
-                        } placeholder: {
-                            Circle().fill(Color(.tertiarySystemFill))
+                    Button { showProfile = true } label: {
+                        if let athlete = stravaAuth.athlete,
+                           let profileURL = URL(string: athlete.profile) {
+                            AsyncImage(url: profileURL) { img in
+                                img.resizable().scaledToFill()
+                            } placeholder: {
+                                Circle().fill(Color(UIColor.tertiarySystemFill))
+                            }
+                            .frame(width: 32, height: 32)
+                            .clipShape(Circle())
+                        } else {
+                            Image(systemName: "person.circle.fill")
+                                .font(.title3).foregroundColor(.secondary)
                         }
-                        .frame(width: 32, height: 32)
-                        .clipShape(Circle())
                     }
                 }
             }
+            .sheet(isPresented: $showProfile) {
+                ProfileSheet()
+            }
+            .onAppear { refreshWidget() }
         }
+    }
+
+    @ViewBuilder
+    private func dashboardContent() -> some View {
+        LazyVStack(spacing: 16) {
+            if !smartTips.isEmpty {
+                SmartTipBanner(tips: smartTips).padding(.horizontal)
+            }
+            metricsRow()
+            sleepLink()
+            if let load = dashVM.trainingLoad { trainingLoadLink(load: load) }
+            quickMetrics()
+            if !dashVM.activities.isEmpty {
+                RecentActivitiesCard(activities: Array(dashVM.activities.prefix(3))).padding(.horizontal)
+            }
+            if dashVM.isLoadingActivities { ProgressView().padding() }
+        }
+        .padding(.top)
+        .padding(.bottom, 32)
+    }
+
+    @ViewBuilder
+    private func metricsRow() -> some View {
+        StressRecoveryEffortRow(
+            recoveryScore: healthKit.recoveryScore,
+            recoveryHistory: healthKit.recoveryHistory,
+            activities: dashVM.activities,
+            hrvHistory: healthKit.hrvHistory,
+            rhrHistory: healthKit.restingHRHistory,
+            todayRHR: healthKit.todaySummary?.restingHR,
+            hourlyHR: healthKit.recentHourlyHR,
+            todayActiveKcal: healthKit.todaySummary?.activeCalories ?? 0,
+            trainingLoad: dashVM.trainingLoad,
+            sleep: healthKit.sleepHistory.first,
+            sleepHistory: healthKit.sleepHistory
+        )
+        .padding(.horizontal)
+    }
+
+    @ViewBuilder
+    private func quickMetrics() -> some View {
+        QuickMetricsGrid(
+            summary: healthKit.todaySummary,
+            hrvHistory: healthKit.hrvHistory,
+            vo2MaxData: healthKit.vo2MaxData,
+            respiratoryData: healthKit.respiratoryData,
+            wristTempData: healthKit.wristTempData,
+            daylightData: healthKit.daylightData
+        )
+        .padding(.horizontal)
+    }
+
+    @ViewBuilder
+    private func sleepLink() -> some View {
+        let h = healthKit.sleepHistory
+        NavigationLink(destination: SleepDetailView(history: h)) {
+            SleepCard(sleep: h.first).padding(.horizontal)
+        }
+        .buttonStyle(.plain)
+    }
+
+    @ViewBuilder
+    private func trainingLoadLink(load: TrainingLoad) -> some View {
+        let acts = dashVM.activities
+        let hist = dashVM.loadHistory
+        NavigationLink(destination: TrainingLoadDetailView(load: load, activities: acts, loadHistory: hist)) {
+            TrainingLoadCard(load: load).padding(.horizontal)
+        }
+        .buttonStyle(.plain)
     }
 }
 

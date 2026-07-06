@@ -3,11 +3,11 @@ import Foundation
 import UIKit
 
 enum StravaConfig {
-    // Crea tu app en https://www.strava.com/settings/api
-    static let clientID = "259817"
-    static let clientSecret = "9a94220e7da8a3baa02461063c10f65e52cf27d3"
-    static let redirectURI = "apex-strava://localhost/oauth"
-    static let scopes = "read,activity:read_all,profile:read_all"
+    // Crea tu app en https://www.strava.com/settings/api y rellena estos valores
+    static let clientID     = "YOUR_STRAVA_CLIENT_ID"
+    static let clientSecret = "YOUR_STRAVA_CLIENT_SECRET"
+    static let redirectURI  = "apex-strava://localhost/oauth"
+    static let scopes       = "read,activity:read_all,profile:read_all"
 }
 
 @MainActor
@@ -87,10 +87,17 @@ final class StravaAuthManager: NSObject, ObservableObject, ASWebAuthenticationPr
     }
 
     func refreshTokenIfNeeded() async {
-        guard let expires = UserDefaults.standard.object(forKey: expiresKey) as? Date,
-              expires < Date().addingTimeInterval(300),
+        // Refrescar si el token expira en menos de 5 minutos o ya caducó
+        let expires = UserDefaults.standard.object(forKey: expiresKey) as? Date ?? .distantPast
+        guard expires < Date().addingTimeInterval(300),
               let refresh = UserDefaults.standard.string(forKey: refreshKey)
-        else { return }
+        else {
+            // Token vigente — aseguramos que el atleta esté cargado
+            if athlete == nil, let token = accessToken {
+                athlete = try? await StravaAPI.shared.fetchAthlete(token: token)
+            }
+            return
+        }
 
         guard let url = URL(string: "https://www.strava.com/oauth/token") else { return }
         var request = URLRequest(url: url)
@@ -121,12 +128,14 @@ final class StravaAuthManager: NSObject, ObservableObject, ASWebAuthenticationPr
     }
 
     private func loadStoredToken() {
-        guard let token = UserDefaults.standard.string(forKey: tokenKey),
-              let expires = UserDefaults.standard.object(forKey: expiresKey) as? Date,
-              expires > Date()
-        else { return }
+        // Si hay refresh token guardado marcamos autenticado aunque el access haya caducado.
+        // refreshTokenIfNeeded() se llamará al arrancar y renovará el access token.
+        let hasRefresh = UserDefaults.standard.string(forKey: refreshKey) != nil
+        guard let token = UserDefaults.standard.string(forKey: tokenKey), hasRefresh else { return }
         accessToken = token
         isAuthenticated = true
+        // Si ya hay atleta en cache lo cargamos; se actualizará tras el refresh
+        Task { await refreshTokenIfNeeded() }
     }
 
     func signOut() {
