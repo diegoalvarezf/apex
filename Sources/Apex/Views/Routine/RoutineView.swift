@@ -283,13 +283,15 @@ private struct ExerciseRow: View {
     let exercise: GymExercise
     let index: Int
     var supersetColor: Color? = nil   // no nil → es parte de superserie
-    @State private var expanded = false
+    @ObservedObject private var progress = RoutineProgressStore.shared
+    @State private var showProgress = false
 
     private var accentColor: Color { supersetColor ?? muscleColor }
+    private var latest: LiftEntry? { progress.latest(for: exercise.id) }
 
     var body: some View {
         Button {
-            withAnimation(.spring(response: 0.3)) { expanded.toggle() }
+            showProgress = true
         } label: {
             VStack(alignment: .leading, spacing: 0) {
                 HStack(spacing: 0) {
@@ -320,28 +322,55 @@ private struct ExerciseRow: View {
                         Text("\(exercise.sets) × \(exercise.reps)")
                             .font(.system(.subheadline, design: .rounded)).fontWeight(.semibold)
                             .foregroundColor(supersetColor != nil ? accentColor : .primary)
-                        if !exercise.weight.isEmpty {
+                        // Último peso registrado (o el objetivo de la rutina si no hay)
+                        if let latest {
+                            loggedBadge(latest)
+                        } else if !exercise.weight.isEmpty {
                             Text(exercise.weight).font(.caption2).foregroundColor(.secondary)
                         }
                     }
-                    Image(systemName: expanded ? "chevron.up" : "chevron.down")
-                        .font(.caption2).foregroundColor(.secondary)
-                        .padding(.leading, 10)
+                    Image(systemName: "chart.line.uptrend.xyaxis")
+                        .font(.caption).foregroundColor(.secondary)
+                        .padding(.leading, 12)
                 }
                 .padding(.horizontal, 14).padding(.vertical, 12)
 
-                if expanded && !exercise.notes.isEmpty {
+                if !exercise.notes.isEmpty {
                     HStack(spacing: 8) {
-                        Rectangle().fill(accentColor).frame(width: 3).cornerRadius(2)
+                        Rectangle().fill(accentColor.opacity(0.5)).frame(width: 3).cornerRadius(2)
                         Text(exercise.notes).font(.caption).foregroundColor(.secondary)
                             .fixedSize(horizontal: false, vertical: true)
+                        Spacer(minLength: 0)
                     }
                     .padding(.leading, 50).padding(.trailing, 14).padding(.bottom, 12)
-                    .transition(.opacity.combined(with: .move(edge: .top)))
                 }
             }
         }
         .buttonStyle(.plain)
+        .sheet(isPresented: $showProgress) {
+            ExerciseProgressSheet(exercise: exercise, accent: accentColor)
+        }
+    }
+
+    // Capsula con el último peso registrado + variación
+    @ViewBuilder private func loggedBadge(_ latest: LiftEntry) -> some View {
+        let delta = progress.lastDelta(for: exercise.id)
+        HStack(spacing: 3) {
+            if let d = delta, d != 0 {
+                Image(systemName: d > 0 ? "arrow.up" : "arrow.down")
+                    .font(.system(size: 8, weight: .bold))
+                    .foregroundColor(d > 0 ? .green : .orange)
+            }
+            Text(fmtKg(latest.weight))
+                .font(.caption2).fontWeight(.semibold)
+                .foregroundColor(accentColor)
+        }
+        .padding(.horizontal, 7).padding(.vertical, 2)
+        .background(accentColor.opacity(0.12), in: Capsule())
+    }
+
+    private func fmtKg(_ w: Double) -> String {
+        (w == w.rounded() ? "\(Int(w))" : String(format: "%.1f", w)) + " kg"
     }
 
     private var muscleColor: Color {

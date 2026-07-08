@@ -24,15 +24,22 @@ struct DashboardView: View {
         guard let score = healthKit.recoveryScore else { return }
         let battery = BodyBatteryStore.shared.currentBattery(
             recoveryScore: score,
-            sleep: healthKit.sleepHistory.first,
+            sleepHistory: healthKit.sleepHistory,
             hourlyHR: healthKit.recentHourlyHR,
-            restingHR: healthKit.todaySummary?.restingHR
+            restingHR: healthKit.todaySummary?.restingHR,
+            recoveryHistory: healthKit.recoveryHistory
         )
+        // Mismo cálculo de esfuerzo que el tile del dashboard (Edwards TRIMP diario)
+        let rhr = healthKit.todaySummary?.restingHR ?? UserProfile.restingHR
+        let maxHR = TrainingMetrics.observedMaxHR(hourlyHR: healthKit.recentHourlyHR)
+        let effort = TrainingMetrics.effortScore(dailyTRIMP: TrainingMetrics.dailyEffortTRIMP(
+            day: Date(), activities: dashVM.activities, hourlyHR: healthKit.recentHourlyHR,
+            restingHR: rhr, maxHR: maxHR, isMale: UserProfile.isMale))
         UserProfileManager.shared.updateWidget(
             battery: battery,
             recovery: score.value,
             label: score.label,
-            effort: dashVM.todayEffortScore,
+            effort: effort,
             sleep: healthKit.sleepHistory.first?.score ?? 0
         )
     }

@@ -86,9 +86,22 @@ final class HealthKitManager: ObservableObject {
         async let body = fetchBodyComposition()
         async let hourlyHR = fetchRecentHourlyHR()
         async let spo2 = fetchLatestQuantity(.oxygenSaturation, unit: .percent())
+        async let maxHR30 = fetchMaxHR30Days()
 
-        let (sleepData, hrvData, rhrVal, rhrHist, vo2Data, stepsVal, calsVal, respData, wtData, dlData, bodyData, workoutCals, hrByHour, spo2Val) =
-            await (sleep, hrv, rhr, rhrHistory, vo2, steps, calories, respiratory, wristTemp, daylight, body, recentWorkoutCalories, hourlyHR, spo2)
+        let (sleepData, hrvData, rhrVal, rhrHist, vo2Data, stepsVal, calsVal, respData, wtData, dlData, bodyData, workoutCals, hrByHour, spo2Val, maxHRVal) =
+            await (sleep, hrv, rhr, rhrHistory, vo2, steps, calories, respiratory, wristTemp, daylight, body, recentWorkoutCalories, hourlyHR, spo2, maxHR30)
+
+        // Persistir para las calculadoras (TRIMP, zonas, battery):
+        // FCmáx observada 30 días (metodología PeakWatch), FC reposo y sexo biológico
+        if let m = maxHRVal, m > 100 {
+            UserDefaults.standard.set(m, forKey: "user_observed_max_hr_30d")
+        }
+        if let r = rhrVal, r > 20 {
+            UserDefaults.standard.set(r, forKey: "user_resting_hr")
+        }
+        if let sx = (try? store.biologicalSex())?.biologicalSex, sx != .notSet {
+            UserDefaults.standard.set(sx != .female, forKey: "user_is_male")
+        }
 
         sleepHistory = sleepData
         hrvHistory = hrvData
@@ -156,8 +169,8 @@ final class HealthKitManager: ObservableObject {
             bmi: bodyData?.bmi
         )
 
-        // Sincronizar perfil con datos de HealthKit
-        await UserProfileManager.shared.syncFromHealthKit(
+        // Sincronizar perfil con datos de HealthKit (mismo actor, sin await)
+        UserProfileManager.shared.syncFromHealthKit(
             weightKg: bodyData?.weightKg,
             chronologicalAge: biologicalAge?.chronologicalAge
         )
@@ -485,33 +498,17 @@ final class HealthKitManager: ObservableObject {
     // MARK: - Recovery score
 
     private func computeRecovery(sleep: SleepData?, hrv: HRVData?, rhr: Double?, recentWorkoutCalories: Double) -> RecoveryScore {
-        // ── Sleep (30%) ───────────────────────────────────────────────────────
-        // Duration 40% + deep% 30% + REM% 15% + efficiency 15%
-        let sleepScore: Int
-        if let s = sleep {
-            let hours = s.totalSleep / 3600
-            let durationScore = hours < 5 ? 0.0
-                : hours < 6 ? 0.3
-                : hours < 7 ? 0.6
-                : hours <= 9 ? 1.0
-                : 0.8  // dormir demasiado también penaliza ligeramente
-            let total = max(s.totalSleep, 1)
-            let deepPct  = s.deepSleep  / total
-            let remPct   = s.remSleep   / total
-            let deepScore  = min(deepPct  / 0.22, 1.0)  // óptimo ≥22%
-            let remScore   = min(remPct   / 0.22, 1.0)  // óptimo ≥22%
-            let effScore   = min(s.efficiency / 90.0, 1.0)
-            sleepScore = Int((durationScore * 0.40 + deepScore * 0.30 + remScore * 0.15 + effScore * 0.15) * 100)
-        } else {
-            sleepScore = 50
-        }
+        // ── Sleep — score único anclado a AASM/NSF (SleepData.score) ──────────
+        let sleepScore = sleep?.score ?? 50
 
         // ── HRV — z-score contra baseline 60 días ────────────────────────────
         // PeakWatch: baseline (z=0) = ~75 pts, no 50. Al estar en tu media de 60d
         // estás "bien" recuperado. Solo bajas de 50 si estás claramente por debajo.
         let hrvScore: Int
         if let sdnn = hrv?.sdnn {
-            let history = hrvHistory.compactMap { $0.date < Date() ? $0.sdnn : nil }
+            // Baseline = últimos 60 días EXCLUYENDO hoy (hoy se compara contra tu media)
+            let todayStart = Calendar.current.startOfDay(for: Date())
+            let history = hrvHistory.compactMap { $0.date < todayStart ? $0.sdnn : nil }
             if history.count >= 7 {
                 let mean = history.reduce(0, +) / Double(history.count)
                 let variance = history.map { ($0 - mean) * ($0 - mean) }.reduce(0, +) / Double(history.count)
@@ -530,7 +527,9 @@ final class HealthKitManager: ObservableObject {
         // ── FC reposo — z-score invertido ────────────────────────────────────
         let rhrScore: Int
         if let rhr {
-            let history = restingHRHistory.map(\.value)
+            // Baseline = últimos 60 días EXCLUYENDO hoy
+            let todayStart = Calendar.current.startOfDay(for: Date())
+            let history = restingHRHistory.filter { $0.date < todayStart }.map(\.value)
             if history.count >= 7 {
                 let mean = history.reduce(0, +) / Double(history.count)
                 let variance = history.map { ($0 - mean) * ($0 - mean) }.reduce(0, +) / Double(history.count)
@@ -589,7 +588,7 @@ final class HealthKitManager: ObservableObject {
 
         return RecoveryScore(
             value: max(0, min(100, composite)),
-            sleepScore: sleepScore,
+            sleepScore: adjustedSleepScore,
             hrvScore: hrvScore,
             trainingLoadScore: trainingScore,
             restingHRScore: rhrScore
@@ -668,6 +667,22 @@ final class HealthKitManager: ObservableObject {
         return byHour.map { date, vals in
             MetricSample(date: date, value: vals.reduce(0, +) / Double(vals.count))
         }.sorted { $0.date < $1.date }
+    }
+
+    // FC máxima registrada en los últimos 30 días (PeakWatch: "the highest
+    // recorded heart rate over the past 30 days" como FCmáx efectiva)
+    private func fetchMaxHR30Days() async -> Double? {
+        guard let type = HKQuantityType.quantityType(forIdentifier: .heartRate) else { return nil }
+        let start = Calendar.current.date(byAdding: .day, value: -30, to: Date())!
+        let predicate = HKQuery.predicateForSamples(withStart: start, end: Date())
+        let unit = HKUnit.count().unitDivided(by: .minute())
+        return await withCheckedContinuation { continuation in
+            let query = HKStatisticsQuery(quantityType: type, quantitySamplePredicate: predicate,
+                                          options: .discreteMax) { _, stats, _ in
+                continuation.resume(returning: stats?.maximumQuantity()?.doubleValue(for: unit))
+            }
+            store.execute(query)
+        }
     }
 
     private func fetchRecentWorkoutCalories() async -> Double {

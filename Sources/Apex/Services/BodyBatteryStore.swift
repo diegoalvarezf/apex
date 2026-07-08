@@ -1,11 +1,14 @@
 import Foundation
 import SwiftUI
 
-// Implementa Body Energy igual que PeakWatch:
-// - El valor al final del día se persiste y es el punto de partida del día siguiente
-// - El sueño carga la batería en función del Recovery Score
-// - La actividad física la depleciona de forma asimétrica (más duro cerca de 100, más lento cerca de 0)
-
+// Body Battery estilo PeakWatch (doc.peakwatch.co/en/battery.html):
+// - El valor del final del día es el punto de partida del día siguiente
+// - El sueño carga en función del Recovery Score y de la duración real dormida
+// - El estrés físico (FC sobre reposo) depleciona; estrés muy bajo recarga levemente
+// - Cargar/descargar cuesta más cerca de los límites (factor asimétrico)
+//
+// PeakWatch no publica fórmulas exactas; las constantes de carga/descarga de este
+// fichero son calibración propia de Apex documentada en cada línea.
 final class BodyBatteryStore {
     static let shared = BodyBatteryStore()
     private let storageKey = "apex_body_battery_snapshots"
@@ -15,39 +18,57 @@ final class BodyBatteryStore {
 
     // MARK: - API pública
 
+    // Serie horaria de HOY. Encadena la simulación de los últimos 7 días con la FC
+    // horaria disponible, de modo que el punto de partida de hoy sea el final real
+    // de ayer (no el último valor visto al abrir la app).
     func hourlyBattery(
         recoveryScore: RecoveryScore?,
-        sleep: SleepData?,
+        sleepHistory: [SleepData],
         hourlyHR: [MetricSample],
-        restingHR: Double?
+        restingHR: Double?,
+        recoveryHistory: [MetricSample] = []
     ) -> [MetricSample] {
-        let recovery = Double(recoveryScore?.value ?? 65)
-        let rhr      = restingHR ?? 55.0
+        let recoveryToday = Double(recoveryScore?.value ?? 65)
+        let rhr = restingHR ?? UserProfile.restingHR
+        let today = cal.startOfDay(for: Date())
 
-        let yesterday    = cal.date(byAdding: .day, value: -1, to: cal.startOfDay(for: Date()))!
-        let startBattery = storedValue(for: yesterday) ?? min(95.0, recovery * 0.95)
+        func recovery(for day: Date) -> Double {
+            recoveryHistory.first { cal.isDate($0.date, inSameDayAs: day) }?.value ?? recoveryToday
+        }
 
-        let result = simulateDay(
-            day: Date(),
-            recovery: recovery,
-            hourlyHR: hourlyHR,
-            sleep: sleep,
-            startBattery: startBattery,
-            restingHR: rhr
-        )
+        guard let firstDay = cal.date(byAdding: .day, value: -6, to: today) else { return [] }
+        var battery = storedValue(for: cal.date(byAdding: .day, value: -1, to: firstDay) ?? firstDay)
+            ?? min(95.0, recovery(for: firstDay) * 0.95)
 
-        if let last = result.last { storeValue(last.value, for: Date()) }
-        return result
+        for offset in 0...6 {
+            guard let day = cal.date(byAdding: .day, value: offset - 6, to: today) else { continue }
+            let dayHR = hourlyHR.filter { cal.isDate($0.date, inSameDayAs: day) }
+            let sleep = sleepHistory.first { cal.isDate($0.date, inSameDayAs: day) }
+            let sim = simulateDay(
+                day: day,
+                recovery: recovery(for: day),
+                hourlyHR: dayHR,
+                sleep: sleep,
+                startBattery: battery,
+                restingHR: rhr
+            )
+            battery = sim.last?.value ?? battery
+            storeValue(battery, for: day)
+            if cal.isDate(day, inSameDayAs: today) { return sim }
+        }
+        return []
     }
 
     func currentBattery(
         recoveryScore: RecoveryScore?,
-        sleep: SleepData?,
+        sleepHistory: [SleepData],
         hourlyHR: [MetricSample],
-        restingHR: Double?
+        restingHR: Double?,
+        recoveryHistory: [MetricSample] = []
     ) -> Int {
-        let samples = hourlyBattery(recoveryScore: recoveryScore, sleep: sleep,
-                                    hourlyHR: hourlyHR, restingHR: restingHR)
+        let samples = hourlyBattery(recoveryScore: recoveryScore, sleepHistory: sleepHistory,
+                                    hourlyHR: hourlyHR, restingHR: restingHR,
+                                    recoveryHistory: recoveryHistory)
         return Int(samples.last?.value ?? Double(recoveryScore?.value ?? 0))
     }
 
@@ -60,19 +81,23 @@ final class BodyBatteryStore {
         startBattery: Double,
         restingHR: Double
     ) -> [MetricSample] {
-        let maxHR     = max(Double(UserProfile.maxHR), hourlyHR.map(\.value).max() ?? Double(UserProfile.maxHR))
+        let maxHR    = TrainingMetrics.observedMaxHR(hourlyHR: hourlyHR)
         let wakeHour  = sleep.map { cal.component(.hour, from: $0.sleepEnd)   } ?? 7
         let sleepHour = sleep.map { cal.component(.hour, from: $0.sleepStart) } ?? 23
         let maxHour   = cal.isDateInToday(day) ? cal.component(.hour, from: Date()) : 23
 
-        let totalSleepH: Double = sleepHour >= wakeHour
+        // Ventana en cama (horas de reloj) — solo define el tramo donde se carga
+        let windowH: Double = sleepHour >= wakeHour
             ? max(1.0, Double(24 - sleepHour + wakeHour))
             : max(1.0, Double(wakeHour - sleepHour))
 
-        // PeakWatch: buen sueño carga por ENCIMA del recovery.
-        // 8h → recovery+8, 7h → recovery+4, 6h → recovery+0, 5h → recovery-4
-        let sleepBonus    = max(-15.0, min(15.0, (totalSleepH - 6.0) * 4.0))
-        let wakeupBattery = max(startBattery, min(100.0, recovery + sleepBonus))
+        // Duración REAL dormida (HealthKit), no la ventana en cama
+        let sleepDurationH = sleep.map { $0.totalSleep / 3600.0 } ?? windowH
+
+        // Buen sueño carga por ENCIMA del recovery; sueño corto por debajo.
+        // 8h → recovery+8 · 7h → +4 · 6h → 0 · 5h → −4 (límites ±15)
+        let sleepBonus    = max(-15.0, min(15.0, (sleepDurationH - 6.0) * 4.0))
+        let wakeupBattery = max(0.0, min(100.0, recovery + sleepBonus))
 
         var battery = startBattery
         var result: [MetricSample] = []
@@ -91,25 +116,26 @@ final class BodyBatteryStore {
             }
 
             if isAsleep {
-                let progress = min(1.0, hoursIntoSleep / totalSleepH)
+                // Curva logarítmica: carga rápida al inicio de la noche, se aplana al final
+                let progress = min(1.0, hoursIntoSleep / windowH)
                 battery = startBattery + (wakeupBattery - startBattery) * Foundation.log10(1.0 + 9.0 * progress)
             } else {
-                // PeakWatch: estrés muy bajo → apenas depleciona o incluso recarga ligeramente.
+                // Cerca de 100 cuesta más cargar y se descarga más rápido; cerca de 0 al revés
                 let depletionFactor = max(0.2, battery / 100.0)
                 let hourlyDelta: Double
                 if let hr = hourlyHR.first(where: { cal.component(.hour, from: $0.date) == hour }) {
                     let hrr = max(0.0, min(1.0, (hr.value - restingHR) / (maxHR - restingHR)))
                     if hrr < 0.10 {
-                        hourlyDelta = +0.15
+                        hourlyDelta = +0.15   // reposo profundo: recarga leve
                     } else if hrr < 0.25 {
-                        hourlyDelta = -0.4
+                        hourlyDelta = -0.4    // vida diaria tranquila
                     } else if hrr < 0.50 {
                         hourlyDelta = -hrr * hrr * 12.0
                     } else {
-                        hourlyDelta = -hrr * hrr * 22.0
+                        hourlyDelta = -hrr * hrr * 22.0  // ejercicio: drenaje cuadrático
                     }
                 } else {
-                    hourlyDelta = -0.3
+                    hourlyDelta = -0.3        // sin datos de FC: consumo basal
                 }
                 battery += hourlyDelta * depletionFactor
             }

@@ -44,13 +44,35 @@ struct TrainingLoadDetailView: View {
 
                 // ATL / CTL / ACWR
                 HStack(spacing: 0) {
-                    LoadStat(label: "ATL", subtitle: "7 días", value: load.atl, color: .orange)
+                    LoadStat(label: "ATL", subtitle: "Fatiga · 7d", value: load.atl, color: .orange)
                     Divider().frame(height: 50)
-                    LoadStat(label: "CTL", subtitle: "42 días", value: load.ctl, color: .blue)
+                    LoadStat(label: "CTL", subtitle: "Fitness · 42d", value: load.ctl, color: .blue)
                     Divider().frame(height: 50)
-                    LoadStat(label: "ACWR", subtitle: "Ratio", value: load.acwr,
+                    LoadStat(label: "ACWR", subtitle: "Riesgo", value: load.acwr,
                              color: load.formStatus.color, decimals: 2)
                 }
+                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .padding(.horizontal)
+
+                // Forma / frescura (TSB = CTL − ATL)
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Label("Forma (TSB)", systemImage: "figure.run.circle.fill")
+                            .font(.headline).foregroundColor(load.formZone.color)
+                        Spacer()
+                        Text(String(format: "%+.0f", load.tsb))
+                            .font(.system(.title3, design: .rounded)).fontWeight(.bold)
+                            .foregroundColor(load.formZone.color)
+                        Text(load.formZone.rawValue)
+                            .font(.caption).fontWeight(.semibold)
+                            .foregroundColor(load.formZone.color)
+                            .padding(.horizontal, 8).padding(.vertical, 3)
+                            .background(load.formZone.color.opacity(0.12), in: Capsule())
+                    }
+                    Text(load.formZone.detail)
+                        .font(.subheadline).foregroundColor(.secondary)
+                }
+                .padding(16)
                 .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
                 .padding(.horizontal)
 
@@ -135,7 +157,7 @@ struct TrainingLoadDetailView: View {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Cómo funciona")
                         .font(.headline)
-                    Text("**ATL** (Carga aguda, 7 días) refleja la fatiga acumulada esta semana. **CTL** (Carga crónica, 42 días) refleja tu fitness general.\n\n**ACWR** = ATL / CTL. <0.8 subentrenado · 0.8–1.3 óptimo · 1.3–1.5 elevado · >1.5 riesgo de lesión.")
+                    Text("**ATL** (Carga aguda, 7 días) refleja la fatiga acumulada esta semana. **CTL** (Carga crónica, 42 días) refleja tu fitness general.\n\n**ACWR** = ATL / CTL (riesgo de lesión, Gabbett): <0.8 subentrenado · 0.8–1.3 óptimo · 1.3–1.5 elevado · >1.5 riesgo.\n\n**TSB** = CTL − ATL (forma/frescura, TrainingPeaks): positivo = fresco para competir, negativo = fatiga de entrenamiento productivo.")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                 }

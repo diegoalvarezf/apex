@@ -243,22 +243,21 @@ struct ActivitiesView: View {
                 }
 
                 ToolbarItem(placement: .navigationBarLeading) {
-                    HStack(spacing: 14) {
+                    HStack(spacing: 18) {
                         if !workoutStore.logs.isEmpty {
                             NavigationLink(destination: WorkoutHistoryView()) {
                                 Image(systemName: "dumbbell")
-                                    .fontWeight(.semibold)
                             }
                         }
                         NavigationLink(destination: PersonalRecordsView(activities: dashVM.activities)) {
-                            Image(systemName: "trophy.fill")
-                                .foregroundColor(.orange)
+                            Image(systemName: "trophy")
                         }
                         NavigationLink(destination: ActivityStatsView(activities: dashVM.activities)) {
-                            Image(systemName: "chart.bar.fill")
-                                .foregroundColor(.blue)
+                            Image(systemName: "chart.bar")
                         }
                     }
+                    .font(.body)
+                    .foregroundStyle(.primary)
                 }
             }
             .sheet(isPresented: $showStartSheet) {

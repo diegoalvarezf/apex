@@ -53,6 +53,9 @@ struct BodyBatteryDetailView: View {
                         score: dayScore(for: availableDays[i]),
                         todayScore: score,
                         hourlyHR: hoursFor(day: availableDays[i]),
+                        weekHourlyHR: recentHourlyHR,
+                        sleepHistory: sleepHistory,
+                        recoveryHistory: recoveryHistory,
                         restingHR: restingHR,
                         sleep: sleepFor(day: availableDays[i]),
                         startBattery: startBattery(for: i),
@@ -111,6 +114,9 @@ private struct DayBatteryPage: View {
     let score: Int
     let todayScore: RecoveryScore?
     let hourlyHR: [MetricSample]
+    let weekHourlyHR: [MetricSample]
+    let sleepHistory: [SleepData]
+    let recoveryHistory: [MetricSample]
     let restingHR: Double?
     let sleep: SleepData?
     let startBattery: Double
@@ -132,9 +138,10 @@ private struct DayBatteryPage: View {
             // Para hoy: misma llamada que usa la card, garantiza valor idéntico
             return BodyBatteryStore.shared.hourlyBattery(
                 recoveryScore: todayScore,
-                sleep: sleep,
-                hourlyHR: hourlyHR,
-                restingHR: restingHR
+                sleepHistory: sleepHistory,
+                hourlyHR: weekHourlyHR,
+                restingHR: restingHR,
+                recoveryHistory: recoveryHistory
             )
         }
         return BodyBatteryStore.shared.simulateDay(
@@ -329,20 +336,22 @@ private struct DayBatteryPage: View {
                 // Factores (solo hoy)
                 if cal.isDateInToday(day), let s = todayScore {
                     VStack(alignment: .leading, spacing: 0) {
-                        Text("Composición de hoy").font(.headline)
+                        Text("Qué mueve tu batería hoy").font(.headline)
                             .padding(.horizontal, 16).padding(.top, 16).padding(.bottom, 12)
                         FactorBarRow(label: "Sueño", icon: "moon.fill", color: .indigo,
-                                     value: s.sleepScore, weight: "30%")
+                                     value: s.sleepScore, weight: "carga")
                         Divider().padding(.leading, 52)
                         FactorBarRow(label: "HRV", icon: "waveform.path.ecg", color: .green,
-                                     value: s.hrvScore, weight: "40%")
+                                     value: s.hrvScore, weight: "70% rec.")
                         Divider().padding(.leading, 52)
                         FactorBarRow(label: "FC reposo", icon: "heart.fill", color: .red,
-                                     value: s.restingHRScore, weight: "20%")
+                                     value: s.restingHRScore, weight: "30% rec.")
                         Divider().padding(.leading, 52)
                         FactorBarRow(label: "Carga", icon: "figure.run", color: .orange,
-                                     value: s.trainingLoadScore, weight: "10%")
-                            .padding(.bottom, 8)
+                                     value: s.trainingLoadScore, weight: "drenaje")
+                        Text("La recuperación (HRV 70% + FC reposo 30%) fija el nivel al que carga el sueño; la actividad del día la drena hora a hora.")
+                            .font(.caption2).foregroundStyle(.secondary)
+                            .padding(.horizontal, 16).padding(.top, 4).padding(.bottom, 12)
                     }
                     .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
                 }

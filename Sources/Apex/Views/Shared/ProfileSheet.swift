@@ -104,8 +104,13 @@ struct ProfileSheet: View {
                 }
 
                 // ── Strava ───────────────────────────────────────────────────
-                if stravaAuth.isAuthenticated {
-                    Section {
+                Section {
+                    Button {
+                        stravaAuth.authorize()
+                    } label: {
+                        Label("Reconectar Strava", systemImage: "arrow.triangle.2.circlepath")
+                    }
+                    if stravaAuth.isAuthenticated {
                         Button(role: .destructive) {
                             stravaAuth.signOut()
                             dismiss()
@@ -113,6 +118,8 @@ struct ProfileSheet: View {
                             Label("Desconectar Strava", systemImage: "link.slash")
                         }
                     }
+                } footer: {
+                    Text("Si dejaste de ver tus actividades, reconecta para renovar el acceso a Strava.")
                 }
 
                 // ── Info app ─────────────────────────────────────────────────

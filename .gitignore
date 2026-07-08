@@ -6,3 +6,6 @@ DerivedData/
 *.ipa
 *.xcarchive
 .build/
+
+# Credenciales locales de Strava (nunca subir al repo)
+StravaSecrets.plist

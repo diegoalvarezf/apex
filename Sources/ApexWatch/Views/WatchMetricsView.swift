@@ -20,7 +20,11 @@ struct WatchMetricsView: View {
         }
     }
 
-    private var tsbColor: Color { data.tsb >= 0.25 ? .green : data.tsb >= -0.5 ? .cyan : data.tsb >= -1.5 ? .orange : .red }
+    // TSB = CTL − ATL en unidades de carga (zonas TrainingPeaks):
+    // ≥25 muy fresco · 5..25 fresco · −10..5 neutro · −30..−10 cargando · <−30 sobrecarga
+    private var tsbColor: Color {
+        data.tsb >= 25 ? .cyan : data.tsb >= 5 ? .green : data.tsb >= -10 ? .gray : data.tsb >= -30 ? .orange : .red
+    }
 
     var body: some View {
         List {
@@ -32,9 +36,9 @@ struct WatchMetricsView: View {
             }
             if data.ctl > 0 {
                 Section("Carga") {
-                    metricRow("chart.line.uptrend.xyaxis", "CTL", String(format: "%.2f", data.ctl), color: .blue)
-                    metricRow("bolt.fill", "ATL", String(format: "%.2f", data.atl), color: .orange)
-                    metricRow("gauge.medium", "TSB", String(format: "%+.2f", data.tsb), color: tsbColor)
+                    metricRow("chart.line.uptrend.xyaxis", "CTL", String(format: "%.0f", data.ctl), color: .blue)
+                    metricRow("bolt.fill", "ATL", String(format: "%.0f", data.atl), color: .orange)
+                    metricRow("gauge.medium", "TSB", String(format: "%+.0f", data.tsb), color: tsbColor)
                 }
             }
         }

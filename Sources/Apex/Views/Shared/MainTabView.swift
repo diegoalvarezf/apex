@@ -33,7 +33,7 @@ struct MainTabView: View {
                 await dashVM.loadActivities(token: token)
             }
             if !healthKit.isAuthorized {
-                await healthKit.requestAuthorization()
+                _ = await healthKit.requestAuthorization()
             }
         }
     }

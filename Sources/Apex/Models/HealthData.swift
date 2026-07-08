@@ -57,9 +57,16 @@ struct SleepData: Identifiable {
     let coreSleep: TimeInterval
     let awake: TimeInterval
 
+    // Tiempo en cama = ventana completa de la sesión (de dormirse a despertar)
+    var timeInBed: TimeInterval {
+        max(sleepEnd.timeIntervalSince(sleepStart), totalSleep + awake)
+    }
+
+    // Eficiencia estándar (AASM): tiempo dormido / tiempo en cama.
+    // totalSleep ya excluye los despertares, por eso se divide entre timeInBed.
     var efficiency: Double {
-        guard totalSleep > 0 else { return 0 }
-        return (totalSleep - awake) / totalSleep * 100
+        guard timeInBed > 0 else { return 0 }
+        return min(100, totalSleep / timeInBed * 100)
     }
 
     var formattedTotal: String {
@@ -68,12 +75,31 @@ struct SleepData: Identifiable {
         return "\(hours)h \(minutes)m"
     }
 
+    // Score de calidad del sueño 0-100 anclado a las normas de arquitectura del
+    // sueño de la AASM y la National Sleep Foundation:
+    //   Duración 40% — óptimo 7-9h (NSF)
+    //   Profundo (N3) 20% — normal 15-20% del total; se da crédito pleno a ≥16%
+    //   REM 20% — normal 20-25%; crédito pleno a ≥20%
+    //   Eficiencia 20% — normal ≥85% (AASM)
+    // Fuente única de score de sueño para toda la app (cards, recovery, edad).
     var score: Int {
-        let baseDuration = min(totalSleep / (8 * 3600), 1.0) * 40
-        let deepPct = totalSleep > 0 ? deepSleep / totalSleep : 0
-        let deepScore = min(deepPct / 0.20, 1.0) * 30
-        let effScore = efficiency / 100.0 * 30
-        return Int(baseDuration + deepScore + effScore)
+        let hours = totalSleep / 3600
+        let durationScore: Double
+        switch hours {
+        case 7...9:   durationScore = 1.0
+        case 6..<7:   durationScore = 0.6 + (hours - 6) * 0.4      // 6→0.6, 7→1.0
+        case 9..<10:  durationScore = 1.0 - (hours - 9) * 0.3      // ligera penalización por exceso
+        case 5..<6:   durationScore = 0.3 + (hours - 5) * 0.3      // 5→0.3, 6→0.6
+        default:      durationScore = max(0, min(0.3, hours / 5 * 0.3))
+        }
+
+        let total = max(totalSleep, 1)
+        let deepScore = min(deepSleep / total / 0.16, 1.0)   // N3 ≥16%
+        let remScore  = min(remSleep  / total / 0.20, 1.0)   // REM ≥20%
+        let effScore  = max(0, min((efficiency - 50) / 35, 1.0))  // 50%→0, ≥85%→1
+
+        let composite = durationScore * 0.40 + deepScore * 0.20 + remScore * 0.20 + effScore * 0.20
+        return Int((composite * 100).rounded())
     }
 }
 
@@ -190,6 +216,53 @@ struct HeartRateZone: Identifiable {
     }
 }
 
+// MARK: - Fitness age normative data (VO2max)
+
+// Valores normativos de VO2max por edad y sexo del HUNT Fitness Study
+// (Loe, Steinshamn & Wisløff 2013, PLOS One, n=3.816 adultos sanos 20-90 años).
+// Se usan los puntos medios de cada década. La "edad de fitness" es la edad a la
+// que la media poblacional de VO2max iguala tu VO2max medido — mismo concepto que
+// la Fitness Age de CERG/NTNU y Garmin.
+enum FitnessAgeNorms {
+    // (edad media de la banda, VO2max medio ml/kg/min)
+    private static let male: [(Double, Double)] = [
+        (25, 54.4), (35, 49.0), (45, 47.0), (55, 42.7), (65, 38.5), (75, 34.7), (85, 31.4)
+    ]
+    private static let female: [(Double, Double)] = [
+        (25, 43.0), (35, 39.9), (45, 37.2), (55, 33.0), (65, 29.8), (75, 27.1), (85, 24.4)
+    ]
+
+    // VO2max medio esperado para una edad/sexo (interpolación lineal, extrapolación en extremos)
+    static func expectedVO2max(age: Double, male isMale: Bool) -> Double {
+        let t = isMale ? male : female
+        if age <= t.first!.0 { return t.first!.1 }
+        if age >= t.last!.0 { return t.last!.1 }
+        for i in 0..<(t.count - 1) where age >= t[i].0 && age <= t[i+1].0 {
+            let f = (age - t[i].0) / (t[i+1].0 - t[i].0)
+            return t[i].1 + f * (t[i+1].1 - t[i].1)
+        }
+        return t.last!.1
+    }
+
+    // Edad a la que la media poblacional de VO2max = tu VO2max (invierte la curva).
+    static func fitnessAge(vo2Max: Double, male isMale: Bool) -> Double {
+        let t = isMale ? male : female
+        // Por encima de la media de 20-29 → más joven que 20; por debajo de la de 80-89 → 90
+        if vo2Max >= t.first!.1 {
+            // extrapolar por la pendiente del primer tramo, con suelo en 18
+            let slope = (t[1].1 - t[0].1) / (t[1].0 - t[0].0)   // ml/kg/min por año (negativa)
+            let age = t.first!.0 + (vo2Max - t.first!.1) / slope
+            return max(18, age)
+        }
+        if vo2Max <= t.last!.1 { return 90 }
+        for i in 0..<(t.count - 1) where vo2Max <= t[i].1 && vo2Max >= t[i+1].1 {
+            let f = (vo2Max - t[i].1) / (t[i+1].1 - t[i].1)
+            return t[i].0 + f * (t[i+1].0 - t[i].0)
+        }
+        return t.last!.0
+    }
+}
+
 // MARK: - Biological Age
 
 struct BiologicalAgeResult {
@@ -237,24 +310,36 @@ struct BiologicalAgeResult {
         var factors: [BiologicalAgeFactor] = []
         var totalDelta = 0.0
 
-        // ── VO2Max (±8 años) — predictor más potente ───────────────
+        // ── VO2Max — eje de la edad de fitness (Loe 2013, HUNT) ─────
+        // Edad de fitness = edad a la que la media poblacional de VO2max iguala tu
+        // valor medido (definición de Garmin/CERG). Es el predictor de longevidad
+        // más validado, así que DOMINA el número (enfoque "honesto con el VO2max").
+        // Nota: HealthKit puede infravalorarlo si no corres al aire libre.
         if let v = vo2Max {
-            let d = vo2MaxDelta(v, age: chronologicalAge, male: isMale)
+            let fitnessAge = FitnessAgeNorms.fitnessAge(vo2Max: v, male: isMale)
+            let d = fitnessAge - Double(chronologicalAge)
             totalDelta += d
+            let expected = FitnessAgeNorms.expectedVO2max(age: Double(chronologicalAge), male: isMale)
             factors.append(.init(
                 name: "VO₂Max",
                 icon: "lungs.fill",
                 color: .cyan,
                 ageDelta: d,
-                valueLabel: String(format: "%.1f ml/kg/min", v),
-                explanation: "La capacidad aeróbica máxima es el predictor más potente de longevidad. Un VO₂Max alto equivale a un corazón y pulmones más jóvenes."
+                valueLabel: String(format: "%.1f ml/kg/min (media %.0f a tu edad)", v, expected),
+                explanation: "La capacidad aeróbica máxima es el predictor más potente de longevidad. Tu edad de fitness es la edad a la que la media de VO₂Max de la población (estudio HUNT, 3.816 adultos) iguala tu valor medido."
             ))
         }
 
+        // Marcadores secundarios como AJUSTE FINO sobre la edad de fitness. Con
+        // VO2max presente están correlacionados con él, así que van a media potencia
+        // para no duplicar el efecto: el VO2max manda, estos matizan ±unos años.
+        let secondaryWeight = vo2Max != nil ? 0.5 : 1.0
+        var secondaryDelta = 0.0
+
         // ── FC en reposo (±4 años) ─────────────────────────────────
         if let rhr = restingHR {
-            let d = rhrDelta(rhr)
-            totalDelta += d
+            let d = rhrDelta(rhr) * secondaryWeight
+            secondaryDelta += d
             factors.append(.init(
                 name: "FC en reposo",
                 icon: "heart.fill",
@@ -267,8 +352,8 @@ struct BiologicalAgeResult {
 
         // ── HRV (±4 años) ─────────────────────────────────────────
         if let h = hrv {
-            let d = hrvDelta(h, age: chronologicalAge)
-            totalDelta += d
+            let d = hrvDelta(h, age: chronologicalAge) * secondaryWeight
+            secondaryDelta += d
             factors.append(.init(
                 name: "HRV",
                 icon: "waveform.path.ecg",
@@ -281,8 +366,8 @@ struct BiologicalAgeResult {
 
         // ── Sueño (±3 años) ────────────────────────────────────────
         if let score = sleepScore {
-            let d = sleepDelta(score)
-            totalDelta += d
+            let d = sleepDelta(score) * secondaryWeight
+            secondaryDelta += d
             factors.append(.init(
                 name: "Calidad del sueño",
                 icon: "moon.fill",
@@ -295,8 +380,8 @@ struct BiologicalAgeResult {
 
         // ── IMC (±3 años) ──────────────────────────────────────────
         if let b = bmi {
-            let d = bmiDelta(b)
-            totalDelta += d
+            let d = bmiDelta(b) * secondaryWeight
+            secondaryDelta += d
             factors.append(.init(
                 name: "Composición corporal",
                 icon: "figure.stand",
@@ -307,11 +392,11 @@ struct BiologicalAgeResult {
             ))
         }
 
-        // ── Actividad física semanal (±3.5 años) — igual que PeakWatch ─
-        // PeakWatch incluye aeróbico, HIIT, fuerza y pasos como factor de bio age
+        // ── Actividad física semanal (±3.5 años) ───────────────────
+        // Guías OMS 150-300 min/sem; asociación dosis-respuesta con mortalidad.
         if let mins = weeklyActiveMinutes {
-            let d = exerciseDelta(mins)
-            totalDelta += d
+            let d = exerciseDelta(mins) * secondaryWeight
+            secondaryDelta += d
             let label = mins < 60 ? "< 1h/semana"
                 : mins < 150 ? String(format: "%.0f min/semana", mins)
                 : String(format: "%.0fh/semana", mins / 60)
@@ -325,6 +410,7 @@ struct BiologicalAgeResult {
             ))
         }
 
+        totalDelta += secondaryDelta
         let bioAge = max(18.0, Double(chronologicalAge) + totalDelta)
         // Redondear a 1 decimal
         let rounded = (bioAge * 10).rounded() / 10
@@ -335,21 +421,7 @@ struct BiologicalAgeResult {
         )
     }
 
-    // MARK: - Delta functions
-
-    private static func vo2MaxDelta(_ v: Double, age: Int, male: Bool) -> Double {
-        let avg: Double
-        switch age {
-        case ..<30: avg = male ? 47 : 42
-        case 30..<40: avg = male ? 43 : 38
-        case 40..<50: avg = male ? 39 : 34
-        case 50..<60: avg = male ? 35 : 30
-        default: avg = male ? 31 : 27
-        }
-        // ±1 año por cada 1.5 ml/kg/min de diferencia, cap ±8
-        let d = -(v - avg) / 1.5
-        return max(-8, min(8, d))
-    }
+    // MARK: - Delta functions (marcadores secundarios sobre la edad de fitness)
 
     private static func rhrDelta(_ rhr: Double) -> Double {
         switch rhr {

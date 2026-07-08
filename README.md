@@ -9,14 +9,14 @@ App iOS nativa de seguimiento de rendimiento deportivo. Integra Strava, Apple He
 ### Dashboard
 - **Body Battery** — energía acumulada day-over-day siguiendo la metodología de PeakWatch: el sueño carga por encima del recovery score, el ejercicio intenso depleciona, el reposo apenas consume.
 - **Recuperación** — score 0–100 calculado con z-score de HRV (70%) y FC en reposo (30%) contra tu baseline de 60 días. Calibrado para que "en tu media" = ~75 pts, no 50.
-- **Esfuerzo** — TRIMP de Banister del día escalado a 0–100. Usa TSS para ciclismo con datos de potencia.
-- **Estrés** — inverso de recuperación, con gráfica horaria de FC.
+- **Esfuerzo** — TRIMP de Banister continuo acumulado en el día (actividades + FC de fondo elevada), con curva saturante a 0–100.
+- **Estrés** — media diaria del estrés fisiológico horario: (FC − FC reposo) / reserva cardíaca.
 - **Carga de entrenamiento (ACWR)** — ATL/CTL con 180 días de historial. Barra de 4 colores: azul (<0.8), verde (0.8–1.3), amarillo (1.3–1.5), rojo (>1.5).
 - **Sueño** — duración, sueño profundo, score y tendencia semanal.
 - **Smart Tips** — alertas locales instantáneas basadas en recuperación, HRV, carga acumulada y déficit de sueño.
 
 ### Pestaña Salud
-- **Edad biológica** — algoritmo multifactor: VO2max, FC reposo, HRV, IMC, sueño, actividad semanal. Muestra delta con 1 decimal (ej. "2.4 años menos").
+- **Edad biológica (edad de fitness)** — anclada al VO2max medido: la edad a la que la media poblacional de VO2max (datos normativos HUNT / Loe 2013, n=3.816) iguala tu valor. FC reposo, HRV, IMC, sueño y actividad aplican ajustes menores (a media potencia cuando hay VO2max, por correlación). Delta con 1 decimal.
 - **Métricas corporales** — HRV, FC reposo, temperatura de muñeca, luz solar.
 - **Actividad** — VO2max, frecuencia respiratoria, SpO2.
 - **Composición corporal** — peso, IMC, masa grasa estimada.
@@ -147,6 +147,10 @@ Sources/
 
 ## Métricas y algoritmos
 
+> 📚 La base científica completa de cada métrica, con referencias a la literatura, está en
+> [`docs/METRICS_SOURCES.md`](docs/METRICS_SOURCES.md). Ahí se marcan también las únicas tres
+> calibraciones de producto (sin fuente pública).
+
 ### Body Battery
 Modelo acumulativo day-over-day inspirado en PeakWatch/Garmin:
 - **Sueño**: carga `recovery + (horas - 6) × 4` (8h de sueño con recovery=79 → 87 de batería)
@@ -169,10 +173,20 @@ Z-score contra baseline de 60 días:
 - ACWR = ATL / CTL
 - 180 días de historial para convergencia del CTL
 
-### TRIMP (Esfuerzo)
-`duración_h × HRR × e^(1.92 × HRR) × 13`
+### Carga por sesión (ATL/CTL)
+TRIMP de Banister (1991) en unidades reales:
+`t_min × HRr × 0.64 × e^(1.92·HRr)` (hombres) / `t_min × HRr × 0.86 × e^(1.67·HRr)` (mujeres)
 
-Para ciclismo con datos de potencia usa TSS: `(segundos × NP × IF) / (FTP × 3600) × 100`
+Para ciclismo con potencia usa TSS: `(segundos × NP × IF) / (FTP × 3600) × 100`, con FTP estimado como 95% de la mejor NP en salidas ≥20 min.
+
+### Esfuerzo diario (tile)
+TRIMP de Banister continuo acumulado en el día: cada actividad + cada hora de fondo con FC elevada (HRr>0.20) aporta `t·HRr·a·e^(b·HRr)`. Curva saturante `score = 100·(1−e^(−TRIMP/90))`. Se cambió desde Edwards por zonas porque su corte al 50% daba 0 en días sin entreno intenso.
+
+### Sueño
+Score anclado a normas AASM / National Sleep Foundation: duración 40% (óptimo 7–9h), sueño profundo N3 20% (≥16% del total), REM 20% (≥20%), eficiencia 20% (≥85%). Eficiencia = tiempo dormido / tiempo en cama (definición AASM).
+
+### Edad de fitness
+`FitnessAgeNorms.fitnessAge(vo2Max:)` invierte la curva normativa de VO2max por edad/sexo del HUNT Study (Loe 2013) para dar la edad a la que la media poblacional iguala tu VO2max. Ecuación de Nes 2011 disponible como estimador no-ejercicio de VO2max.
 
 ---
 

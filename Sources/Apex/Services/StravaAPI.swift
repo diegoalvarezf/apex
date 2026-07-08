@@ -21,6 +21,21 @@ final class StravaAPI {
         return try await get("/athlete/activities?\(params)", token: token)
     }
 
+    // Trae TODAS las actividades desde `after` recorriendo páginas hasta agotarlas.
+    // Strava topa per_page en 200; sin paginación se perderían actividades y el
+    // ATL/CTL quedaría infravalorado. `maxPages` es un tope de seguridad.
+    func fetchAllActivities(token: String, after: Date, perPage: Int = 200, maxPages: Int = 20) async throws -> [StravaActivity] {
+        var all: [StravaActivity] = []
+        var page = 1
+        while page <= maxPages {
+            let batch = try await fetchActivities(token: token, page: page, perPage: perPage, after: after)
+            all.append(contentsOf: batch)
+            if batch.count < perPage { break }   // última página
+            page += 1
+        }
+        return all
+    }
+
     func fetchActivity(id: Int, token: String) async throws -> StravaActivity {
         try await get("/activities/\(id)", token: token)
     }

@@ -10,7 +10,6 @@ final class DashboardViewModel: ObservableObject {
     @Published var isLoadingActivities = false
     @Published var isLoadingInsights = false
     @Published var error: String?
-    @Published var todayEffortScore: Int = 0
 
     struct LoadSample: Identifiable {
         let id = UUID()
@@ -24,9 +23,10 @@ final class DashboardViewModel: ObservableObject {
         isLoadingActivities = true
         defer { isLoadingActivities = false }
         do {
-            // 6 meses para que el CTL (42d) converja correctamente, igual que PeakWatch
+            // 6 meses para que el CTL (42d) converja correctamente. Paginado: si hay
+            // >200 actividades en la ventana, sin esto se perderían y el CTL/ATL bajaría.
             let sixMonthsAgo = Calendar.current.date(byAdding: .day, value: -180, to: Date())!
-            let fetched = try await StravaAPI.shared.fetchActivities(token: token, perPage: 200, after: sixMonthsAgo)
+            let fetched = try await StravaAPI.shared.fetchAllActivities(token: token, after: sixMonthsAgo)
             activities = fetched.sorted { $0.startDate > $1.startDate }
             let (load, history) = computeTrainingLoad(from: activities)
             trainingLoad = load
@@ -61,13 +61,17 @@ final class DashboardViewModel: ObservableObject {
     private func computeTrainingLoad(from activities: [StravaActivity]) -> (TrainingLoad, [LoadSample]) {
         let cal = Calendar.current
         let today = cal.startOfDay(for: Date())
-        let ftpEstimate = estimatedFTP(from: activities)
+        let ftpEstimate = TrainingMetrics.estimateFTP(from: activities)
+        let rhr = UserProfile.restingHR
+        let maxHR = UserProfile.effectiveMaxHR
+        let isMale = UserProfile.isMale
 
-        // Daily TRIMP/TSS accumulated per day
+        // Carga diaria acumulada: TSS (ciclismo con potencia) o TRIMP de Banister
         var dailyTrimp: [Date: Double] = [:]
         for act in activities {
             let day = cal.startOfDay(for: act.startDate)
-            dailyTrimp[day, default: 0] += trimpForActivity(act, ftpEstimate: ftpEstimate)
+            dailyTrimp[day, default: 0] += TrainingMetrics.sessionLoad(
+                act, ftp: ftpEstimate, restingHR: rhr, maxHR: maxHR, isMale: isMale)
         }
 
         // EMA standard PeakWatch/TrainingPeaks
@@ -86,77 +90,12 @@ final class DashboardViewModel: ObservableObject {
             let trimp = dailyTrimp[day] ?? 0.0
             atl = atl * (1 - kATL) + trimp * kATL
             ctl = ctl * (1 - kCTL) + trimp * kCTL
-            let acwr = ctl > 0 ? atl / ctl : 1.0
-            history.append(LoadSample(date: day, atl: atl, ctl: ctl, tsb: acwr))
+            // TSB real = CTL − ATL (forma/frescura), no el ACWR
+            history.append(LoadSample(date: day, atl: atl, ctl: ctl, tsb: ctl - atl))
         }
 
         let finalATL = history.last?.atl ?? 0
         let finalCTL = history.last?.ctl ?? 0
-        // Esfuerzo de hoy: TRIMP del día escalado a 0-100
-        let rawToday = dailyTrimp[today] ?? 0.0
-        todayEffortScore = min(100, Int(rawToday))
         return (TrainingLoad(atl: finalATL, ctl: finalCTL), history)
-    }
-
-    // Estimate FTP from average power of the most recent 10 rides with power data
-    private func estimatedFTP(from activities: [StravaActivity]) -> Double? {
-        let rideTypes = ["ride", "virtualride", "ebikeride", "mountainbikeride", "gravelride"]
-        let powerValues: [Double] = Array(
-            activities
-                .filter { rideTypes.contains($0.sportType.lowercased()) }
-                .compactMap { act -> Double? in
-                    if let w = act.weightedAverageWatts { return Double(w) }
-                    return act.averageWatts
-                }
-                .prefix(10)
-        )
-        guard !powerValues.isEmpty else { return nil }
-        return powerValues.reduce(0, +) / Double(powerValues.count)
-    }
-
-    // Banister TRIMP / TSS per activity
-    private func trimpForActivity(_ act: StravaActivity, ftpEstimate: Double? = nil) -> Double {
-        let rhr = 55.0
-        let maxHR = Double(UserProfile.maxHR)
-
-        // TSS for cycling rides that have power data
-        let rideTypes = ["ride", "virtualride", "ebikeride", "mountainbikeride", "gravelride"]
-        let np: Double? = act.weightedAverageWatts.map(Double.init) ?? act.averageWatts
-        if rideTypes.contains(act.sportType.lowercased()),
-           let ftp = ftpEstimate, ftp > 0,
-           let npValue = np, npValue > 0 {
-            let ifValue = npValue / ftp
-            let seconds = Double(act.movingTime)
-            var tss = (seconds * npValue * ifValue) / (ftp * 3600.0) * 100.0
-            // +1% per 100m elevation gain
-            let elevationFactor = 1.0 + (act.totalElevationGain / 10000.0)
-            tss *= elevationFactor
-            return tss
-        }
-
-        // Banister TRIMP for all other sports
-        let durationH = Double(act.movingTime) / 3600.0
-        let avgHR: Double
-        if let hr = act.averageHeartrate {
-            avgHR = hr
-        } else {
-            let frac: Double
-            switch act.sportType.lowercased() {
-            case "run", "trail_run", "virtualrun":        frac = 0.75
-            case "ride", "virtualride", "ebikeride":      frac = 0.65
-            case "swim":                                   frac = 0.70
-            case "weighttraining", "crossfit", "workout": frac = 0.55
-            case "walk", "hike":                          frac = 0.40
-            case "yoga", "pilates":                       frac = 0.30
-            default:                                       frac = 0.60
-            }
-            avgHR = rhr + frac * (maxHR - rhr)
-        }
-        let hrr = max(0, min(1, (avgHR - rhr) / (maxHR - rhr)))
-        var trimp = durationH * hrr * Foundation.exp(1.92 * hrr)
-        let elevationFactor = 1.0 + (act.totalElevationGain / 10000.0)
-        trimp *= elevationFactor
-        // Escalar a rango PeakWatch (ATL/CTL en unidades 20-50 para entrenos típicos)
-        return trimp * 13.0
     }
 }

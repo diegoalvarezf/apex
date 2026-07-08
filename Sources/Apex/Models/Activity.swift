@@ -140,7 +140,36 @@ struct StravaActivity: Identifiable, Codable {
         case "hike":                return "Senderismo"
         case "weighttraining":      return "Fuerza"
         case "yoga":                return "Yoga"
-        default:                    return sportType
+        default:                    return sportType.capitalized
+        }
+    }
+
+    var sportIcon: String {
+        switch sportType.lowercased() {
+        case "run", "virtualrun":                       return "figure.run"
+        case "trail_run":                               return "figure.run"
+        case "ride", "virtualride", "ebikeride",
+             "mountainbikeride", "gravelride":          return "figure.outdoor.cycle"
+        case "swim":                                    return "figure.pool.swim"
+        case "walk":                                    return "figure.walk"
+        case "hike":                                    return "figure.hiking"
+        case "weighttraining", "crossfit", "workout":   return "dumbbell.fill"
+        case "yoga", "pilates":                         return "figure.yoga"
+        default:                                        return "bolt.fill"
+        }
+    }
+
+    var sportColor: Color {
+        switch sportType.lowercased() {
+        case "run", "virtualrun", "trail_run":          return .orange
+        case "ride", "virtualride", "ebikeride",
+             "mountainbikeride", "gravelride":          return .green
+        case "swim":                                    return .cyan
+        case "walk":                                    return .teal
+        case "hike":                                    return .brown
+        case "weighttraining", "crossfit", "workout":   return .purple
+        case "yoga", "pilates":                         return .pink
+        default:                                        return .blue
         }
     }
 }
@@ -168,19 +197,61 @@ struct TrainingLoad: Equatable {
     let atl: Double  // Acute Training Load  (7-day EMA)
     let ctl: Double  // Chronic Training Load (42-day EMA)
 
-    // ACWR = ATL/CTL — misma métrica que PeakWatch "TSB"
+    // ACWR = ATL/CTL (Gabbett 2016) — indicador de RIESGO DE LESIÓN.
     // Óptimo: 0.8-1.3 · Elevado: 1.3-1.5 · Riesgo: >1.5 · Subentrenado: <0.8
     var acwr: Double { ctl > 0 ? atl / ctl : 1.0 }
 
-    // Mantenemos tsb como alias para compatibilidad con Watch y notificaciones
-    var tsb: Double { acwr }
+    // TSB = CTL − ATL (Training Stress Balance / "Form", Coggan-Banister) — indicador
+    // de FRESCURA. En unidades de carga (TSS/TRIMP): positivo = fresco, negativo = fatigado.
+    // No confundir con ACWR: miden cosas distintas (frescura vs riesgo de lesión).
+    var tsb: Double { ctl - atl }
 
+    // Estado de riesgo (barra de carga) — basado en ACWR
     var formStatus: FormStatus {
         switch acwr {
         case ..<0.8:       return .undertrained
         case 0.8..<1.3:    return .optimal
         case 1.3..<1.5:    return .elevated
         default:            return .overreached
+        }
+    }
+
+    // Zona de forma/frescura — basada en TSB (zonas TrainingPeaks)
+    var formZone: FormZone {
+        switch tsb {
+        case 25...:        return .transition   // muy fresco / desentrenando
+        case 5..<25:       return .fresh        // frescura de competición
+        case -10..<5:      return .neutral      // zona neutra
+        case -30..<(-10):  return .productive   // entrenamiento productivo (fatiga útil)
+        default:           return .overreached  // sobrecarga
+        }
+    }
+
+    enum FormZone: String {
+        case transition  = "Muy fresco"
+        case fresh       = "Fresco"
+        case neutral     = "Neutro"
+        case productive  = "Cargando"
+        case overreached = "Sobrecarga"
+
+        var color: Color {
+            switch self {
+            case .transition:  return .cyan
+            case .fresh:       return .green
+            case .neutral:     return .gray
+            case .productive:  return .orange
+            case .overreached: return .red
+            }
+        }
+
+        var detail: String {
+            switch self {
+            case .transition:  return "Muy descansado. Ideal para competir, pero mantenido en el tiempo pierdes fitness."
+            case .fresh:       return "Frescura de competición: fitness alto y fatiga baja. Buen momento para rendir."
+            case .neutral:     return "Carga y recuperación equilibradas. Mantenimiento."
+            case .productive:  return "Fatiga útil: estás construyendo fitness. Normal en bloques de carga."
+            case .overreached: return "Fatiga muy alta. Reduce la carga para no caer en sobreentrenamiento."
+            }
         }
     }
 

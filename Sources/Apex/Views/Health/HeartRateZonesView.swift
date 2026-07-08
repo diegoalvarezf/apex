@@ -5,10 +5,10 @@ struct HeartRateZonesView: View {
     @EnvironmentObject var dashVM: DashboardViewModel
     @EnvironmentObject var healthKit: HealthKitManager
 
+    // Zonas por %FCmáx (modelo estándar de 5 zonas). FCmáx efectiva del perfil:
+    // custom del usuario > máxima registrada 30 días > 220−edad.
     var zones: [HeartRateZone] {
-        guard let rhr = healthKit.todaySummary?.restingHR else { return defaultZones(maxHR: 190) }
-        let maxHR = 220 - 30  // estimado; idealmente del perfil del usuario
-        return computeZones(maxHR: Double(maxHR), activities: dashVM.activities)
+        computeZones(maxHR: UserProfile.effectiveMaxHR, activities: dashVM.activities)
     }
 
     var body: some View {
@@ -74,11 +74,12 @@ struct HeartRateZonesView: View {
         let pcts: [(Double, Double)] = [(0.5, 0.6), (0.6, 0.7), (0.7, 0.8), (0.8, 0.9), (0.9, 1.0)]
         var timeInZone = [Double](repeating: 0, count: 5)
 
+        // Aproximación: sin streams de FC de Strava, se imputa toda la duración de
+        // cada actividad a la zona de su FC media. Con datos de stream sería exacto.
         for act in activities {
-            guard let avgHR = act.averageHeartrate, let maxActHR = act.maxHeartrate else { continue }
-            let duration = Double(act.movingTime)
+            guard let avgHR = act.averageHeartrate else { continue }
             let z = zoneIndex(hr: avgHR, maxHR: maxHR, pcts: pcts)
-            if z >= 0 { timeInZone[z] += duration }
+            if z >= 0 { timeInZone[z] += Double(act.movingTime) }
         }
 
         return (0..<5).map { i in

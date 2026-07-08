@@ -17,21 +17,39 @@ struct StressRecoveryEffortRow: View {
     var sleep: SleepData? = nil
     var sleepHistory: [SleepData] = []
 
-    private var stressValue: Int { 100 - (recoveryScore?.value ?? 50) }
+    // Estrés fisiológico = FC sobre reposo, normalizada por la reserva cardíaca.
+    // El valor diario es la MEDIA de las muestras horarias medidas (no un derivado
+    // del recovery): coincide con lo que muestra la gráfica horaria interior.
+    private var stressValue: Int {
+        let s = todayHourlyStress
+        guard !s.isEmpty else { return max(0, 100 - (recoveryScore?.value ?? 50)) }
+        return Int((s.map(\.value).reduce(0, +) / Double(s.count)).rounded())
+    }
+
+    private func hourlyStress(samples: [MetricSample]) -> [MetricSample] {
+        let rhr: Double = todayRHR ?? UserProfile.restingHR
+        let maxHR = TrainingMetrics.observedMaxHR(hourlyHR: hourlyHR)
+        return samples.map { s in
+            let stress: Double = max(0.0, min(100.0, (s.value - rhr) / (maxHR - rhr) * 100.0))
+            return MetricSample(date: s.date, value: stress)
+        }.sorted { $0.date < $1.date }
+    }
 
     // Estrés horario de HOY — lo mismo que se ve dentro al pulsar
     private var todayHourlyStress: [MetricSample] {
-        let rhr: Double = todayRHR ?? 55.0
         let today = Calendar.current.startOfDay(for: Date())
-        let filtered = hourlyHR.filter { $0.date >= today }
-        let mapped: [MetricSample] = filtered.map { s in
-            let stress: Double = max(0.0, min(100.0, (s.value - rhr) / (Double(UserProfile.maxHR) - rhr) * 100.0))
-            return MetricSample(date: s.date, value: stress)
-        }
-        return mapped.sorted { $0.date < $1.date }
+        return hourlyStress(samples: hourlyHR.filter { $0.date >= today })
     }
+
+    // Media diaria de estrés de los últimos 7 días (para tendencia y páginas de detalle)
     private var stressTrendHistory: [MetricSample] {
-        recoveryHistory.map { MetricSample(date: $0.date, value: max(0, 100 - $0.value)) }
+        let cal = Calendar.current
+        return (0...6).compactMap { offset -> MetricSample? in
+            guard let day = cal.date(byAdding: .day, value: -offset, to: cal.startOfDay(for: Date())) else { return nil }
+            let daySamples = hourlyStress(samples: hourlyHR.filter { cal.isDate($0.date, inSameDayAs: day) })
+            guard !daySamples.isEmpty else { return nil }
+            return MetricSample(date: day, value: daySamples.map(\.value).reduce(0, +) / Double(daySamples.count))
+        }.sorted { $0.date < $1.date }
     }
     private var stressTrend: MetricTrend { computeTrend(samples: stressTrendHistory) }
 
@@ -43,59 +61,17 @@ struct StressRecoveryEffortRow: View {
     }
     private var recoveryTrend: MetricTrend { computeTrend(samples: recoveryHistory) }
 
-    // TRIMP — igual que PeakWatch: todo el día sin umbral, maxHR observado sin buffer
-    // PeakWatch doc: "not only deliberate exercise but also all activities in daily life"
-    // PeakWatch doc: "the highest recorded heart rate over the past 30 days" como maxHR
+    // Esfuerzo diario — TRIMP de Edwards (tiempo en zonas de FC), la misma
+    // metodología que documenta PeakWatch para su Exertion Score: FCmáx = máxima
+    // registrada y "accumulated time spent in different heart rate zones".
+    // Incluye actividades Strava + toda la FC de fondo del día.
     private func trimpStrain(forDay day: Date) -> Double {
-        let rhr    = todayRHR ?? 55.0
-        let allHR  = hourlyHR.map(\.value)
-        // maxHR = máximo observado en los datos disponibles, sin buffer artificial
-        let maxHR  = max(Double(UserProfile.maxHR), allHR.max() ?? Double(UserProfile.maxHR))
-        let cal    = Calendar.current
-
-        let dayActs = activities.filter { cal.isDate($0.startDate, inSameDayAs: day) }
-        var trimp = 0.0
-        var coveredHours: Set<Int> = []
-
-        for act in dayActs {
-            let durationH = Double(act.movingTime) / 3600.0
-            let avgHR: Double
-            if let hr = act.averageHeartrate {
-                avgHR = hr
-            } else {
-                let hrrFraction: Double
-                switch act.sportType.lowercased() {
-                case "run", "trail_run", "virtualrun":        hrrFraction = 0.75
-                case "ride", "virtualride", "ebikeride":      hrrFraction = 0.65
-                case "swim":                                   hrrFraction = 0.70
-                case "weighttraining", "crossfit", "workout": hrrFraction = 0.55
-                case "walk", "hike":                          hrrFraction = 0.40
-                case "yoga", "pilates":                       hrrFraction = 0.30
-                default:                                       hrrFraction = 0.60
-                }
-                avgHR = rhr + hrrFraction * (maxHR - rhr)
-            }
-            let hrr = max(0.0, min(1.0, (avgHR - rhr) / (maxHR - rhr)))
-            trimp += durationH * hrr * Foundation.exp(1.92 * hrr)
-
-            let startH = cal.component(.hour, from: act.startDate)
-            let endH   = min(23, startH + Int(ceil(durationH)))
-            for h in startH...endH { coveredHours.insert(h) }
-        }
-
-        // Toda la actividad de fondo del día — sin umbral mínimo, igual que PeakWatch
-        // La fórmula TRIMP pondera de forma natural: reposo (HRR≈0.08) aporta ~0.09/h,
-        // caminar (HRR≈0.24) aporta ~0.38/h, ejercicio real aporta 2-5/h
-        let dayHR = hourlyHR.filter { cal.isDate($0.date, inSameDayAs: day) }
-        for s in dayHR {
-            let hour = cal.component(.hour, from: s.date)
-            guard !coveredHours.contains(hour) else { continue }
-            let hrr = max(0.0, min(1.0, (s.value - rhr) / (maxHR - rhr)))
-            trimp += hrr * Foundation.exp(1.92 * hrr)
-        }
-
-        // Calibración: maratón completo (~9 TRIMP total) → ~100 puntos, igual que PeakWatch
-        return min(100.0, trimp * 11.0)
+        let rhr = todayRHR ?? UserProfile.restingHR
+        let maxHR = TrainingMetrics.observedMaxHR(hourlyHR: hourlyHR)
+        let trimp = TrainingMetrics.dailyEffortTRIMP(
+            day: day, activities: activities, hourlyHR: hourlyHR,
+            restingHR: rhr, maxHR: maxHR, isMale: UserProfile.isMale)
+        return Double(TrainingMetrics.effortScore(dailyTRIMP: trimp))
     }
 
     private var todayKcal: Double {
@@ -133,8 +109,9 @@ struct StressRecoveryEffortRow: View {
     // MARK: Body Battery — usa BodyBatteryStore (acumulativo entre días, igual que PeakWatch)
     private var batteryHourlySamples: [MetricSample] {
         BodyBatteryStore.shared.hourlyBattery(
-            recoveryScore: recoveryScore, sleep: sleep,
-            hourlyHR: hourlyHR, restingHR: todayRHR)
+            recoveryScore: recoveryScore, sleepHistory: sleepHistory,
+            hourlyHR: hourlyHR, restingHR: todayRHR,
+            recoveryHistory: recoveryHistory)
     }
     private var currentBattery: Int {
         Int(batteryHourlySamples.last?.value ?? Double(recoveryScore?.value ?? 0))
@@ -275,9 +252,10 @@ private struct DayStressPage: View {
     }
 
     private var hourlyStress: [MetricSample] {
-        let rhr = restingHR ?? 55.0
+        let rhr = restingHR ?? UserProfile.restingHR
+        let maxHR = TrainingMetrics.observedMaxHR(hourlyHR: hourlyHR)
         return hourlyHR.map { s in
-            let stress = max(0, min(100, (s.value - rhr) / (Double(UserProfile.maxHR) - rhr) * 100))
+            let stress = max(0, min(100, (s.value - rhr) / (maxHR - rhr) * 100))
             return MetricSample(date: s.date, value: stress)
         }.sorted { $0.date < $1.date }
     }
@@ -377,23 +355,27 @@ struct RecoveryDetailView: View {
                     unit: "ppm"
                 )
 
-                // Factores adicionales
+                // Factores — pesos reales del score (HRV 70% + FC reposo 30%,
+                // metodología PeakWatch). Sueño y carga se muestran como contexto:
+                // alimentan Body Battery y las alertas, no este score.
                 if let s = score {
                     VStack(alignment: .leading, spacing: 0) {
-                        Text("Todos los factores").font(.headline)
+                        Text("Composición del score").font(.headline)
                             .padding(.horizontal, 16).padding(.top, 16).padding(.bottom, 12)
-                        FactorBarRow(label: "Sueño", icon: "moon.fill", color: .indigo,
-                                     value: s.sleepScore, weight: "30%")
-                        Divider().padding(.leading, 52)
                         FactorBarRow(label: "HRV", icon: "waveform.path.ecg", color: .green,
-                                     value: s.hrvScore, weight: "40%")
+                                     value: s.hrvScore, weight: "70%")
                         Divider().padding(.leading, 52)
                         FactorBarRow(label: "FC reposo", icon: "heart.fill", color: .red,
-                                     value: s.restingHRScore, weight: "20%")
+                                     value: s.restingHRScore, weight: "30%")
+                        Divider().padding(.leading, 52)
+                        FactorBarRow(label: "Sueño", icon: "moon.fill", color: .indigo,
+                                     value: s.sleepScore, weight: "contexto")
                         Divider().padding(.leading, 52)
                         FactorBarRow(label: "Carga", icon: "figure.run", color: .orange,
-                                     value: s.trainingLoadScore, weight: "10%")
-                            .padding(.bottom, 8)
+                                     value: s.trainingLoadScore, weight: "contexto")
+                        Text("El score compara HRV y FC en reposo de hoy contra tu baseline de 60 días. Sueño y carga influyen en Body Battery, no en este número.")
+                            .font(.caption2).foregroundStyle(.secondary)
+                            .padding(.horizontal, 16).padding(.top, 4).padding(.bottom, 12)
                     }
                     .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
                 }
@@ -426,8 +408,8 @@ struct EffortDetailView: View {
     private let zoneNames  = ["Z1 Muy suave", "Z2 Aeróbico", "Z3 Umbral", "Z4 Anaeróbico", "Z5 Máximo"]
     private let zoneColors: [Color] = [.gray, .blue, .green, .orange, .red]
 
-    private var rhr: Double { restingHR ?? 55.0 }
-    private var maxHR: Double { max(Double(UserProfile.maxHR), (hourlyHR.map(\.value).max() ?? Double(UserProfile.maxHR)) * 1.05) }
+    private var rhr: Double { restingHR ?? UserProfile.restingHR }
+    private var maxHR: Double { TrainingMetrics.observedMaxHR(hourlyHR: hourlyHR) }
 
     // Tiempo en cada zona: prioriza actividades Strava (FC exacta × minutos), fallback horario
     private var zoneHours: [Int] {

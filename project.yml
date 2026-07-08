@@ -57,6 +57,7 @@ targets:
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         UILaunchScreen:
           UIColorName: ""
+        UIRequiresFullScreen: true
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
         NSHealthShareUsageDescription: "Apex uses Health data to calculate your recovery score, analyze sleep quality and track fitness trends."

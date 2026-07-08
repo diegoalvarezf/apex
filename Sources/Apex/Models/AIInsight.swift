@@ -180,26 +180,21 @@ enum SmartTipsEngine {
             }
         }
 
-        // ── Esfuerzo acumulado (TRIMP últimos 3 días) ─────────────────
-        let rhrVal = rhr ?? 55.0
-        let maxHR = max(185.0, (hourlyHR.map(\.value).max() ?? 185.0) * 1.05)
+        // ── Esfuerzo acumulado (Edwards TRIMP últimos 2 días) ─────────
+        let rhrVal = rhr ?? UserProfile.restingHR
+        let maxHR = TrainingMetrics.observedMaxHR(hourlyHR: hourlyHR)
         let cal = Calendar.current
 
-        func trimpForDay(_ day: Date) -> Double {
-            let dayHR = hourlyHR.filter { cal.isDate($0.date, inSameDayAs: day) }
-            guard !dayHR.isEmpty else { return 0.0 }
-            var total = 0.0
-            for s in dayHR {
-                let hrr: Double = max(0.0, min(1.0, (s.value - rhrVal) / (maxHR - rhrVal)))
-                total += hrr * Foundation.exp(1.92 * hrr)
-            }
-            return total
+        func effortForDay(_ day: Date) -> Int {
+            let trimp = TrainingMetrics.dailyEffortTRIMP(day: day, activities: activities,
+                hourlyHR: hourlyHR, restingHR: rhrVal, maxHR: maxHR, isMale: UserProfile.isMale)
+            return TrainingMetrics.effortScore(dailyTRIMP: trimp)
         }
 
         let yesterday = cal.date(byAdding: .day, value: -1, to: Date()) ?? Date()
         let dayBefore = cal.date(byAdding: .day, value: -2, to: Date()) ?? Date()
-        let cumulativeTrimp = trimpForDay(yesterday) + trimpForDay(dayBefore)
-        if cumulativeTrimp > 22 {
+        // Alerta si dos días seguidos con esfuerzo alto (score ≥70 cada uno)
+        if effortForDay(yesterday) >= 70 && effortForDay(dayBefore) >= 70 {
             tips.append(SmartTip(
                 icon: "flame.fill", color: .orange,
                 title: "Carga alta acumulada (2 días)",

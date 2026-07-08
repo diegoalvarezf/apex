@@ -3,9 +3,18 @@ import Foundation
 import UIKit
 
 enum StravaConfig {
-    // Crea tu app en https://www.strava.com/settings/api y rellena estos valores
-    static let clientID     = "YOUR_STRAVA_CLIENT_ID"
-    static let clientSecret = "YOUR_STRAVA_CLIENT_SECRET"
+    // Credenciales desde StravaSecrets.plist (local, en .gitignore). Ver
+    // StravaSecrets.example.plist. Fallback al placeholder si el fichero no existe.
+    private static let secrets: [String: String] = {
+        guard let url = Bundle.main.url(forResource: "StravaSecrets", withExtension: "plist"),
+              let data = try? Data(contentsOf: url),
+              let dict = try? PropertyListSerialization.propertyList(from: data, format: nil) as? [String: String]
+        else { return [:] }
+        return dict
+    }()
+
+    static let clientID     = secrets["ClientID"]     ?? "YOUR_STRAVA_CLIENT_ID"
+    static let clientSecret = secrets["ClientSecret"] ?? "YOUR_STRAVA_CLIENT_SECRET"
     static let redirectURI  = "apex-strava://localhost/oauth"
     static let scopes       = "read,activity:read_all,profile:read_all"
 }
@@ -27,7 +36,7 @@ final class StravaAuthManager: NSObject, ObservableObject, ASWebAuthenticationPr
     }
 
     func authorize() {
-        var queryItems: [URLQueryItem] = [
+        let queryItems: [URLQueryItem] = [
             .init(name: "client_id", value: StravaConfig.clientID),
             .init(name: "redirect_uri", value: StravaConfig.redirectURI),
             .init(name: "response_type", value: "code"),
@@ -111,11 +120,20 @@ final class StravaAuthManager: NSObject, ObservableObject, ASWebAuthenticationPr
         ]
         request.httpBody = try? JSONSerialization.data(withJSONObject: body)
 
-        guard let (data, _) = try? await URLSession.shared.data(for: request),
-              let json = try? JSONDecoder().decode(TokenResponse.self, from: data)
-        else { return }
-
-        saveToken(json)
+        do {
+            let (data, response) = try await URLSession.shared.data(for: request)
+            if let http = response as? HTTPURLResponse, !(200..<300).contains(http.statusCode) {
+                // 400/401 = refresh token revocado o inválido → forzar reconexión.
+                // Otros códigos (5xx, rate limit) son transitorios: mantener sesión.
+                if http.statusCode == 400 || http.statusCode == 401 { signOut() }
+                return
+            }
+            let json = try JSONDecoder().decode(TokenResponse.self, from: data)
+            saveToken(json)
+        } catch {
+            // Error de red transitorio: mantener la sesión, se reintenta al reabrir.
+            return
+        }
     }
 
     private func saveToken(_ token: TokenResponse) {
