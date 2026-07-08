@@ -152,20 +152,20 @@ Sources/
 > calibraciones de producto (sin fuente pública).
 
 ### Body Battery
-Modelo acumulativo day-over-day inspirado en PeakWatch/Garmin:
-- **Sueño**: carga `recovery + (horas - 6) × 4` (8h de sueño con recovery=79 → 87 de batería)
-- **Reposo**: -0.3 pts/hora
-- **Ejercicio moderado (HRR 0.25–0.5)**: -1.5 a -3 pts/hora
-- **Ejercicio intenso (HRR >0.5)**: -5.5 a -22 pts/hora
-- **Estrés muy bajo (HRR <0.1)**: +0.15 pts/hora (ligera recarga)
+Modelo acumulativo day-over-day. Principio de Garmin/Firstbeat: el ejercicio drena según su
+**carga (EPOC/TRIMP)**, no según el promedio de FC (que se diluye en el gimnasio). Arranca
+del recovery del día (+ bonus de sueño) y solo recarga durmiendo:
+- **Entreno (Strava)**: drena `65·(1−e^(−TRIMP/45))` pts repartidos en sus horas
+- **Vida diaria (HRR <0.25, sin actividad)**: -0.6 a -1.2 pts/hora
+- **Sueño**: carga hasta `recovery + (horas - 6) × 4`
 
 ### Recovery Score
 `HRV (70%) + FC_reposo (30%)`
 
-Z-score contra baseline de 60 días:
-- z = 0 (en tu media) → 75 pts
-- z = +1 (HRV elevada) → 89 pts
-- z = -1 (HRV baja) → 61 pts
+Z-score contra baseline de 60 días (calibrado vs PeakWatch con datos reales):
+- z = 0 (en tu media) → 50 pts
+- z = +1 (HRV elevada) → 70 pts
+- z = -1 (HRV baja) → 30 pts
 
 ### ACWR (Carga de entrenamiento)
 - ATL: EMA 7 días (k ≈ 0.134)

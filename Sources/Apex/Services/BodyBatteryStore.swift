@@ -26,7 +26,8 @@ final class BodyBatteryStore {
         sleepHistory: [SleepData],
         hourlyHR: [MetricSample],
         restingHR: Double?,
-        recoveryHistory: [MetricSample] = []
+        recoveryHistory: [MetricSample] = [],
+        activities: [StravaActivity] = []
     ) -> [MetricSample] {
         let recoveryToday = Double(recoveryScore?.value ?? 65)
         let rhr = restingHR ?? UserProfile.restingHR
@@ -44,13 +45,15 @@ final class BodyBatteryStore {
             guard let day = cal.date(byAdding: .day, value: offset - 6, to: today) else { continue }
             let dayHR = hourlyHR.filter { cal.isDate($0.date, inSameDayAs: day) }
             let sleep = sleepHistory.first { cal.isDate($0.date, inSameDayAs: day) }
+            let dayActs = activities.filter { cal.isDate($0.startDate, inSameDayAs: day) }
             let sim = simulateDay(
                 day: day,
                 recovery: recovery(for: day),
                 hourlyHR: dayHR,
                 sleep: sleep,
                 startBattery: battery,
-                restingHR: rhr
+                restingHR: rhr,
+                activities: dayActs
             )
             battery = sim.last?.value ?? battery
             storeValue(battery, for: day)
@@ -64,12 +67,22 @@ final class BodyBatteryStore {
         sleepHistory: [SleepData],
         hourlyHR: [MetricSample],
         restingHR: Double?,
-        recoveryHistory: [MetricSample] = []
+        recoveryHistory: [MetricSample] = [],
+        activities: [StravaActivity] = []
     ) -> Int {
         let samples = hourlyBattery(recoveryScore: recoveryScore, sleepHistory: sleepHistory,
                                     hourlyHR: hourlyHR, restingHR: restingHR,
-                                    recoveryHistory: recoveryHistory)
+                                    recoveryHistory: recoveryHistory, activities: activities)
         return Int(samples.last?.value ?? Double(recoveryScore?.value ?? 0))
+    }
+
+    // Convierte la carga de una sesión (TRIMP de Banister) en puntos de batería a
+    // drenar. Curva saturante (estilo EPOC de Firstbeat): sesiones duras drenan mucho
+    // pero con rendimientos decrecientes. ~30 TRIMP (gimnasio 50') ≈ 33 pts,
+    // ~90 TRIMP (1h Z2) ≈ 55, maratón → ~65. Calibración de producto documentada.
+    private func activityDrain(trimp: Double) -> Double {
+        guard trimp > 0 else { return 0 }
+        return 65.0 * (1.0 - Foundation.exp(-trimp / 45.0))
     }
 
     // Simulación reutilizable para cualquier día (se usa también en el detalle histórico)
@@ -79,7 +92,8 @@ final class BodyBatteryStore {
         hourlyHR: [MetricSample],
         sleep: SleepData?,
         startBattery: Double,
-        restingHR: Double
+        restingHR: Double,
+        activities: [StravaActivity] = []
     ) -> [MetricSample] {
         let maxHR    = TrainingMetrics.observedMaxHR(hourlyHR: hourlyHR)
         let wakeHour  = sleep.map { cal.component(.hour, from: $0.sleepEnd)   } ?? 7
@@ -98,6 +112,22 @@ final class BodyBatteryStore {
         // 8h → recovery+8 · 7h → +4 · 6h → 0 · 5h → −4 (límites ±15)
         let sleepBonus    = max(-15.0, min(15.0, (sleepDurationH - 6.0) * 4.0))
         let wakeupBattery = max(0.0, min(100.0, recovery + sleepBonus))
+
+        // Drenaje por carga de entrenamiento repartido por hora (estilo EPOC de
+        // Firstbeat): cada sesión drena según su TRIMP, no según el promedio de FC
+        // (que se diluye en el gimnasio). En las horas cubiertas manda esto.
+        let ftp = TrainingMetrics.estimateFTP(from: activities)
+        var activityDrainByHour: [Int: Double] = [:]
+        for act in activities {
+            let load = TrainingMetrics.sessionLoad(act, ftp: ftp, restingHR: restingHR,
+                                                   maxHR: maxHR, isMale: UserProfile.isMale)
+            let drain = activityDrain(trimp: load)
+            let startH = cal.component(.hour, from: act.startDate)
+            let spanH = max(1, Int(ceil(Double(act.movingTime) / 3600.0)))
+            let endH = min(23, startH + spanH - 1)
+            let perHour = drain / Double(endH - startH + 1)
+            for h in startH...endH { activityDrainByHour[h, default: 0] += perHour }
+        }
 
         var battery = startBattery
         var result: [MetricSample] = []
@@ -123,19 +153,22 @@ final class BodyBatteryStore {
                 // Cerca de 100 cuesta más cargar y se descarga más rápido; cerca de 0 al revés
                 let depletionFactor = max(0.2, battery / 100.0)
                 let hourlyDelta: Double
-                if let hr = hourlyHR.first(where: { cal.component(.hour, from: $0.date) == hour }) {
+                if let actDrain = activityDrainByHour[hour] {
+                    // Hora de entreno: manda la carga de la sesión (no la FC diluida)
+                    hourlyDelta = -actDrain
+                } else if let hr = hourlyHR.first(where: { cal.component(.hour, from: $0.date) == hour }) {
                     let hrr = max(0.0, min(1.0, (hr.value - restingHR) / (maxHR - restingHR)))
                     if hrr < 0.10 {
-                        hourlyDelta = +0.15   // reposo profundo: recarga leve
+                        hourlyDelta = -0.6    // en reposo se consume poco, pero NO recarga de día
                     } else if hrr < 0.25 {
-                        hourlyDelta = -0.4    // vida diaria tranquila
+                        hourlyDelta = -1.2    // vida diaria tranquila
                     } else if hrr < 0.50 {
-                        hourlyDelta = -hrr * hrr * 12.0
+                        hourlyDelta = -hrr * hrr * 20.0
                     } else {
-                        hourlyDelta = -hrr * hrr * 22.0  // ejercicio: drenaje cuadrático
+                        hourlyDelta = -hrr * hrr * 42.0  // ejercicio sin registrar como actividad
                     }
                 } else {
-                    hourlyDelta = -0.3        // sin datos de FC: consumo basal
+                    hourlyDelta = -0.7        // sin datos de FC: consumo basal
                 }
                 battery += hourlyDelta * depletionFactor
             }

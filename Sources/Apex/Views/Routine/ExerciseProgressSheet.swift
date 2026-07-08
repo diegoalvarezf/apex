@@ -7,12 +7,25 @@ struct ExerciseProgressSheet: View {
     var accent: Color = .purple
 
     @StateObject private var store = RoutineProgressStore.shared
+    @EnvironmentObject private var routineVM: RoutineViewModel
     @Environment(\.dismiss) private var dismiss
+
+    // Ejercicio vivo del VM (refleja ediciones al instante); id estable para el store
+    private var live: GymExercise {
+        for r in routineVM.routines {
+            for d in r.days {
+                if let e = d.exercises.first(where: { $0.id == exercise.id }) { return e }
+            }
+        }
+        return exercise
+    }
 
     @State private var weightText = ""
     @State private var repsText = ""
     @State private var entryDate = Date()
     @State private var showAdd = false
+    @State private var showEdit = false
+    @State private var editingEntry: LiftEntry? = nil   // nil = alta nueva
 
     private var entries: [LiftEntry] { store.entries(for: exercise.id) }
 
@@ -33,14 +46,16 @@ struct ExerciseProgressSheet: View {
                 .padding(.bottom, 32)
             }
             .background(Color(.systemGroupedBackground))
-            .navigationTitle(exercise.name)
+            .navigationTitle(live.name)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cerrar") { dismiss() }
                 }
-                ToolbarItem(placement: .primaryAction) {
+                ToolbarItemGroup(placement: .primaryAction) {
+                    Button { showEdit = true } label: { Image(systemName: "pencil") }
                     Button {
+                        editingEntry = nil
                         prefillFromLast()
                         showAdd = true
                     } label: { Image(systemName: "plus") }
@@ -48,6 +63,7 @@ struct ExerciseProgressSheet: View {
                 }
             }
             .sheet(isPresented: $showAdd) { addSheet }
+            .sheet(isPresented: $showEdit) { EditExerciseSheet(exercise: live) }
         }
     }
 
@@ -56,12 +72,12 @@ struct ExerciseProgressSheet: View {
     private var prescriptionCard: some View {
         HStack(spacing: 14) {
             VStack(alignment: .leading, spacing: 4) {
-                Text(exercise.muscleGroup.isEmpty ? "Ejercicio" : exercise.muscleGroup)
+                Text(live.muscleGroup.isEmpty ? "Ejercicio" : live.muscleGroup)
                     .font(.caption).foregroundStyle(.secondary)
-                Text("\(exercise.sets) series × \(exercise.reps)")
+                Text("\(live.sets) series × \(live.reps)")
                     .font(.system(.title3, design: .rounded)).fontWeight(.bold)
-                if !exercise.weight.isEmpty {
-                    Text("Objetivo rutina: \(exercise.weight)")
+                if !live.weight.isEmpty {
+                    Text("Objetivo rutina: \(live.weight)")
                         .font(.caption).foregroundStyle(.secondary)
                 }
             }
@@ -140,27 +156,27 @@ struct ExerciseProgressSheet: View {
                 .padding(.horizontal, 16).padding(.top, 16).padding(.bottom, 8)
 
             ForEach(entries.reversed()) { e in
-                HStack(spacing: 12) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(e.date, format: .dateTime.weekday(.abbreviated).day().month(.abbreviated))
-                            .font(.subheadline).fontWeight(.medium)
-                        if let reps = e.reps {
-                            Text("\(reps) reps\(e.oneRepMax.map { " · 1RM ~\(formatKg($0))" } ?? "")")
-                                .font(.caption).foregroundStyle(.secondary)
+                Button { startEditing(e) } label: {
+                    HStack(spacing: 12) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(e.date, format: .dateTime.weekday(.abbreviated).day().month(.abbreviated))
+                                .font(.subheadline).fontWeight(.medium).foregroundStyle(.primary)
+                            if let reps = e.reps {
+                                Text("\(reps) reps\(e.oneRepMax.map { " · 1RM ~\(formatKg($0))" } ?? "")")
+                                    .font(.caption).foregroundStyle(.secondary)
+                            }
                         }
+                        Spacer()
+                        Text(formatKg(e.weight))
+                            .font(.system(.subheadline, design: .rounded)).fontWeight(.semibold)
+                            .foregroundStyle(.primary)
+                        Image(systemName: "chevron.right")
+                            .font(.caption2.weight(.semibold)).foregroundStyle(.tertiary)
                     }
-                    Spacer()
-                    Text(formatKg(e.weight))
-                        .font(.system(.subheadline, design: .rounded)).fontWeight(.semibold)
-                        .foregroundStyle(.primary)
+                    .padding(.horizontal, 16).padding(.vertical, 11)
+                    .contentShape(Rectangle())
                 }
-                .padding(.horizontal, 16).padding(.vertical, 11)
-                .contentShape(Rectangle())
-                .swipeActions {
-                    Button(role: .destructive) {
-                        store.remove(e, for: exercise.id)
-                    } label: { Label("Borrar", systemImage: "trash") }
-                }
+                .buttonStyle(.plain)
                 if e.id != entries.first?.id { Divider().padding(.leading, 16) }
             }
             .padding(.bottom, 6)
@@ -209,12 +225,23 @@ struct ExerciseProgressSheet: View {
                 Section {
                     DatePicker("Fecha", selection: $entryDate, displayedComponents: .date)
                 }
+                if let editing = editingEntry {
+                    Section {
+                        Button(role: .destructive) {
+                            store.remove(editing, for: exercise.id)
+                            showAdd = false; editingEntry = nil
+                        } label: {
+                            Label("Borrar este registro", systemImage: "trash")
+                                .frame(maxWidth: .infinity)
+                        }
+                    }
+                }
             }
-            .navigationTitle("Registrar peso")
+            .navigationTitle(editingEntry == nil ? "Registrar peso" : "Editar peso")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancelar") { showAdd = false }
+                    Button("Cancelar") { showAdd = false; editingEntry = nil }
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Guardar") { saveEntry() }
@@ -242,10 +269,26 @@ struct ExerciseProgressSheet: View {
         entryDate = Date()
     }
 
+    private func startEditing(_ e: LiftEntry) {
+        editingEntry = e
+        weightText = formatNumber(e.weight)
+        repsText = e.reps.map(String.init) ?? ""
+        entryDate = e.date
+        showAdd = true
+    }
+
     private func saveEntry() {
         guard let w = parsedWeight else { return }
-        store.add(weight: w, reps: Int(repsText), date: entryDate, for: exercise.id)
+        if var updated = editingEntry {
+            updated.weight = w
+            updated.reps = Int(repsText)
+            updated.date = entryDate
+            store.update(updated, for: exercise.id)
+        } else {
+            store.add(weight: w, reps: Int(repsText), date: entryDate, for: exercise.id)
+        }
         showAdd = false
+        editingEntry = nil
     }
 
     @ViewBuilder private func deltaLabel(_ d: Double) -> some View {

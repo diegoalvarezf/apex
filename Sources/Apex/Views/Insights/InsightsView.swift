@@ -3,8 +3,52 @@ import SwiftUI
 struct InsightsView: View {
     @EnvironmentObject var dashVM: DashboardViewModel
     @EnvironmentObject var healthKit: HealthKitManager
+    @EnvironmentObject var routineVM: RoutineViewModel
 
     @State private var showAllTips = false
+
+    private func analyze() {
+        Task { await dashVM.loadInsights(health: healthKit,
+                                         strengthSummary: strengthSummary(),
+                                         localAlerts: localAlerts()) }
+    }
+
+    // Auto-análisis: solo si no hay uno de hoy (1×/día). El resto se sirve de caché.
+    private func analyzeIfStale() {
+        Task {
+            await dashVM.loadInsightsIfStale(health: healthKit,
+                                             strengthSummary: strengthSummary(),
+                                             localAlerts: localAlerts())
+            await dashVM.loadWeeklySummaryIfStale(health: healthKit,
+                                                  strengthSummary: strengthSummary())
+        }
+    }
+
+    // Las alertas locales que ya ve el usuario, para que la IA no las repita
+    private func localAlerts() -> String? {
+        let tips = smartTips
+        guard !tips.isEmpty else { return nil }
+        return tips.map { "- \($0.title): \($0.detail)" }.joined(separator: "\n")
+    }
+
+    // Progresión de peso por ejercicio (de las rutinas), para que la IA analice el gimnasio
+    private func strengthSummary() -> String? {
+        var lines: [String] = []
+        for r in routineVM.routines {
+            for d in r.days {
+                for ex in d.exercises {
+                    let entries = RoutineProgressStore.shared.entries(for: ex.id)
+                    guard !entries.isEmpty else { continue }
+                    let series = entries.suffix(5)
+                        .map { $0.weight == $0.weight.rounded() ? "\(Int($0.weight))" : String(format: "%.1f", $0.weight) }
+                        .joined(separator: "→")
+                    lines.append("  \(ex.name): \(series) kg")
+                }
+            }
+        }
+        guard !lines.isEmpty else { return nil }
+        return Array(Set(lines)).sorted().prefix(20).joined(separator: "\n")
+    }
 
     private var smartTips: [SmartTip] {
         SmartTipsEngine.compute(
@@ -23,6 +67,12 @@ struct InsightsView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 16) {
+
+                    // ── Resumen semanal IA ────────────────────────────────
+                    if let summary = dashVM.weeklySummary {
+                        WeeklySummaryCard(text: summary, date: dashVM.weeklySummaryAt)
+                            .padding(.horizontal)
+                    }
 
                     // ── Sugerencias locales (instantáneas) ────────────────
                     if !smartTips.isEmpty {
@@ -61,7 +111,7 @@ struct InsightsView: View {
                             .padding(.horizontal)
                     } else if dashVM.insights.isEmpty {
                         GenerateInsightsCard {
-                            Task { await dashVM.loadInsights(health: healthKit) }
+                            analyze()
                         }
                         .padding(.horizontal)
                     } else {
@@ -72,11 +122,17 @@ struct InsightsView: View {
                         }
                         .padding(.horizontal)
 
-                        Button {
-                            Task { await dashVM.loadInsights(health: healthKit) }
-                        } label: {
-                            Label("Actualizar análisis", systemImage: "arrow.clockwise")
-                                .font(.subheadline).fontWeight(.medium)
+                        VStack(spacing: 6) {
+                            if let at = dashVM.insightsGeneratedAt {
+                                Text("Actualizado \(at.formatted(.relative(presentation: .named)))")
+                                    .font(.caption2).foregroundStyle(.secondary)
+                            }
+                            Button {
+                                analyze()
+                            } label: {
+                                Label("Actualizar análisis", systemImage: "arrow.clockwise")
+                                    .font(.subheadline).fontWeight(.medium)
+                            }
                         }
                         .padding()
                     }
@@ -86,7 +142,47 @@ struct InsightsView: View {
             }
             .background(Color(.systemGroupedBackground))
             .navigationTitle("IA Coach")
+            .onAppear { analyzeIfStale() }
         }
+    }
+}
+
+// MARK: - Resumen semanal
+
+private struct WeeklySummaryCard: View {
+    let text: String
+    let date: Date?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 10) {
+                Image(systemName: "calendar.badge.clock")
+                    .font(.title3)
+                    .foregroundStyle(LinearGradient(colors: [.purple, .blue],
+                                                    startPoint: .topLeading, endPoint: .bottomTrailing))
+                Text("Resumen de la semana").font(.headline)
+                Spacer()
+                if let date {
+                    Text(date.formatted(.dateTime.day().month(.abbreviated)))
+                        .font(.caption2).foregroundStyle(.secondary)
+                }
+            }
+            Text(text)
+                .font(.subheadline)
+                .foregroundStyle(.primary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            LinearGradient(colors: [Color.purple.opacity(0.10), Color.blue.opacity(0.06)],
+                           startPoint: .topLeading, endPoint: .bottomTrailing),
+            in: RoundedRectangle(cornerRadius: 18, style: .continuous)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .stroke(Color.purple.opacity(0.18), lineWidth: 1)
+        )
     }
 }
 

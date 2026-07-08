@@ -175,8 +175,9 @@ final class HealthKitManager: ObservableObject {
             chronologicalAge: biologicalAge?.chronologicalAge
         )
 
-        // Programar notificación diaria
+        // Programar notificaciones
         await NotificationManager.shared.checkStatus()
+        NotificationManager.shared.scheduleWeeklySummary()
         if let score = recoveryScore {
             // highLoadDaysStreak se actualiza con más precisión en updateStravaTrainingLoad
             NotificationManager.shared.scheduleDailyRecovery(
@@ -514,11 +515,13 @@ final class HealthKitManager: ObservableObject {
                 let variance = history.map { ($0 - mean) * ($0 - mean) }.reduce(0, +) / Double(history.count)
                 let sd = max(sqrt(variance), 1.0)
                 let z = (sdnn - mean) / sd
-                // z=0 → 75 (en tu media = bien), z=+1 → 89, z=-1 → 61, z=-2 → 47
-                let raw = 75.0 + z * 14.0
+                // Calibrado con datos reales vs PeakWatch: en tu media (z=0) ≈ 50.
+                // Pendiente 17 (comprime el extremo alto, que leía ~8 pts por encima).
+                // z=+1 → 67, z=+2 → 84, z=-1 → 33
+                let raw = 50.0 + z * 17.0
                 hrvScore = max(0, min(100, Int(raw)))
             } else {
-                hrvScore = sdnn > 80 ? 88 : sdnn > 60 ? 78 : sdnn > 40 ? 65 : sdnn > 25 ? 45 : 25
+                hrvScore = sdnn > 80 ? 80 : sdnn > 60 ? 62 : sdnn > 40 ? 48 : sdnn > 25 ? 32 : 18
             }
         } else {
             hrvScore = 65
@@ -535,11 +538,11 @@ final class HealthKitManager: ObservableObject {
                 let variance = history.map { ($0 - mean) * ($0 - mean) }.reduce(0, +) / Double(history.count)
                 let sd = max(sqrt(variance), 0.5)
                 let z = (rhr - mean) / sd   // positivo = peor (FC elevada)
-                // z=0 → 75, z=+1 → 61, z=-1 → 89
-                let raw = 75.0 - z * 14.0
+                // Mismo centro/pendiente que el HRV: z=0 → 50, FC baja (z<0) sube el score
+                let raw = 50.0 - z * 17.0
                 rhrScore = max(0, min(100, Int(raw)))
             } else {
-                rhrScore = rhr < 50 ? 92 : rhr < 55 ? 83 : rhr < 62 ? 73 : rhr < 70 ? 60 : 42
+                rhrScore = rhr < 50 ? 82 : rhr < 55 ? 68 : rhr < 62 ? 54 : rhr < 70 ? 40 : 28
             }
         } else {
             rhrScore = 65

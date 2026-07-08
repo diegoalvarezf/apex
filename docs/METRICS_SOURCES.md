@@ -131,7 +131,7 @@ score = 0.70 · HRV_score + 0.30 · RHR_score
 ```
 
 Cada componente es un **z-score** del valor de hoy contra el baseline de 60 días
-(excluyendo hoy). Anclaje: z=0 (en tu media) → 75 pts; ±1 SD ≈ ±14 pts.
+(excluyendo hoy). Anclaje: z=0 (en tu media) → 50 pts; ±1 SD ≈ ±17 pts.
 
 - Metodología de PeakWatch (documentada): "two key physiological indicators: HRV and RHR",
   media móvil de 60 días como baseline.
@@ -140,20 +140,29 @@ Cada componente es un **z-score** del valor de hoy contra el baseline de 60 día
 - Altini M. (HRV4Training): la línea base personal importa más que valores poblacionales;
   baseline = media móvil, se juzga la desviación del día respecto a ella.
 
-⚠️ **Calibración de producto** (z=0 → 75 pts): elección de anclaje sin fuente pública.
-Documentada en código. HealthKit expone **SDNN**, no RMSSD (limitación de la fuente de datos).
+⚠️ **Calibración de producto** (z=0 → 50 pts, ±17/SD): anclaje sin fuente pública,
+ajustado con datos reales comparando contra PeakWatch (recuperación de Apex leía ~15-30
+pts alta). "En tu media" = 50; sube/baja 17 por cada desviación estándar. Documentado en
+código. HealthKit expone **SDNN**, no RMSSD (limitación de la fuente de datos).
 
 ## 8. Body Battery
 
-Modelo acumulativo día-a-día que sigue la **metodología descrita** por PeakWatch
-(doc.peakwatch.co/en/battery.html): el valor del final del día es el inicio del siguiente;
-el sueño carga en función del Recovery Score y la duración real dormida; el estrés físico
-(FC sobre reposo) depleciona; cargar/descargar cuesta más cerca de los límites.
+Modelo acumulativo día-a-día. Principio alineado con **Garmin/Firstbeat**: el drenaje del
+ejercicio correlaciona con el **EPOC / carga de entrenamiento** (no con el promedio de FC,
+que se diluye en ejercicios intermitentes como el gimnasio), y la batería carga durmiendo.
 
-⚠️ PeakWatch **no publica** las fórmulas exactas. Las constantes de carga/descarga
-(`sleepBonus`, factores de drenaje por HRR, recarga en reposo) son **calibración propia de
-Apex**, documentada línea a línea en `BodyBatteryStore.swift`. No se afirma que igualen a
-PeakWatch, solo que siguen la misma lógica cualitativa.
+- Arranca del Recovery del día + bonus por duración de sueño.
+- **Drenaje de entrenamiento**: cada sesión de Strava drena según su TRIMP de Banister
+  mediante curva saturante `65·(1−e^(−TRIMP/45))` — 50' de gym ≈ 33 pts, 1h Z2 ≈ 55.
+- **Drenaje de vida diaria** (horas sin actividad): por FC sobre reposo, sin recarga de día.
+- **Carga**: solo durmiendo, curva logarítmica hasta `recovery + bonus`.
+
+Referencias del enfoque (no publican fórmulas exactas, sí la metodología):
+- Firstbeat Analytics / Garmin — Body Battery basado en HRV-stress + EPOC (Training Effect).
+- doc.peakwatch.co/en/battery.html — Body Energy (mismo principio cualitativo).
+
+⚠️ Las constantes de carga/descarga y la curva de drenaje (`activityDrain`, factores por HRR,
+`sleepBonus`) son **calibración propia de Apex** documentada en `BodyBatteryStore.swift`.
 
 ## 9. Sueño
 
@@ -242,8 +251,8 @@ escala/presentación, están aisladas y documentadas en código, y son las candi
 ajustar si los números no encajan con la percepción real:
 
 1. **`EFFORT_K = 90`** (`TrainingMetrics.swift`) — curva saturante del TRIMP diario a 0–100.
-2. **Recovery z=0 → 75 pts** (`HealthKitManager.swift`) — anclaje del z-score de HRV/RHR.
-3. **Constantes de Body Battery** (`BodyBatteryStore.swift`) — carga/descarga por hora.
+2. **Recovery z=0 → 50 pts, ±17/SD** (`HealthKitManager.swift`) — anclaje del z-score de HRV/RHR.
+3. **Constantes de Body Battery** (`BodyBatteryStore.swift`) — carga/descarga por hora (sin recarga diurna; drenaje de ejercicio ∝ −HRr²·42).
 
 ---
 

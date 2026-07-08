@@ -59,7 +59,8 @@ struct BodyBatteryDetailView: View {
                         restingHR: restingHR,
                         sleep: sleepFor(day: availableDays[i]),
                         startBattery: startBattery(for: i),
-                        activities: activities.filter { cal.isDate($0.startDate, inSameDayAs: availableDays[i]) }
+                        activities: activities.filter { cal.isDate($0.startDate, inSameDayAs: availableDays[i]) },
+                        weekActivities: activities
                     )
                     .tag(i)
                 }
@@ -101,7 +102,8 @@ struct BodyBatteryDetailView: View {
             hourlyHR: hoursFor(day: prevDay),
             sleep: sleepFor(day: prevDay),
             startBattery: startBattery(for: index - 1),
-            restingHR: restingHR ?? 55.0
+            restingHR: restingHR ?? 55.0,
+            activities: activities.filter { cal.isDate($0.startDate, inSameDayAs: prevDay) }
         )
         return prev.last?.value ?? min(95.0, dayRecovery(for: prevDay) * 0.95)
     }
@@ -121,6 +123,7 @@ private struct DayBatteryPage: View {
     let sleep: SleepData?
     let startBattery: Double
     var activities: [StravaActivity] = []
+    var weekActivities: [StravaActivity] = []
 
     private let cal = Calendar.current
 
@@ -141,7 +144,8 @@ private struct DayBatteryPage: View {
                 sleepHistory: sleepHistory,
                 hourlyHR: weekHourlyHR,
                 restingHR: restingHR,
-                recoveryHistory: recoveryHistory
+                recoveryHistory: recoveryHistory,
+                activities: weekActivities
             )
         }
         return BodyBatteryStore.shared.simulateDay(
@@ -150,7 +154,8 @@ private struct DayBatteryPage: View {
             hourlyHR: hourlyHR,
             sleep: sleep,
             startBattery: startBattery,
-            restingHR: restingHR ?? 55.0
+            restingHR: restingHR ?? 55.0,
+            activities: activities
         )
     }
 

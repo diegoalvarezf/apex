@@ -107,13 +107,16 @@ struct RoutineDetailView: View {
     @State private var selectedDayIndex = 0
     @State private var showDeleteConfirm = false
 
+    // Copia viva del VM para que las ediciones se reflejen al instante
+    private var live: GymRoutine { routineVM.routines.first { $0.id == routine.id } ?? routine }
+
     var body: some View {
         VStack(spacing: 0) {
             // Selector de día
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
-                    ForEach(routine.days.indices, id: \.self) { i in
-                        let day = routine.days[i]
+                    ForEach(live.days.indices, id: \.self) { i in
+                        let day = live.days[i]
                         let sel = i == selectedDayIndex
                         Button {
                             withAnimation(.spring(response: 0.3)) { selectedDayIndex = i }
@@ -140,12 +143,12 @@ struct RoutineDetailView: View {
             .padding(.vertical, 12)
             .background(Color(.systemGroupedBackground))
 
-            if routine.days.indices.contains(selectedDayIndex) {
-                DayDetailView(day: routine.days[selectedDayIndex])
+            if live.days.indices.contains(selectedDayIndex) {
+                DayDetailView(day: live.days[selectedDayIndex])
             }
         }
         .background(Color(.systemGroupedBackground))
-        .navigationTitle(routine.name)
+        .navigationTitle(live.name)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
@@ -285,6 +288,7 @@ private struct ExerciseRow: View {
     var supersetColor: Color? = nil   // no nil → es parte de superserie
     @ObservedObject private var progress = RoutineProgressStore.shared
     @State private var showProgress = false
+    @State private var showEdit = false
 
     private var accentColor: Color { supersetColor ?? muscleColor }
     private var latest: LiftEntry? { progress.latest(for: exercise.id) }
@@ -349,6 +353,17 @@ private struct ExerciseRow: View {
         .buttonStyle(.plain)
         .sheet(isPresented: $showProgress) {
             ExerciseProgressSheet(exercise: exercise, accent: accentColor)
+        }
+        .sheet(isPresented: $showEdit) {
+            EditExerciseSheet(exercise: exercise)
+        }
+        .contextMenu {
+            Button { showProgress = true } label: {
+                Label("Ver progresión", systemImage: "chart.line.uptrend.xyaxis")
+            }
+            Button { showEdit = true } label: {
+                Label("Editar ejercicio", systemImage: "pencil")
+            }
         }
     }
 

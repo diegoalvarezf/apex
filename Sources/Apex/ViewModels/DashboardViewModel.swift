@@ -7,9 +7,20 @@ final class DashboardViewModel: ObservableObject {
     @Published var trainingLoad: TrainingLoad?
     @Published var loadHistory: [LoadSample] = []
     @Published var insights: [AIInsight] = []
+    @Published var insightsGeneratedAt: Date?
+    @Published var weeklySummary: String?
+    @Published var weeklySummaryAt: Date?
     @Published var isLoadingActivities = false
     @Published var isLoadingInsights = false
+    @Published var isLoadingWeekly = false
     @Published var error: String?
+
+    private let insightsKey = "apex_ai_insights_v1"
+    private let insightsDateKey = "apex_ai_insights_date_v1"
+    private let weeklyKey = "apex_ai_weekly_v1"
+    private let weeklyDateKey = "apex_ai_weekly_date_v1"
+
+    init() { loadCachedInsights() }
 
     struct LoadSample: Identifiable {
         let id = UUID()
@@ -17,6 +28,69 @@ final class DashboardViewModel: ObservableObject {
         let atl: Double
         let ctl: Double
         let tsb: Double
+    }
+
+    // MARK: - Caché de insights (evita re-llamar a la IA en cada visita)
+
+    private func loadCachedInsights() {
+        if let data = UserDefaults.standard.data(forKey: insightsKey),
+           let decoded = try? JSONDecoder().decode([AIInsight].self, from: data) {
+            insights = decoded
+        }
+        insightsGeneratedAt = UserDefaults.standard.object(forKey: insightsDateKey) as? Date
+        weeklySummary = UserDefaults.standard.string(forKey: weeklyKey)
+        weeklySummaryAt = UserDefaults.standard.object(forKey: weeklyDateKey) as? Date
+    }
+
+    private func saveCachedInsights() {
+        if let data = try? JSONEncoder().encode(insights) {
+            UserDefaults.standard.set(data, forKey: insightsKey)
+        }
+        UserDefaults.standard.set(insightsGeneratedAt, forKey: insightsDateKey)
+    }
+
+    // MARK: - Resumen semanal IA (1×/semana, cacheado)
+
+    private func buildContext(health: HealthKitManager, strengthSummary: String?, localAlerts: String?) -> AICoachContext {
+        AICoachContext(
+            recentActivities: Array(activities.prefix(15)),
+            sleepLast7Days: health.sleepHistory,
+            latestHRV: health.hrvHistory.first,
+            restingHR: health.todaySummary?.restingHR,
+            vo2Max: health.todaySummary?.vo2Max,
+            trainingLoad: trainingLoad,
+            recoveryScore: health.recoveryScore,
+            strengthSummary: strengthSummary,
+            localAlerts: localAlerts
+        )
+    }
+
+    // Genera el resumen solo si no hay uno de la SEMANA actual
+    func loadWeeklySummaryIfStale(health: HealthKitManager, strengthSummary: String? = nil) async {
+        let cal = Calendar.current
+        let sameWeek = weeklySummaryAt.map {
+            cal.isDate($0, equalTo: Date(), toGranularity: .weekOfYear)
+        } ?? false
+        if sameWeek, weeklySummary != nil { return }
+        guard !activities.isEmpty || health.recoveryScore != nil else { return }
+        guard !isLoadingWeekly else { return }
+        isLoadingWeekly = true
+        defer { isLoadingWeekly = false }
+
+        let context = buildContext(health: health, strengthSummary: strengthSummary, localAlerts: nil)
+        do {
+            let text = try await AIService.shared.rawCompletion(
+                prompt: context.buildWeeklySummaryPrompt(),
+                model: ClaudeConfig.opusModel, maxTokens: 600)
+            let clean = text.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !clean.isEmpty else { return }
+            weeklySummary = clean
+            weeklySummaryAt = Date()
+            UserDefaults.standard.set(clean, forKey: weeklyKey)
+            UserDefaults.standard.set(weeklySummaryAt, forKey: weeklyDateKey)
+        } catch {
+            // silencioso: el resumen semanal es secundario, no molesta al usuario con errores
+        }
     }
 
     func loadActivities(token: String) async {
@@ -36,26 +110,40 @@ final class DashboardViewModel: ObservableObject {
         }
     }
 
-    func loadInsights(health: HealthKitManager) async {
+    func loadInsights(health: HealthKitManager, strengthSummary: String? = nil, localAlerts: String? = nil) async {
         guard !isLoadingInsights else { return }
         isLoadingInsights = true
         defer { isLoadingInsights = false }
 
         let context = AICoachContext(
-            recentActivities: Array(activities.prefix(10)),
+            recentActivities: Array(activities.prefix(15)),
             sleepLast7Days: health.sleepHistory,
             latestHRV: health.hrvHistory.first,
             restingHR: health.todaySummary?.restingHR,
             vo2Max: health.todaySummary?.vo2Max,
             trainingLoad: trainingLoad,
-            recoveryScore: health.recoveryScore
+            recoveryScore: health.recoveryScore,
+            strengthSummary: strengthSummary,
+            localAlerts: localAlerts
         )
 
         do {
             insights = try await AIService.shared.generateInsights(context: context)
+            insightsGeneratedAt = Date()
+            saveCachedInsights()
         } catch {
             self.error = "No se pudieron cargar los insights: \(error.localizedDescription)"
         }
+    }
+
+    // Ejecuta el análisis IA solo si no hay uno de hoy (auto 1×/día). El botón
+    // "Actualizar análisis" sigue forzando una llamada nueva con loadInsights.
+    func loadInsightsIfStale(health: HealthKitManager, strengthSummary: String? = nil, localAlerts: String? = nil) async {
+        let hasToday = insightsGeneratedAt.map { Calendar.current.isDateInToday($0) } ?? false
+        if hasToday && !insights.isEmpty { return }
+        // No gastar en la IA si aún no hay datos que analizar
+        guard !activities.isEmpty || health.recoveryScore != nil else { return }
+        await loadInsights(health: health, strengthSummary: strengthSummary, localAlerts: localAlerts)
     }
 
     private func computeTrainingLoad(from activities: [StravaActivity]) -> (TrainingLoad, [LoadSample]) {

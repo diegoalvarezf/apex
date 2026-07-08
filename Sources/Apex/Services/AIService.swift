@@ -1,9 +1,21 @@
 import Foundation
 
 enum ClaudeConfig {
-    // Añade tu API key de Anthropic
-    static let apiKey = "YOUR_ANTHROPIC_API_KEY"  // https://console.anthropic.com
+    // API key desde StravaSecrets.plist (local, en .gitignore) bajo la clave
+    // "AnthropicAPIKey". Fallback al placeholder si el fichero no la tiene.
+    private static let secrets: [String: String] = {
+        guard let url = Bundle.main.url(forResource: "StravaSecrets", withExtension: "plist"),
+              let data = try? Data(contentsOf: url),
+              let dict = try? PropertyListSerialization.propertyList(from: data, format: nil) as? [String: String]
+        else { return [:] }
+        return dict
+    }()
+
+    static let apiKey = secrets["AnthropicAPIKey"] ?? "YOUR_ANTHROPIC_API_KEY"
+
+    // Sonnet para insights diarios (barato, rápido); Opus para crear rutinas (más capaz)
     static let model = "claude-sonnet-4-6"
+    static let opusModel = "claude-opus-4-8"
 }
 
 final class AIService {
@@ -22,7 +34,7 @@ final class AIService {
 
         let body: [String: Any] = [
             "model": ClaudeConfig.model,
-            "max_tokens": 1024,
+            "max_tokens": 1800,
             "messages": [
                 ["role": "user", "content": context.buildPrompt()]
             ]
@@ -35,7 +47,7 @@ final class AIService {
         }
 
         let claudeResponse = try JSONDecoder().decode(ClaudeResponse.self, from: data)
-        guard let text = claudeResponse.content.first?.text else { throw AIError.emptyResponse }
+        guard let text = claudeResponse.firstText else { throw AIError.emptyResponse }
 
         return try parseInsights(from: text)
     }
@@ -58,8 +70,9 @@ final class AIService {
     private struct ClaudeResponse: Codable {
         let content: [ContentBlock]
         struct ContentBlock: Codable {
-            let text: String
+            let text: String?   // los bloques de thinking no traen texto
         }
+        var firstText: String? { content.compactMap(\.text).first }
     }
 
     private struct InsightsWrapper: Codable {
@@ -75,7 +88,9 @@ final class AIService {
     }
 
     /// Returns raw text from Claude. Optionally pass a system prompt for JSON-only tasks.
-    func rawCompletion(prompt: String, system: String? = nil) async throws -> String {
+    /// `model` y `maxTokens` permiten usar Opus con más presupuesto para tareas complejas.
+    func rawCompletion(prompt: String, system: String? = nil,
+                       model: String = ClaudeConfig.model, maxTokens: Int = 2048) async throws -> String {
         guard let url = URL(string: "https://api.anthropic.com/v1/messages") else {
             throw AIError.invalidURL
         }
@@ -84,10 +99,11 @@ final class AIService {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue(ClaudeConfig.apiKey, forHTTPHeaderField: "x-api-key")
         request.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
+        request.timeoutInterval = 120  // Opus con effort alto puede tardar
 
         var body: [String: Any] = [
-            "model": ClaudeConfig.model,
-            "max_tokens": 2048,
+            "model": model,
+            "max_tokens": maxTokens,
             "messages": [["role": "user", "content": prompt]]
         ]
         if let system { body["system"] = system }
@@ -98,7 +114,7 @@ final class AIService {
             throw AIError.apiError
         }
         let claudeResponse = try JSONDecoder().decode(ClaudeResponse.self, from: data)
-        guard let text = claudeResponse.content.first?.text else { throw AIError.emptyResponse }
+        guard let text = claudeResponse.firstText else { throw AIError.emptyResponse }
         return text
     }
 

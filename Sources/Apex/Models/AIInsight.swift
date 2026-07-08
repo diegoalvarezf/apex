@@ -244,14 +244,17 @@ struct AICoachContext {
     let vo2Max: Double?
     let trainingLoad: TrainingLoad?
     let recoveryScore: RecoveryScore?
+    var strengthSummary: String? = nil   // progresión de pesos del gimnasio
+    var localAlerts: String? = nil        // alertas que el usuario ya ve (para no repetirlas)
 
-    func buildPrompt() -> String {
+    // Bloque de datos compartido por insights y resumen semanal
+    private func metricsBlock() -> [String] {
+        let cal = Calendar.current
+        let now = Date()
         var parts: [String] = []
-        parts.append("Eres un entrenador deportivo de élite. Analiza los datos y da insights concisos y accionables en español.")
-        parts.append("")
 
         if let recovery = recoveryScore {
-            parts.append("RECUPERACIÓN: \(recovery.value)/100 — Sueño:\(recovery.sleepScore) HRV:\(recovery.hrvScore) Carga:\(recovery.trainingLoadScore)")
+            parts.append("RECUPERACIÓN: \(recovery.value)/100 — HRV:\(recovery.hrvScore) FCreposo:\(recovery.restingHRScore)")
         }
         if let load = trainingLoad {
             let acwrLabel: String
@@ -261,11 +264,45 @@ struct AICoachContext {
             case 1.3..<1.5: acwrLabel = "elevado (fatiga acumulada)"
             default:        acwrLabel = "riesgo (sobreentrenamiento)"
             }
-            parts.append("CARGA — ATL:\(String(format: "%.1f", load.atl)) CTL:\(String(format: "%.1f", load.ctl)) ACWR:\(String(format: "%.2f", load.acwr)) Estado:\(acwrLabel)")
+            parts.append("CARGA — Fitness(CTL):\(String(format: "%.0f", load.ctl)) Fatiga(ATL):\(String(format: "%.0f", load.atl)) ACWR:\(String(format: "%.2f", load.acwr)) [\(acwrLabel)] Forma(TSB):\(String(format: "%+.0f", load.tsb))")
         }
         if let hrv = latestHRV { parts.append("HRV: \(String(format: "%.0f", hrv.sdnn))ms") }
         if let rhr = restingHR { parts.append("FC reposo: \(String(format: "%.0f", rhr))bpm") }
         if let vo2 = vo2Max { parts.append("VO2max: \(String(format: "%.1f", vo2))ml/kg/min") }
+
+        // ── Resumen semanal de entrenamiento (esta semana vs la anterior) ──
+        func window(_ from: Int, _ to: Int) -> [StravaActivity] {
+            let lo = cal.date(byAdding: .day, value: -from, to: now)!
+            let hi = cal.date(byAdding: .day, value: -to, to: now)!
+            return recentActivities.filter { $0.startDate >= lo && $0.startDate < hi }
+        }
+        func summ(_ acts: [StravaActivity]) -> String {
+            let h = acts.reduce(0.0) { $0 + Double($1.movingTime) } / 3600.0
+            let elev = acts.reduce(0.0) { $0 + $1.totalElevationGain }
+            return String(format: "%d sesiones, %.1fh, %.0fm desnivel", acts.count, h, elev)
+        }
+        parts.append("VOLUMEN — Últimos 7d: \(summ(window(7, 0))) · 7d previos: \(summ(window(14, 7)))")
+
+        // ── Sesiones recientes con detalle ────────────────────────────────
+        if !recentActivities.isEmpty {
+            parts.append("SESIONES RECIENTES:")
+            for a in recentActivities.prefix(8) {
+                let daysAgo = cal.dateComponents([.day], from: a.startDate, to: now).day ?? 0
+                var line = "  hace \(daysAgo)d \(a.sportEmoji) \(a.name): \(a.formattedDistance) \(a.formattedDuration)"
+                if a.distance > 0 { line += " \(a.formattedPace)" }
+                if let hr = a.averageHeartrate { line += " FCmedia:\(Int(hr))" }
+                if a.totalElevationGain > 50 { line += " +\(Int(a.totalElevationGain))m" }
+                if let np = a.averageWatts { line += " \(Int(np))W" }
+                if let ss = a.sufferScore { line += " esfuerzo:\(ss)" }
+                parts.append(line)
+            }
+        }
+
+        // ── Progresión de fuerza (gimnasio) ───────────────────────────────
+        if let strength = strengthSummary, !strength.isEmpty {
+            parts.append("PROGRESIÓN DE FUERZA (peso por ejercicio, de más antiguo a reciente):")
+            parts.append(strength)
+        }
 
         if !sleepLast7Days.isEmpty {
             parts.append("SUEÑO 7 días:")
@@ -273,16 +310,26 @@ struct AICoachContext {
                 parts.append("  \(s.formattedTotal) profundo:\(String(format: "%.0f", s.deepSleep/60))min score:\(s.score)")
             }
         }
-        if !recentActivities.isEmpty {
-            parts.append("ACTIVIDADES:")
-            for a in recentActivities.prefix(5) {
-                var line = "  \(a.sportEmoji) \(a.name): \(a.formattedDistance) \(a.formattedDuration)"
-                if let hr = a.averageHeartrate { line += " FC:\(Int(hr))bpm" }
-                parts.append(line)
-            }
-        }
 
+        if let alerts = localAlerts, !alerts.isEmpty {
+            parts.append("")
+            parts.append("ALERTAS AUTOMÁTICAS QUE EL USUARIO YA VE (NO las repitas):")
+            parts.append(alerts)
+        }
+        return parts
+    }
+
+    // Regla común: la IA interpreta, pero NO inventa cifras.
+    private static let noInventarCifras = "REGLA IMPORTANTE: usa SOLO las cifras que aparecen explícitamente en los datos de arriba. Nunca inventes ni estimes números, porcentajes, pesos, ritmos o valores que no te hayan dado. Si no tienes un dato, habla de la tendencia sin poner una cifra."
+
+    func buildPrompt() -> String {
+        var parts = ["Eres un entrenador deportivo de élite. Analiza SOBRE TODO los entrenamientos del usuario (sesiones recientes, carga, intensidad y progresión) junto con su recuperación, y da insights concisos y accionables en español.", ""]
+        parts += metricsBlock()
         parts.append("""
+
+NO repitas las alertas automáticas de arriba: el usuario ya las ve. Tu valor es ir MÁS ALLÁ — conecta varias señales entre sí (p.ej. carga + sueño + HRV), analiza la PROGRESIÓN (fuerza y fitness/CTL) y la PLANIFICACIÓN a días/semanas vista. Concretamente: ¿progresa la fuerza y el fitness? ¿la carga es adecuada o hay riesgo/estancamiento? ¿toca empujar, mantener o descargar? Sugiere ajustes concretos de la próxima sesión y de la progresión.
+
+\(AICoachContext.noInventarCifras)
 
 Responde SOLO con este JSON exacto (sin markdown):
 {
@@ -290,13 +337,26 @@ Responde SOLO con este JSON exacto (sin markdown):
     {
       "category": "recovery|training|sleep|nutrition|performance",
       "title": "Título corto (max 8 palabras)",
-      "body": "Análisis de 2-3 frases",
+      "body": "Análisis de 2-3 frases basado en SUS datos concretos",
       "recommendations": ["Acción 1", "Acción 2"],
       "priority": "high|medium|low"
     }
   ]
 }
-Genera 3-4 insights relevantes y accionables.
+Genera 3-5 insights, priorizando los de entrenamiento (training/performance).
+""")
+        return parts.joined(separator: "\n")
+    }
+
+    // Resumen semanal en prosa (no JSON) para la tarjeta y la notificación
+    func buildWeeklySummaryPrompt() -> String {
+        var parts = ["Eres un entrenador deportivo de élite. Escribe el RESUMEN SEMANAL del usuario en español: qué tal ha ido la semana de entrenamiento, cómo evolucionan su carga/fitness y su progresión de fuerza, y qué enfocar la semana que viene.", ""]
+        parts += metricsBlock()
+        parts.append("""
+
+Escribe 2 párrafos cortos (máx. 90 palabras en total), tono directo de coach, en TEXTO PLANO (sin markdown, sin listas, sin JSON). Párrafo 1: balance de la semana (volumen, carga, progresión). Párrafo 2: foco y ajuste concreto para la semana que viene.
+
+\(AICoachContext.noInventarCifras)
 """)
         return parts.joined(separator: "\n")
     }

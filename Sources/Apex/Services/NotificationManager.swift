@@ -46,4 +46,25 @@ final class NotificationManager: ObservableObject {
         let request = UNNotificationRequest(identifier: "apex_daily_recovery", content: content, trigger: trigger)
         center.add(request)
     }
+
+    // Recordatorio semanal: domingo 20:00. El resumen IA se genera al abrir la app,
+    // así que el aviso invita a abrirla (no afirma tener nada "listo" que no exista).
+    func scheduleWeeklySummary() {
+        guard isAuthorized else { return }
+        let center = UNUserNotificationCenter.current()
+        center.removePendingNotificationRequests(withIdentifiers: ["apex_weekly_summary"])
+
+        let content = UNMutableNotificationContent()
+        content.title = "Apex · Resumen semanal"
+        content.body = "🗓️ Ábreme para ver cómo ha ido tu semana de entreno y en qué enfocarte la próxima."
+        content.sound = .default
+
+        var components = DateComponents()
+        components.weekday = 1   // domingo
+        components.hour = 20
+        components.minute = 0
+        let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: true)
+        let request = UNNotificationRequest(identifier: "apex_weekly_summary", content: content, trigger: trigger)
+        center.add(request)
+    }
 }

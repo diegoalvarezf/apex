@@ -111,7 +111,7 @@ struct StressRecoveryEffortRow: View {
         BodyBatteryStore.shared.hourlyBattery(
             recoveryScore: recoveryScore, sleepHistory: sleepHistory,
             hourlyHR: hourlyHR, restingHR: todayRHR,
-            recoveryHistory: recoveryHistory)
+            recoveryHistory: recoveryHistory, activities: activities)
     }
     private var currentBattery: Int {
         Int(batteryHourlySamples.last?.value ?? Double(recoveryScore?.value ?? 0))
@@ -121,55 +121,67 @@ struct StressRecoveryEffortRow: View {
     }
     private var batteryTrend: MetricTrend { computeTrend(samples: batteryHourlySamples) }
 
+    // Etiquetas de estado (estilo PeakWatch)
+    private var batteryStatusLabel: String {
+        currentBattery >= 80 ? "Alta" : currentBattery >= 55 ? "Media" : currentBattery >= 30 ? "Baja" : "Muy baja"
+    }
+    private var stressStatusLabel: String {
+        stressValue < 25 ? "Excelente" : stressValue < 45 ? "Normal" : stressValue < 65 ? "Moderado" : "Elevado"
+    }
+    private var effortStatusLabel: String {
+        effortValue < 30 ? "Bajo" : effortValue < 55 ? "Moderado" : effortValue < 75 ? "Alto" : "Máximo"
+    }
+
+    // Gradientes por métrica
+    private let recoveryGradient: [Color] = [.red, .orange, .yellow, .green, .mint]
+    private let stressGradient:   [Color] = [.green, .yellow, .orange, .red]
+    private let effortGradient:   [Color] = [.blue, .indigo, .purple]
+
     var body: some View {
         LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-            // Fila 1: Batería · Recuperación
+            // Fila 1: Body Battery · Recuperación
             NavigationLink(destination: BodyBatteryDetailView(
-                score: recoveryScore,
-                recentHourlyHR: hourlyHR,
-                restingHR: todayRHR,
-                sleepHistory: sleepHistory,
-                recoveryHistory: recoveryHistory,
-                activities: activities
+                score: recoveryScore, recentHourlyHR: hourlyHR, restingHR: todayRHR,
+                sleepHistory: sleepHistory, recoveryHistory: recoveryHistory, activities: activities
             )) {
-                MetricTile(icon: "bolt.heart.fill", color: batteryColor,
-                           title: "Body Battery", value: "\(currentBattery)", unit: "/ 100",
-                           trend: batteryTrend, higherIsBetter: true, samples: batteryHourlySamples)
+                PeakMetricTile(title: "Body Battery", icon: "bolt.heart.fill",
+                               value: currentBattery, statusLabel: batteryStatusLabel, statusColor: batteryColor) {
+                    TrendSparkline(samples: batteryHourlySamples, color: batteryColor, height: 40)
+                }
             }
             .buttonStyle(.plain)
 
             NavigationLink(destination: RecoveryDetailView(
                 score: recoveryScore, history: recoveryHistory,
-                color: recoveryColor, hrvHistory: hrvHistory,
-                rhrHistory: rhrHistory, todayRHR: todayRHR
+                color: recoveryColor, hrvHistory: hrvHistory, rhrHistory: rhrHistory, todayRHR: todayRHR
             )) {
-                MetricTile(icon: "arrow.up.heart.fill", color: recoveryColor,
-                           title: "Recuperación", value: "\(recoveryValue)", unit: "/ 100",
-                           trend: recoveryTrend, higherIsBetter: true, samples: hrvSamples)
+                PeakMetricTile(title: "Recuperación", icon: "arrow.up.heart.fill",
+                               value: recoveryValue, statusLabel: recoveryScore?.label ?? "--", statusColor: recoveryColor) {
+                    MetricGradientBar(value: recoveryValue, gradient: recoveryGradient)
+                }
             }
             .buttonStyle(.plain)
 
             // Fila 2: Estrés · Esfuerzo
             NavigationLink(destination: StressDetailView(
                 value: stressValue, history: stressTrendHistory,
-                color: stressColor, activities: activities,
-                recentHourlyHR: hourlyHR, restingHR: todayRHR
+                color: stressColor, activities: activities, recentHourlyHR: hourlyHR, restingHR: todayRHR
             )) {
-                MetricTile(icon: "brain.head.profile", color: stressColor,
-                           title: "Estrés", value: "\(stressValue)", unit: "/ 100",
-                           trend: stressTrend, higherIsBetter: false, samples: todayHourlyStress)
+                PeakMetricTile(title: "Estrés", icon: "brain.head.profile",
+                               value: stressValue, statusLabel: stressStatusLabel, statusColor: stressColor) {
+                    MetricGauge(value: stressValue, gradient: stressGradient)
+                }
             }
             .buttonStyle(.plain)
 
             NavigationLink(destination: EffortDetailView(
-                value: effortValue,
-                todayKcal: todayKcal, todayActiveKcal: todayActiveKcal,
-                hourlyHR: hourlyHR, restingHR: todayRHR,
-                history: effortHistory, color: effortColor, activities: activities
+                value: effortValue, todayKcal: todayKcal, todayActiveKcal: todayActiveKcal,
+                hourlyHR: hourlyHR, restingHR: todayRHR, history: effortHistory, color: effortColor, activities: activities
             )) {
-                MetricTile(icon: "bolt.fill", color: effortColor,
-                           title: "Esfuerzo", value: "\(effortValue)", unit: "/ 100",
-                           trend: effortTrend, higherIsBetter: false, samples: effortHistory)
+                PeakMetricTile(title: "Esfuerzo", icon: "bolt.fill",
+                               value: effortValue, statusLabel: effortStatusLabel, statusColor: effortColor) {
+                    MetricGradientBar(value: effortValue, gradient: effortGradient, showTicks: true)
+                }
             }
             .buttonStyle(.plain)
         }

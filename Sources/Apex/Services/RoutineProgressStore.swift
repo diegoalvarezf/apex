@@ -54,6 +54,14 @@ final class RoutineProgressStore: ObservableObject {
         persist()
     }
 
+    func update(_ entry: LiftEntry, for exerciseID: UUID) {
+        guard var list = byExercise[exerciseID.uuidString],
+              let idx = list.firstIndex(where: { $0.id == entry.id }) else { return }
+        list[idx] = entry
+        byExercise[exerciseID.uuidString] = list
+        persist()
+    }
+
     func remove(_ entry: LiftEntry, for exerciseID: UUID) {
         byExercise[exerciseID.uuidString]?.removeAll { $0.id == entry.id }
         persist()
