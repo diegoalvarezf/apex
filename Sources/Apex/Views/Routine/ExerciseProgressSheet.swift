@@ -38,6 +38,14 @@ struct ExerciseProgressSheet: View {
                         emptyState
                     } else {
                         chartCard
+                        if entries.count >= 3 {
+                            AITextCard(
+                                title: "¿Cómo progreso?",
+                                subtitle: "Claude analiza tu serie de pesos y te dice si progresas, te estancas o conviene descargar, y el siguiente paso.",
+                                cacheKey: "apex_strength_ai_\(exercise.id.uuidString)_\(entries.count)",
+                                generate: { try await analyzeProgress() }
+                            )
+                        }
                         historyCard
                     }
                 }
@@ -302,5 +310,23 @@ struct ExerciseProgressSheet: View {
     private func formatKg(_ w: Double) -> String { "\(formatNumber(w)) kg" }
     private func formatNumber(_ w: Double) -> String {
         w == w.rounded() ? "\(Int(w))" : String(format: "%.1f", w)
+    }
+
+    // MARK: - Análisis IA de la progresión
+
+    private func analyzeProgress() async throws -> String {
+        let ex = live
+        var lines: [String] = [
+            "Ejercicio: \(ex.name)\(ex.muscleGroup.isEmpty ? "" : " (\(ex.muscleGroup))")",
+            "Prescripción de la rutina: \(ex.sets) series × \(ex.reps)\(ex.weight.isEmpty ? "" : ", objetivo \(ex.weight)")",
+            "Registros (fecha · peso · reps), de más antiguo a reciente:"
+        ]
+        let df = DateFormatter(); df.dateFormat = "d MMM"
+        for e in entries {
+            let reps = e.reps.map { " × \($0)" } ?? ""
+            lines.append("  \(df.string(from: e.date)) · \(formatKg(e.weight))\(reps)")
+        }
+        let system = "Eres un entrenador de fuerza. Analizas la progresión de un ejercicio (serie de pesos/reps por fecha) frente a su prescripción. Responde en español, TEXTO PLANO (sin markdown ni listas), 2-4 frases: ¿progresa, se estanca o conviene descargar?, y el SIGUIENTE paso concreto (subir X kg, subir reps, mantener, o deload). Ten en cuenta sobrecarga progresiva y que los estancamientos de 2-3 sesiones piden un cambio. Usa solo las cifras dadas; nunca inventes valores."
+        return try await AIService.shared.rawCompletion(prompt: lines.joined(separator: "\n"), system: system, maxTokens: 400)
     }
 }

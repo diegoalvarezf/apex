@@ -47,6 +47,7 @@
 		7A496A0733FDF68E88C87544 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C8F99C86532776D9A595C37 /* RootView.swift */; };
 		7BF3896864CAC7D646C05CB2 /* ActivitiesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99ECE6F7F284B1CC63A82394 /* ActivitiesView.swift */; };
 		7F26173322E50A83975C2405 /* MainTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88E4488AD8E9837A8F50CF0F /* MainTabView.swift */; };
+		86EA1312B9941883E35F989C /* AITextCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BE23248C10E9BC45A6CBB62 /* AITextCard.swift */; };
 		898E20BDB5FD62C506097C7F /* DashboardViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2DD8E3C962D4FEE1B6756F /* DashboardViewModel.swift */; };
 		8AF7CC3E2772E77A7BC2D57E /* HealthData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E1CB8BADCFD84F2359D60A2 /* HealthData.swift */; };
 		9186FF434C8621706D5D6A43 /* ActivityStatsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35FF2E339B10BE1D133BFB61 /* ActivityStatsView.swift */; };
@@ -177,6 +178,7 @@
 		772C231E1EF6F463B0630868 /* BiologicalAgeDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BiologicalAgeDetailView.swift; sourceTree = "<group>"; };
 		7B470F268FED90132B9811D6 /* LiveActivityView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveActivityView.swift; sourceTree = "<group>"; };
 		7BC31808388C70362CE5E6E3 /* SleepAgeDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepAgeDetailView.swift; sourceTree = "<group>"; };
+		7BE23248C10E9BC45A6CBB62 /* AITextCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AITextCard.swift; sourceTree = "<group>"; };
 		7E99751B63AB5AAE7641F8FD /* RunAIAnalysisCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunAIAnalysisCard.swift; sourceTree = "<group>"; };
 		8039A0B056518A564A0AF7F2 /* StravaAPI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StravaAPI.swift; sourceTree = "<group>"; };
 		80F6286BC0DDD85727CBB683 /* WatchMetricsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchMetricsView.swift; sourceTree = "<group>"; };
@@ -342,6 +344,7 @@
 		9E72107BDD65EFF69F25A2EE /* Shared */ = {
 			isa = PBXGroup;
 			children = (
+				7BE23248C10E9BC45A6CBB62 /* AITextCard.swift */,
 				AA57C1C41DA62A08155E1EF6 /* GaugeRing.swift */,
 				88E4488AD8E9837A8F50CF0F /* MainTabView.swift */,
 				3B100FBA34C57632B13983D0 /* MetricDetailView.swift */,
@@ -584,6 +587,7 @@
 			files = (
 				37B98D0A71E0A409E9ACD2F8 /* AIInsight.swift in Sources */,
 				C1C424B764AD8253D93FCB48 /* AIService.swift in Sources */,
+				86EA1312B9941883E35F989C /* AITextCard.swift in Sources */,
 				7BF3896864CAC7D646C05CB2 /* ActivitiesView.swift in Sources */,
 				93E74C454D6D3DCBB2DB2A55 /* Activity.swift in Sources */,
 				3CDE3E09328728D2664CC01E /* ActivityDetailView.swift in Sources */,

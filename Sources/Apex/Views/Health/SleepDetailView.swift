@@ -35,6 +35,15 @@ struct SleepDetailView: View {
                     .padding(20)
                     .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
                     .padding(.horizontal)
+
+                    // Análisis IA de la arquitectura del sueño
+                    AITextCard(
+                        title: "Análisis del sueño",
+                        subtitle: "Claude lee tu arquitectura (profundo, REM, despertares, horarios) y te da una lectura de la noche y una recomendación.",
+                        cacheKey: "apex_sleep_ai_\(Int(latest.date.timeIntervalSince1970))",
+                        generate: { try await Self.analyzeSleep(latest: latest, history: history) }
+                    )
+                    .padding(.horizontal)
                 }
 
                 // Historial 7 días
@@ -99,6 +108,30 @@ struct SleepDetailView: View {
     private func formatDuration(_ t: TimeInterval) -> String {
         let h = Int(t) / 3600; let m = (Int(t) % 3600) / 60
         if h > 0 { return "\(h)h\(m)m" }; return "\(m)m"
+    }
+
+    // MARK: - Análisis IA del sueño
+
+    private static func analyzeSleep(latest: SleepData, history: [SleepData]) async throws -> String {
+        func pct(_ part: TimeInterval, _ total: TimeInterval) -> Int { total > 0 ? Int((part / total * 100).rounded()) : 0 }
+        let total = latest.totalSleep
+        let f: (TimeInterval) -> String = { let h = Int($0)/3600, m = (Int($0)%3600)/60; return "\(h)h\(m)m" }
+        let hhmm: (Date) -> String = { let c = Calendar.current.dateComponents([.hour, .minute], from: $0); return String(format: "%02d:%02d", c.hour ?? 0, c.minute ?? 0) }
+
+        var lines: [String] = [
+            "Anoche: \(f(total)) total, eficiencia \(Int(latest.efficiency))%, score \(latest.score)/100.",
+            "Fases: profundo \(f(latest.deepSleep)) (\(pct(latest.deepSleep, total))%), REM \(f(latest.remSleep)) (\(pct(latest.remSleep, total))%), ligero \(f(latest.coreSleep)) (\(pct(latest.coreSleep, total))%), despierto \(f(latest.awake)).",
+            "Horario: se durmió \(hhmm(latest.sleepStart)), despertó \(hhmm(latest.sleepEnd))."
+        ]
+        if history.count > 1 {
+            lines.append("Últimas noches (horas · score · profundo%):")
+            for s in history.prefix(7) {
+                lines.append("  \(f(s.totalSleep)) · \(s.score) · \(pct(s.deepSleep, s.totalSleep))%")
+            }
+        }
+
+        let system = "Eres un experto en sueño. Analizas la arquitectura del sueño frente a las referencias sanas: adultos 7-9h, profundo (N3) 13-23% del total, REM 20-25%, eficiencia ≥85%, horarios consistentes. Responde en español, TEXTO PLANO (sin markdown ni listas), 3-4 frases: lectura de la noche y de la tendencia de la semana, qué destaca (bien o mal) y UNA recomendación concreta. Usa solo las cifras dadas; nunca inventes valores."
+        return try await AIService.shared.rawCompletion(prompt: lines.joined(separator: "\n"), system: system, maxTokens: 400)
     }
 }
 
