@@ -48,27 +48,21 @@ struct ActivityAIAnalysisCard: View {
                     Text("Leyendo tu curva de esfuerzo…").font(.subheadline).foregroundStyle(.secondary)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
+            } else if let error {
+                Text(error).font(.caption).foregroundStyle(.red)
             } else {
                 Text(subtitle).font(.caption).foregroundStyle(.secondary)
-                Button { Task { await analyze() } } label: {
-                    Label("Analizar con IA", systemImage: "sparkles")
-                        .font(.subheadline).fontWeight(.semibold)
-                        .frame(maxWidth: .infinity).padding(.vertical, 10)
-                        .background(LinearGradient(colors: [.purple, .blue], startPoint: .leading, endPoint: .trailing))
-                        .foregroundStyle(.white)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                }
-            }
-
-            if let error {
-                Text(error).font(.caption).foregroundStyle(.red)
             }
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Color(.secondarySystemGroupedBackground))
         .clipShape(RoundedRectangle(cornerRadius: 14))
-        .onAppear { analysis = UserDefaults.standard.string(forKey: cacheKey) }
+        .onAppear {
+            analysis = UserDefaults.standard.string(forKey: cacheKey)
+            // Automático: si no hay análisis cacheado, lánzalo al abrir la actividad
+            if analysis == nil { Task { await analyze() } }
+        }
     }
 
     // MARK: - Lógica
@@ -90,7 +84,7 @@ struct ActivityAIAnalysisCard: View {
         }
     }
 
-    private static let system = "Eres un entrenador de resistencia (carrera y ciclismo). Analizas una sesión a partir de su curva de FC, ritmo o potencia por tramos. Responde en español, TEXTO PLANO (sin markdown ni listas), 3-4 frases. Identifica la ESTRUCTURA real (continuo / progresivo / tempo / intervalos-series con nº y duración aproximados / bloques / cuestas), el control del esfuerzo (FC, ritmo o potencia) a lo largo de la sesión, si hubo deriva cardíaca o fade al final, y UNA observación accionable. Usa solo cifras presentes en los datos; nunca inventes valores."
+    private static let system = "Eres un entrenador de resistencia (carrera y ciclismo). Analizas una sesión a partir de su curva de FC, ritmo o potencia por tramos. SÉ BREVE: 2-3 frases como máximo, directo, sin preámbulos ni relleno. Español, TEXTO PLANO (sin markdown ni listas). Di la ESTRUCTURA real (continuo/progresivo/tempo/series con nº y duración aprox./cuestas), lo más relevante del control del esfuerzo o de la deriva/fade, y si procede UNA acción. Usa solo cifras presentes en los datos; nunca inventes valores."
 
     private func buildPrompt(streams: ActivityStreams) -> String {
         var lines: [String] = [

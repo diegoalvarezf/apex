@@ -154,11 +154,17 @@ que se diluye en ejercicios intermitentes como el gimnasio), y la batería carga
 - Arranca del Recovery del día + bonus por duración de sueño.
 - **Drenaje de entrenamiento**: cada sesión de Strava drena según su TRIMP de Banister
   mediante curva saturante `65·(1−e^(−TRIMP/45))` — 50' de gym ≈ 33 pts, 1h Z2 ≈ 55.
-- **Drenaje de vida diaria** (horas sin actividad): por FC sobre reposo, sin recarga de día.
-- **Carga**: solo durmiendo, curva logarítmica hasta `recovery + bonus`.
+- **Vida diaria** (horas sin actividad): por FC sobre reposo. El **reposo genuino despierto**
+  (FCr<0.10: leer, sentado, siesta) **recarga ~6 pts/h**, la vida normal es casi neutra y solo
+  el esfuerzo drena. Corrige el modelo previo, que drenaba todo el día y dejaba la batería baja
+  en días frescos (60 vs 83 de PeakWatch).
+- **Carga en sueño**: curva logarítmica hasta `recovery + bonus`; una noche completa suma ~40-60.
+- **Asimetría corregida**: la recarga es rápida con la batería baja y se aplana cerca de 100;
+  el drenaje es rápido con la batería alta (factores separados). Acotado a **5-100** (Garmin).
 
 Referencias del enfoque (no publican fórmulas exactas, sí la metodología):
-- Firstbeat Analytics / Garmin — Body Battery basado en HRV-stress + EPOC (Training Effect).
+- Firstbeat Analytics / Garmin — Body Battery basado en HRV-stress (RMSSD) + EPOC. El reposo
+  despierto real recarga ~5-10 pts/h; el sueño completo suma 40-60; rango 5-100.
 - doc.peakwatch.co/en/battery.html — Body Energy (mismo principio cualitativo).
 
 ⚠️ Las constantes de carga/descarga y la curva de drenaje (`activityDrain`, factores por HRR,
@@ -252,7 +258,7 @@ ajustar si los números no encajan con la percepción real:
 
 1. **`EFFORT_K = 90`** (`TrainingMetrics.swift`) — curva saturante del TRIMP diario a 0–100.
 2. **Recovery z=0 → 50 pts, ±17/SD** (`HealthKitManager.swift`) — anclaje del z-score de HRV/RHR.
-3. **Constantes de Body Battery** (`BodyBatteryStore.swift`) — carga/descarga por hora (sin recarga diurna; drenaje de ejercicio ∝ −HRr²·42).
+3. **Constantes de Body Battery** (`BodyBatteryStore.swift`) — carga/descarga por hora (reposo despierto real +6/h; drenaje de ejercicio sin registrar ∝ −HRr²·40; entreno registrado por TRIMP).
 
 ---
 
