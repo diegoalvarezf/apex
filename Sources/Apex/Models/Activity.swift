@@ -29,7 +29,16 @@ struct StravaActivity: Identifiable, Codable {
     let sufferScore: Int?
     let kudosCount: Int
     let hasHeartrate: Bool
+    let workoutType: Int?        // Strava: run 1=carrera, 2=tirada larga, 3=workout/intervalos
     private let map: ActivityMap?
+
+    // Sesión de ritmo variable (intervalos/series/fartlek/tempo): las métricas de
+    // economía y desacoplamiento NO aplican porque comparan un promedio contra continuo.
+    var isStructuredWorkout: Bool {
+        if workoutType == 3 { return true }
+        let n = name.lowercased()
+        return ["interval", "serie", "series", "fartlek", "tempo", "x400", "x800", "x1000", "cuestas"].contains { n.contains($0) }
+    }
 
     var summaryPolyline: String? { map?.summaryPolyline }
     // Usa calories si está disponible (todos los deportes), si no kilojoules * 0.239 (ciclismo con potenciómetro)
@@ -89,6 +98,7 @@ struct StravaActivity: Identifiable, Codable {
         case sufferScore = "suffer_score"
         case kudosCount = "kudos_count"
         case hasHeartrate = "has_heartrate"
+        case workoutType = "workout_type"
     }
 
     var formattedDistance: String {

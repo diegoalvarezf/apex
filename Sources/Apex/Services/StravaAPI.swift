@@ -40,6 +40,11 @@ final class StravaAPI {
         try await get("/activities/\(id)", token: token)
     }
 
+    // Series temporales de la actividad (para análisis IA de la curva de FC/ritmo)
+    func fetchStreams(id: Int, token: String) async throws -> ActivityStreams {
+        try await get("/activities/\(id)/streams?keys=time,heartrate,velocity_smooth,distance,altitude,watts&key_by_type=true", token: token)
+    }
+
     func fetchAthleteZones(token: String) async throws -> AthleteZones {
         try await get("/athlete/zones", token: token)
     }
@@ -53,6 +58,20 @@ final class StravaAPI {
             throw StravaError.httpError(http.statusCode)
         }
         return try decoder.decode(T.self, from: data)
+    }
+}
+
+struct ActivityStreams: Decodable {
+    struct Stream: Decodable { let data: [Double] }
+    let time: Stream?
+    let heartrate: Stream?
+    let velocitySmooth: Stream?   // m/s
+    let distance: Stream?
+    let altitude: Stream?
+    let watts: Stream?
+    enum CodingKeys: String, CodingKey {
+        case time, heartrate, distance, altitude, watts
+        case velocitySmooth = "velocity_smooth"
     }
 }
 

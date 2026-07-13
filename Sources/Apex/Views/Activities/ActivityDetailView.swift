@@ -8,6 +8,9 @@ struct ActivityDetailView: View {
     private var isRunningActivity: Bool {
         ["run", "trail_run", "virtualrun"].contains(activity.sportType.lowercased())
     }
+    private var isCyclingActivity: Bool {
+        ["ride", "virtualride", "ebikeride", "mountainbikeride", "gravelride"].contains(activity.sportType.lowercased())
+    }
 
     private var recentSameSportActivities: [StravaActivity] {
         Array(dashVM.activities.filter {
@@ -36,8 +39,15 @@ struct ActivityDetailView: View {
                         .padding(.horizontal)
                 }
 
-                // Running economy — solo para running con FC
-                if isRunningActivity && activity.averageHeartrate != nil {
+                // Análisis IA de la sesión (lee la curva real de FC/ritmo/potencia de Strava)
+                if (isRunningActivity || isCyclingActivity) && (activity.averageHeartrate != nil || activity.averageWatts != nil) {
+                    ActivityAIAnalysisCard(activity: activity)
+                        .padding(.horizontal)
+                }
+
+                // Economía de carrera (cálculo fijo) — solo tiene sentido en carrera
+                // continua; en intervalos el promedio engaña, así que se omite.
+                if isRunningActivity && activity.averageHeartrate != nil && !activity.isStructuredWorkout {
                     RunningEconomyCard(activity: activity, recentRuns: recentSameSportActivities)
                         .padding(.horizontal)
                 }

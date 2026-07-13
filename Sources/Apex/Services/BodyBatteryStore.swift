@@ -159,16 +159,16 @@ final class BodyBatteryStore {
                 } else if let hr = hourlyHR.first(where: { cal.component(.hour, from: $0.date) == hour }) {
                     let hrr = max(0.0, min(1.0, (hr.value - restingHR) / (maxHR - restingHR)))
                     if hrr < 0.10 {
-                        hourlyDelta = -0.6    // en reposo se consume poco, pero NO recarga de día
+                        hourlyDelta = +0.4    // reposo real: recarga leve (parasimpático)
                     } else if hrr < 0.25 {
-                        hourlyDelta = -1.2    // vida diaria tranquila
+                        hourlyDelta = -0.5    // vida diaria tranquila
                     } else if hrr < 0.50 {
                         hourlyDelta = -hrr * hrr * 20.0
                     } else {
                         hourlyDelta = -hrr * hrr * 42.0  // ejercicio sin registrar como actividad
                     }
                 } else {
-                    hourlyDelta = -0.7        // sin datos de FC: consumo basal
+                    hourlyDelta = -0.4        // sin datos de FC: consumo basal
                 }
                 battery += hourlyDelta * depletionFactor
             }

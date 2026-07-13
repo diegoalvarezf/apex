@@ -289,13 +289,15 @@ struct AICoachContext {
             for a in recentActivities.prefix(8) {
                 let daysAgo = cal.dateComponents([.day], from: a.startDate, to: now).day ?? 0
                 var line = "  hace \(daysAgo)d \(a.sportEmoji) \(a.name): \(a.formattedDistance) \(a.formattedDuration)"
-                if a.distance > 0 { line += " \(a.formattedPace)" }
+                if a.distance > 0 { line += " ritmo_medio:\(a.formattedPace)" }
                 if let hr = a.averageHeartrate { line += " FCmedia:\(Int(hr))" }
                 if a.totalElevationGain > 50 { line += " +\(Int(a.totalElevationGain))m" }
                 if let np = a.averageWatts { line += " \(Int(np))W" }
                 if let ss = a.sufferScore { line += " esfuerzo:\(ss)" }
+                if a.isStructuredWorkout { line += " [INTERVALOS/serie: ritmo variable por diseño]" }
                 parts.append(line)
             }
+            parts.append("  (Nota: estos son PROMEDIOS de sesión. En sesiones marcadas como intervalos, un ritmo medio lento con FC alta es NORMAL — son las recuperaciones las que bajan el promedio; NO lo interpretes como mala economía o ritmo irregular.)")
         }
 
         // ── Progresión de fuerza (gimnasio) ───────────────────────────────
