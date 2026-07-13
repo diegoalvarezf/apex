@@ -178,6 +178,28 @@ struct ActivitiesView: View {
                         .padding(.horizontal, 16)
                         .padding(.top, 8)
 
+                        // Accesos: récords, estadísticas e historial de pesas
+                        HStack(spacing: 10) {
+                            NavigationLink(destination: PersonalRecordsView(activities: dashVM.activities)) {
+                                ActivityNavCard(icon: "trophy.fill", label: "Récords", color: .yellow)
+                            }
+                            .buttonStyle(.plain)
+
+                            NavigationLink(destination: ActivityStatsView(activities: dashVM.activities)) {
+                                ActivityNavCard(icon: "chart.bar.fill", label: "Estadísticas", color: .blue)
+                            }
+                            .buttonStyle(.plain)
+
+                            if !workoutStore.logs.isEmpty {
+                                NavigationLink(destination: WorkoutHistoryView()) {
+                                    ActivityNavCard(icon: "dumbbell.fill", label: "Pesas", color: .purple)
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.top, 10)
+
                         // Filtros
                         ScrollView(.horizontal, showsIndicators: false) {
                             HStack(spacing: 8) {
@@ -242,23 +264,6 @@ struct ActivitiesView: View {
                     .buttonStyle(.plain)
                 }
 
-                ToolbarItem(placement: .navigationBarLeading) {
-                    HStack(spacing: 18) {
-                        if !workoutStore.logs.isEmpty {
-                            NavigationLink(destination: WorkoutHistoryView()) {
-                                Image(systemName: "dumbbell")
-                            }
-                        }
-                        NavigationLink(destination: PersonalRecordsView(activities: dashVM.activities)) {
-                            Image(systemName: "trophy")
-                        }
-                        NavigationLink(destination: ActivityStatsView(activities: dashVM.activities)) {
-                            Image(systemName: "chart.bar")
-                        }
-                    }
-                    .font(.body)
-                    .foregroundStyle(.primary)
-                }
             }
             .sheet(isPresented: $showStartSheet) {
                 StartActivitySheet { sport in
@@ -270,6 +275,29 @@ struct ActivitiesView: View {
                 LiveActivityView(sport: activeSport)
             }
         }
+    }
+}
+
+// MARK: - Tarjeta de acceso (récords, estadísticas, pesas)
+
+private struct ActivityNavCard: View {
+    let icon: String
+    let label: String
+    let color: Color
+
+    var body: some View {
+        VStack(spacing: 6) {
+            Image(systemName: icon)
+                .font(.system(size: 17, weight: .semibold))
+                .foregroundStyle(color)
+                .frame(height: 22)
+            Text(label)
+                .font(.caption).fontWeight(.medium)
+                .foregroundStyle(.primary)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 12)
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
     }
 }
 

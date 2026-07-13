@@ -60,9 +60,25 @@ struct ActivityStatsView: View {
     private var totalElevation: Double { activities.reduce(0) { $0 + $1.totalElevationGain } }
     private var totalActivities: Int { activities.count }
 
+    // Rango temporal cubierto por las actividades sincronizadas, para dejar claro
+    // que las cifras son ACUMULADAS de todo el historial (no diarias ni mensuales).
+    private var periodLabel: String {
+        guard let earliest = activities.map(\.startDate).min() else { return "" }
+        let f = DateFormatter(); f.locale = Locale(identifier: "es_ES"); f.dateFormat = "MMM yyyy"
+        return "\(totalActivities) actividades · desde \(f.string(from: earliest))"
+    }
+
     var body: some View {
         ScrollView {
             VStack(spacing: 16) {
+
+                // Aclaración del periodo: todo el historial acumulado
+                VStack(spacing: 2) {
+                    Text("Totales acumulados").font(.headline)
+                    Text(periodLabel).font(.caption).foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal)
 
                 // — Totales en grid 2×2
                 LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {

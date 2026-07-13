@@ -39,9 +39,7 @@ struct ActivityAIAnalysisCard: View {
             }
 
             if let analysis {
-                Text(analysis)
-                    .font(.subheadline).foregroundStyle(.primary)
-                    .fixedSize(horizontal: false, vertical: true)
+                AIAnalysisBody(text: analysis)
             } else if isLoading {
                 HStack(spacing: 10) {
                     ProgressView()
@@ -84,7 +82,7 @@ struct ActivityAIAnalysisCard: View {
         }
     }
 
-    private static let system = "Eres un entrenador de resistencia (carrera y ciclismo). Analizas una sesión a partir de su curva de FC, ritmo o potencia por tramos. SÉ BREVE: 2-3 frases como máximo, directo, sin preámbulos ni relleno. Español, TEXTO PLANO (sin markdown ni listas). Di la ESTRUCTURA real (continuo/progresivo/tempo/series con nº y duración aprox./cuestas), lo más relevante del control del esfuerzo o de la deriva/fade, y si procede UNA acción. Usa solo cifras presentes en los datos; nunca inventes valores."
+    private static let system = "Eres un entrenador de resistencia (carrera y ciclismo). Analizas una sesión a partir de su curva de FC, ritmo o potencia por tramos. SÉ BREVE: 2-3 frases de análisis, directo, sin preámbulos ni relleno. Español, TEXTO PLANO (sin markdown ni listas). Di la ESTRUCTURA real (continuo/progresivo/tempo/series con nº y duración aprox./cuestas), lo más relevante del control del esfuerzo o de la deriva/fade. Usa solo cifras presentes en los datos; nunca inventes valores. TERMINA SIEMPRE con una línea aparte que empiece por 'Conclusión: ' y resuma en una frase la idea clave y la acción a tomar."
 
     private func buildPrompt(streams: ActivityStreams) -> String {
         var lines: [String] = [

@@ -105,36 +105,49 @@ struct PersonalRecordsView: View {
 
     private struct SportRecordsCard: View {
         let group: SportGroup
+        @State private var expanded = true
 
         var body: some View {
             VStack(spacing: 0) {
-                // Cabecera del deporte
-                HStack(spacing: 12) {
-                    IconBadge(icon: group.icon, color: group.color, size: 34, corner: 9)
-                    Text(group.label)
-                        .font(.headline)
-                    Spacer()
-                    Text("\(group.records.count)")
-                        .font(.footnote.weight(.semibold))
-                        .foregroundStyle(.secondary)
-                        .padding(.horizontal, 9).padding(.vertical, 3)
-                        .background(Color.primary.opacity(0.06), in: Capsule())
-                }
-                .padding(.horizontal, 16)
-                .padding(.top, 14)
-                .padding(.bottom, 10)
-
-                ForEach(Array(group.records.enumerated()), id: \.element.id) { idx, rec in
-                    NavigationLink(destination: ActivityDetailView(activity: rec.activity)) {
-                        RecordRow(rec: rec)
+                // Cabecera del deporte (toca para plegar/desplegar)
+                Button {
+                    withAnimation(.spring(response: 0.3)) { expanded.toggle() }
+                } label: {
+                    HStack(spacing: 12) {
+                        IconBadge(icon: group.icon, color: group.color, size: 34, corner: 9)
+                        Text(group.label)
+                            .font(.headline)
+                            .foregroundStyle(.primary)
+                        Spacer()
+                        Text("\(group.records.count)")
+                            .font(.footnote.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                            .padding(.horizontal, 9).padding(.vertical, 3)
+                            .background(Color.primary.opacity(0.06), in: Capsule())
+                        Image(systemName: expanded ? "chevron.up" : "chevron.down")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.secondary)
                     }
-                    .buttonStyle(.plain)
-
-                    if idx < group.records.count - 1 {
-                        Divider().padding(.leading, 60)
-                    }
+                    .padding(.horizontal, 16)
+                    .padding(.top, 14)
+                    .padding(.bottom, expanded ? 10 : 14)
+                    .contentShape(Rectangle())
                 }
-                .padding(.bottom, 6)
+                .buttonStyle(.plain)
+
+                if expanded {
+                    ForEach(Array(group.records.enumerated()), id: \.element.id) { idx, rec in
+                        NavigationLink(destination: ActivityDetailView(activity: rec.activity)) {
+                            RecordRow(rec: rec)
+                        }
+                        .buttonStyle(.plain)
+
+                        if idx < group.records.count - 1 {
+                            Divider().padding(.leading, 60)
+                        }
+                    }
+                    .padding(.bottom, 6)
+                }
             }
             .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
         }

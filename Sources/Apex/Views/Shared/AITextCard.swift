@@ -26,8 +26,7 @@ struct AITextCard: View {
             }
 
             if let text {
-                Text(text).font(.subheadline).foregroundStyle(.primary)
-                    .fixedSize(horizontal: false, vertical: true)
+                AIAnalysisBody(text: text)
             } else if isLoading {
                 HStack(spacing: 10) {
                     ProgressView()
@@ -66,6 +65,49 @@ struct AITextCard: View {
                 UserDefaults.standard.set(out, forKey: cacheKey)
             } catch {
                 self.error = "No pude analizar: \(error.localizedDescription)"
+            }
+        }
+    }
+}
+
+// Renderiza un análisis IA separando el cuerpo de la línea "Conclusión: …",
+// que se destaca en su propia caja. Reutilizada por todas las cards de IA.
+struct AIAnalysisBody: View {
+    let text: String
+
+    private var parts: (body: String, conclusion: String?) {
+        guard let r = text.range(of: "Conclusión:", options: .caseInsensitive) else {
+            return (text, nil)
+        }
+        let body = String(text[..<r.lowerBound]).trimmingCharacters(in: .whitespacesAndNewlines)
+        let concl = String(text[r.upperBound...]).trimmingCharacters(in: .whitespacesAndNewlines)
+        return (body, concl.isEmpty ? nil : concl)
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            if !parts.body.isEmpty {
+                Text(parts.body)
+                    .font(.subheadline).foregroundStyle(.primary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            if let concl = parts.conclusion {
+                HStack(alignment: .top, spacing: 8) {
+                    Image(systemName: "checkmark.seal.fill")
+                        .font(.subheadline)
+                        .foregroundStyle(LinearGradient(colors: [.purple, .blue], startPoint: .topLeading, endPoint: .bottomTrailing))
+                    Text(concl)
+                        .font(.subheadline).fontWeight(.semibold)
+                        .foregroundStyle(.primary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .padding(10)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(
+                    LinearGradient(colors: [.purple.opacity(0.12), .blue.opacity(0.12)],
+                                   startPoint: .leading, endPoint: .trailing),
+                    in: RoundedRectangle(cornerRadius: 10, style: .continuous)
+                )
             }
         }
     }
