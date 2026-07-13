@@ -26,11 +26,8 @@ private struct WelcomeStep: View {
         VStack(spacing: 0) {
             Spacer()
             VStack(spacing: 24) {
-                ZStack {
-                    Circle().fill(Color.accentColor.opacity(0.12)).frame(width: 100, height: 100)
-                    Image(systemName: "bolt.heart.fill")
-                        .font(.system(size: 48)).foregroundStyle(Color.accentColor)
-                }
+                ApexIcon(size: 104)
+                    .shadow(color: .black.opacity(0.25), radius: 16, y: 8)
                 VStack(spacing: 8) {
                     Text("Apex").font(.system(size: 38, weight: .bold))
                     Text("Entrena con inteligencia").font(.title3).foregroundStyle(.secondary)

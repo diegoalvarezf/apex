@@ -62,6 +62,7 @@
 		B299C31E8FEC72618458A065 /* UserProfileManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF755D279BC97FD0AD59B978 /* UserProfileManager.swift */; };
 		B2F36CA794FFB1FFD9D2C7DD /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3DA5C81DAE39EFD8E208A8E /* DashboardView.swift */; };
 		B5848EBE45A36A5E42EB3B2E /* SmartTipBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA8104DA37D19A942B47E271 /* SmartTipBanner.swift */; };
+		BCCDD7B9E2814C098EBB9BD7 /* ApexLogo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36D74569B2AAD248B9B50035 /* ApexLogo.swift */; };
 		C17FAF211C25302C0130DC0E /* StravaSecrets.example.plist in Resources */ = {isa = PBXBuildFile; fileRef = 27BE0E5F42E910E1195161B5 /* StravaSecrets.example.plist */; };
 		C1C424B764AD8253D93FCB48 /* AIService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7085B67C96F3791C8445CD73 /* AIService.swift */; };
 		C7F187D963AFFF075DB59168 /* StartActivitySheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A4C69AB6473F5BC5F1AE98C /* StartActivitySheet.swift */; };
@@ -150,6 +151,7 @@
 		29A428C3DFC4F73E20ED3421 /* ApexWatchApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApexWatchApp.swift; sourceTree = "<group>"; };
 		2E6365D4F6FE91F2ABAA5891 /* PersonalRecordsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersonalRecordsView.swift; sourceTree = "<group>"; };
 		35FF2E339B10BE1D133BFB61 /* ActivityStatsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityStatsView.swift; sourceTree = "<group>"; };
+		36D74569B2AAD248B9B50035 /* ApexLogo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApexLogo.swift; sourceTree = "<group>"; };
 		3711C7634C698D2C39E28A17 /* SleepDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepDetailView.swift; sourceTree = "<group>"; };
 		3A4C69AB6473F5BC5F1AE98C /* StartActivitySheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StartActivitySheet.swift; sourceTree = "<group>"; };
 		3B100FBA34C57632B13983D0 /* MetricDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetricDetailView.swift; sourceTree = "<group>"; };
@@ -161,7 +163,7 @@
 		4429550F6F3F5229FD2BBA7D /* StravaSecrets.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = StravaSecrets.plist; sourceTree = "<group>"; };
 		44C5D570EA6243B6B67E2AEA /* TrainingLoadCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrainingLoadCard.swift; sourceTree = "<group>"; };
 		4D98E51CB174C34F4540BEF9 /* AIInsight.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIInsight.swift; sourceTree = "<group>"; };
-		55DAD81B00BA688F089A40F3 /* Apex.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Apex.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		55DAD81B00BA688F089A40F3 /* Apex.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Apex.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		588F608DCC40E95DD8647E18 /* RoutineView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoutineView.swift; sourceTree = "<group>"; };
 		5B29A7E2D63C7414E34B5E82 /* InsightsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InsightsView.swift; sourceTree = "<group>"; };
 		5E755A8A669E92EB89A93F2A /* WorkoutHistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutHistoryView.swift; sourceTree = "<group>"; };
@@ -182,7 +184,7 @@
 		7E99751B63AB5AAE7641F8FD /* RunAIAnalysisCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunAIAnalysisCard.swift; sourceTree = "<group>"; };
 		8039A0B056518A564A0AF7F2 /* StravaAPI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StravaAPI.swift; sourceTree = "<group>"; };
 		80F6286BC0DDD85727CBB683 /* WatchMetricsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchMetricsView.swift; sourceTree = "<group>"; };
-		81AAEDC457D97B1EFF7576CA /* ApexWidget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = ApexWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		81AAEDC457D97B1EFF7576CA /* ApexWidget.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = ApexWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		81F597DE06694FA79047E2CA /* EditExerciseSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditExerciseSheet.swift; sourceTree = "<group>"; };
 		84F95477213FB0DE9EB839EF /* NotificationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationManager.swift; sourceTree = "<group>"; };
 		88E4488AD8E9837A8F50CF0F /* MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabView.swift; sourceTree = "<group>"; };
@@ -345,6 +347,7 @@
 			isa = PBXGroup;
 			children = (
 				7BE23248C10E9BC45A6CBB62 /* AITextCard.swift */,
+				36D74569B2AAD248B9B50035 /* ApexLogo.swift */,
 				AA57C1C41DA62A08155E1EF6 /* GaugeRing.swift */,
 				88E4488AD8E9837A8F50CF0F /* MainTabView.swift */,
 				3B100FBA34C57632B13983D0 /* MetricDetailView.swift */,
@@ -594,6 +597,7 @@
 				9186FF434C8621706D5D6A43 /* ActivityStatsView.swift in Sources */,
 				F1460305CC88C6AB5326DBEB /* ActivityTracker.swift in Sources */,
 				A3EA3F7EFF380248F6820678 /* ApexApp.swift in Sources */,
+				BCCDD7B9E2814C098EBB9BD7 /* ApexLogo.swift in Sources */,
 				D4C3E2EB5D9E8124415EC12B /* BiologicalAgeCard.swift in Sources */,
 				5995891A086AEAE25FE2E1B2 /* BiologicalAgeDetailView.swift in Sources */,
 				B2513318DD327D8CE70286A7 /* BodyBatteryDetailView.swift in Sources */,
@@ -696,7 +700,6 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = Sources/ApexWatch/ApexWatch.entitlements;
-				DEVELOPMENT_TEAM = ZBL544FP3Q;
 				INFOPLIST_FILE = Sources/ApexWatch/Info.plist;
 				PRODUCT_BUNDLE_IDENTIFIER = com.diegoalvarezfrancos.apex.watchkitapp;
 				SDKROOT = watchos;
@@ -711,7 +714,6 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = Sources/ApexWidget/ApexWidget.entitlements;
-				DEVELOPMENT_TEAM = ZBL544FP3Q;
 				INFOPLIST_FILE = Sources/ApexWidget/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -733,7 +735,6 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = Sources/Apex/App/Apex.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				DEVELOPMENT_TEAM = ZBL544FP3Q;
 				INFOPLIST_FILE = Sources/Apex/App/Info.plist;
 				INFOPLIST_KEY_UIStatusBarStyle = UIStatusBarStyleDarkContent;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -819,7 +820,6 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = Sources/Apex/App/Apex.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				DEVELOPMENT_TEAM = ZBL544FP3Q;
 				INFOPLIST_FILE = Sources/Apex/App/Info.plist;
 				INFOPLIST_KEY_UIStatusBarStyle = UIStatusBarStyleDarkContent;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -895,7 +895,6 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = Sources/ApexWidget/ApexWidget.entitlements;
-				DEVELOPMENT_TEAM = ZBL544FP3Q;
 				INFOPLIST_FILE = Sources/ApexWidget/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -915,7 +914,6 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = Sources/ApexWatch/ApexWatch.entitlements;
-				DEVELOPMENT_TEAM = ZBL544FP3Q;
 				INFOPLIST_FILE = Sources/ApexWatch/Info.plist;
 				PRODUCT_BUNDLE_IDENTIFIER = com.diegoalvarezfrancos.apex.watchkitapp;
 				SDKROOT = watchos;
