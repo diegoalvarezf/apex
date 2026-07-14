@@ -19,6 +19,7 @@ final class HealthKitManager: ObservableObject {
     @Published var bodyComposition: BodyCompositionData?
     @Published var heartRateZones: [HeartRateZone] = []
     @Published var restingHRHistory: [MetricSample] = []
+    @Published var restingHRIsDerived = false   // true si la FC reposo se estimó de la FC (sin dato nativo)
     @Published var recoveryHistory: [MetricSample] = []
     @Published var biologicalAge: BiologicalAgeResult?
     @Published var sleepAge: SleepAgeResult?
@@ -87,9 +88,17 @@ final class HealthKitManager: ObservableObject {
         async let hourlyHR = fetchRecentHourlyHR()
         async let spo2 = fetchLatestQuantity(.oxygenSaturation, unit: .percent())
         async let maxHR30 = fetchMaxHR30Days()
+        async let rhrDerivedSeries = fetchRestingHRSeries()
 
-        let (sleepData, hrvData, rhrVal, rhrHist, vo2Data, stepsVal, calsVal, respData, wtData, dlData, bodyData, workoutCals, hrByHour, spo2Val, maxHRVal) =
-            await (sleep, hrv, rhr, rhrHistory, vo2, steps, calories, respiratory, wristTemp, daylight, body, recentWorkoutCalories, hourlyHR, spo2, maxHR30)
+        let (sleepData, hrvData, rhrRaw, rhrHistRaw, vo2Data, stepsVal, calsVal, respData, wtData, dlData, bodyData, workoutCals, hrByHour, spo2Val, maxHRVal, rhrSeries) =
+            await (sleep, hrv, rhr, rhrHistory, vo2, steps, calories, respiratory, wristTemp, daylight, body, recentWorkoutCalories, hourlyHR, spo2, maxHR30, rhrDerivedSeries)
+
+        // FC en reposo: la de HealthKit si existe; si no, la derivada de la FC real
+        // (mediana de mínimos diarios). El baseline z-score usa el histórico real y,
+        // en su defecto, la serie derivada.
+        let rhrVal = rhrRaw ?? Self.median(rhrSeries.map(\.value))
+        let rhrHist = rhrHistRaw.isEmpty ? rhrSeries : rhrHistRaw
+        restingHRIsDerived = rhrRaw == nil && rhrVal != nil
 
         // Persistir para las calculadoras (TRIMP, zonas, battery):
         // FCmáx observada 30 días (metodología PeakWatch), FC reposo y sexo biológico
@@ -670,6 +679,42 @@ final class HealthKitManager: ObservableObject {
         return byHour.map { date, vals in
             MetricSample(date: date, value: vals.reduce(0, +) / Double(vals.count))
         }.sorted { $0.date < $1.date }
+    }
+
+    // FC en reposo derivada de la FC real cuando HealthKit no expone
+    // `.restingHeartRate` (algunos relojes/pipelines no lo escriben). Metodología
+    // equivalente a la de Apple: mínimo de FC de cada día y mediana de esos mínimos
+    // → FC en reposo estable, robusta frente a lecturas atípicas. Devuelve la serie
+    // diaria (para el baseline z-score del Recovery) además del valor mediano.
+    private func fetchRestingHRSeries(days: Int = 14) async -> [MetricSample] {
+        guard let type = HKQuantityType.quantityType(forIdentifier: .heartRate) else { return [] }
+        let cal = Calendar.current
+        let end = Date()
+        let start = cal.date(byAdding: .day, value: -days, to: cal.startOfDay(for: end))!
+        let unit = HKUnit.count().unitDivided(by: .minute())
+        var interval = DateComponents(); interval.day = 1
+        let predicate = HKQuery.predicateForSamples(withStart: start, end: end)
+        return await withCheckedContinuation { cont in
+            let q = HKStatisticsCollectionQuery(quantityType: type, quantitySamplePredicate: predicate,
+                                                options: .discreteMin, anchorDate: cal.startOfDay(for: start),
+                                                intervalComponents: interval)
+            q.initialResultsHandler = { _, results, _ in
+                var series: [MetricSample] = []
+                results?.enumerateStatistics(from: start, to: end) { stat, _ in
+                    if let m = stat.minimumQuantity()?.doubleValue(for: unit), m > 25, m < 120 {
+                        series.append(MetricSample(date: stat.startDate, value: m))
+                    }
+                }
+                cont.resume(returning: series.sorted { $0.date < $1.date })
+            }
+            self.store.execute(q)
+        }
+    }
+
+    private static func median(_ values: [Double]) -> Double? {
+        guard !values.isEmpty else { return nil }
+        let s = values.sorted()
+        return s[s.count / 2]
     }
 
     // FC máxima registrada en los últimos 30 días (PeakWatch: "the highest

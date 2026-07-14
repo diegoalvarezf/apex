@@ -108,10 +108,15 @@ final class BodyBatteryStore {
         // Duración REAL dormida (HealthKit), no la ventana en cama
         let sleepDurationH = sleep.map { $0.totalSleep / 3600.0 } ?? windowH
 
-        // Buen sueño carga por ENCIMA del recovery; sueño corto por debajo.
-        // 8h → recovery+8 · 7h → +4 · 6h → 0 · 5h → −4 (límites ±15)
-        let sleepBonus    = max(-15.0, min(15.0, (sleepDurationH - 6.0) * 4.0))
-        let wakeupBattery = max(0.0, min(100.0, recovery + sleepBonus))
+        // Carga de sueño ADITIVA (estilo Firstbeat): una noche completa de calidad
+        // (~8 h) recarga ~50 pts (≈6.5/h); el sueño corto o de baja calidad carga en
+        // proporción. Se parte de la batería con la que te acostaste (drenada por el
+        // día y el entreno) y se le SUMA la recarga — no se ancla al Recovery, para
+        // no arrastrar su valor. Así una noche corta tras entrenar deja una batería
+        // moderada, no llena.
+        let sleepQuality  = max(0.4, min(1.0, Double(sleep?.score ?? 60) / 85.0))
+        let sleepCharge   = sleepQuality * sleepDurationH * 6.5
+        let wakeupBattery = max(0.0, min(100.0, startBattery + sleepCharge))
 
         // Drenaje por carga de entrenamiento repartido por hora (estilo EPOC de
         // Firstbeat): cada sesión drena según su TRIMP, no según el promedio de FC
@@ -156,21 +161,22 @@ final class BodyBatteryStore {
                     hourlyDelta = -actDrain
                 } else if let hr = hourlyHR.first(where: { cal.component(.hour, from: $0.date) == hour }) {
                     let hrr = max(0.0, min(1.0, (hr.value - restingHR) / (maxHR - restingHR)))
-                    // Firstbeat: el reposo genuino despierto (leer, sentado, siesta) recarga
-                    // ~5-10 pts/h; la vida diaria normal es casi neutra; solo el esfuerzo drena.
-                    if hrr < 0.10 {
-                        hourlyDelta = +6.0    // reposo real (parasimpático dominante)
-                    } else if hrr < 0.20 {
-                        hourlyDelta = +1.5    // relajado
+                    // Firstbeat: despierto la batería tiende a BAJAR salvo reposo genuino.
+                    // El reposo real (sentado tranquilo, siesta) recarga; la vida diaria
+                    // normal drena poco a poco; el esfuerzo drena fuerte.
+                    if hrr < 0.08 {
+                        hourlyDelta = +3.5    // reposo real (parasimpático dominante)
+                    } else if hrr < 0.18 {
+                        hourlyDelta = +0.5    // relajado
                     } else if hrr < 0.35 {
-                        hourlyDelta = -1.0    // vida diaria normal (andar por casa, trabajo)
+                        hourlyDelta = -2.0    // vida diaria normal (andar por casa, trabajo)
                     } else if hrr < 0.50 {
                         hourlyDelta = -hrr * hrr * 18.0
                     } else {
                         hourlyDelta = -hrr * hrr * 40.0  // ejercicio sin registrar como actividad
                     }
                 } else {
-                    hourlyDelta = -0.3        // sin datos de FC: consumo basal leve
+                    hourlyDelta = -0.6        // sin datos de FC: consumo basal
                 }
                 // Asimetría: la recarga es rápida con la batería baja y se aplana cerca de
                 // 100; el drenaje es rápido con la batería alta. (Factores separados.)

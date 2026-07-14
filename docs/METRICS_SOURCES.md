@@ -133,6 +133,12 @@ score = 0.70 · HRV_score + 0.30 · RHR_score
 Cada componente es un **z-score** del valor de hoy contra el baseline de 60 días
 (excluyendo hoy). Anclaje: z=0 (en tu media) → 50 pts; ±1 SD ≈ ±17 pts.
 
+**FC en reposo (RHR).** Se usa la de HealthKit (`.restingHeartRate`). Cuando el reloj/pipeline
+no la escribe, se **deriva de la FC real**: mínimo de FC de cada día y **mediana** de esos
+mínimos (metodología equivalente a la de Apple), sobre 14 días. Esa serie también sirve de
+baseline para el z-score. Evita el fallback fijo (que leía FC reposo alta y bajaba el TRIMP,
+la carga ATL y el Body Battery). Si no hay ninguna FC → "sin datos".
+
 - Metodología de PeakWatch (documentada): "two key physiological indicators: HRV and RHR",
   media móvil de 60 días como baseline.
 - Plews DJ, Laursen PB, et al. *Training adaptation and HRV in elite endurance athletes.*
@@ -151,16 +157,17 @@ Modelo acumulativo día-a-día. Principio alineado con **Garmin/Firstbeat**: el 
 ejercicio correlaciona con el **EPOC / carga de entrenamiento** (no con el promedio de FC,
 que se diluye en ejercicios intermitentes como el gimnasio), y la batería carga durmiendo.
 
-- Arranca del Recovery del día + bonus por duración de sueño.
 - **Drenaje de entrenamiento**: cada sesión de Strava drena según su TRIMP de Banister
   mediante curva saturante `65·(1−e^(−TRIMP/45))` — 50' de gym ≈ 33 pts, 1h Z2 ≈ 55.
-- **Vida diaria** (horas sin actividad): por FC sobre reposo. El **reposo genuino despierto**
-  (FCr<0.10: leer, sentado, siesta) **recarga ~6 pts/h**, la vida normal es casi neutra y solo
-  el esfuerzo drena. Corrige el modelo previo, que drenaba todo el día y dejaba la batería baja
-  en días frescos (60 vs 83 de PeakWatch).
-- **Carga en sueño**: curva logarítmica hasta `recovery + bonus`; una noche completa suma ~40-60.
-- **Asimetría corregida**: la recarga es rápida con la batería baja y se aplana cerca de 100;
-  el drenaje es rápido con la batería alta (factores separados). Acotado a **5-100** (Garmin).
+- **Vida diaria** (horas sin actividad): por FC sobre reposo. Despierto la batería tiende a
+  **bajar** salvo reposo genuino: FCr<0.08 (sentado tranquilo, siesta) recarga ~3.5/h; la vida
+  normal drena ~2/h; el esfuerzo drena fuerte (−HRr²·40).
+- **Carga en sueño ADITIVA** (no anclada al Recovery, para no arrastrar su valor): se parte de
+  la batería con la que te acostaste (drenada por el día y el entreno) y se le SUMA
+  `calidad · horas · 6.5` (Firstbeat: noche completa de calidad ≈ +50, ~6.5/h). Así una noche
+  corta tras entrenar deja la batería moderada, no llena (corrige el 88 vs 66 de PeakWatch).
+- **Asimetría**: la recarga es rápida con la batería baja y se aplana cerca de 100; el drenaje
+  es rápido con la batería alta (factores separados). Acotado a **5-100** (Garmin).
 
 Referencias del enfoque (no publican fórmulas exactas, sí la metodología):
 - Firstbeat Analytics / Garmin — Body Battery basado en HRV-stress (RMSSD) + EPOC. El reposo
@@ -258,7 +265,7 @@ ajustar si los números no encajan con la percepción real:
 
 1. **`EFFORT_K = 90`** (`TrainingMetrics.swift`) — curva saturante del TRIMP diario a 0–100.
 2. **Recovery z=0 → 50 pts, ±17/SD** (`HealthKitManager.swift`) — anclaje del z-score de HRV/RHR.
-3. **Constantes de Body Battery** (`BodyBatteryStore.swift`) — carga/descarga por hora (reposo despierto real +6/h; drenaje de ejercicio sin registrar ∝ −HRr²·40; entreno registrado por TRIMP).
+3. **Constantes de Body Battery** (`BodyBatteryStore.swift`) — carga de sueño aditiva `calidad·horas·6.5`; reposo despierto +3.5/h, vida normal −2/h, ejercicio sin registrar ∝ −HRr²·40; entreno registrado por TRIMP.
 
 ---
 

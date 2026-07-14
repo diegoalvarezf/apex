@@ -4,60 +4,66 @@ import MapKit
 struct ActivityDetailView: View {
     let activity: StravaActivity
     @EnvironmentObject var dashVM: DashboardViewModel
+    @EnvironmentObject var stravaAuth: StravaAuthManager
+
+    // Detalle completo de Strava (incluye `calories` reales, que NO vienen en la
+    // lista). Mientras carga se usa el resumen; al llegar se prefiere el detalle.
+    @State private var detailed: StravaActivity?
+    private var act: StravaActivity { detailed ?? activity }
 
     private var isRunningActivity: Bool {
-        ["run", "trail_run", "virtualrun"].contains(activity.sportType.lowercased())
+        ["run", "trail_run", "virtualrun"].contains(act.sportType.lowercased())
     }
     private var isCyclingActivity: Bool {
-        ["ride", "virtualride", "ebikeride", "mountainbikeride", "gravelride"].contains(activity.sportType.lowercased())
+        ["ride", "virtualride", "ebikeride", "mountainbikeride", "gravelride"].contains(act.sportType.lowercased())
     }
 
     private var recentSameSportActivities: [StravaActivity] {
         Array(dashVM.activities.filter {
-            $0.id != activity.id &&
-            $0.sportType.lowercased() == activity.sportType.lowercased()
+            $0.id != act.id &&
+            $0.sportType.lowercased() == act.sportType.lowercased()
         }.prefix(10))
     }
 
     var body: some View {
         ScrollView {
             VStack(spacing: 16) {
-                ActivityHeaderCard(activity: activity)
+                ActivityHeaderCard(activity: act)
                     .padding(.horizontal)
 
                 // Mapa de ruta (si hay polyline)
-                if let polyline = activity.summaryPolyline, !polyline.isEmpty {
-                    RouteMapCard(polyline: polyline, sportType: activity.sportType)
+                if let polyline = act.summaryPolyline, !polyline.isEmpty {
+                    RouteMapCard(polyline: polyline, sportType: act.sportType)
                         .padding(.horizontal)
                 }
 
-                StatsGrid(activity: activity)
+                StatsGrid(activity: act)
                     .padding(.horizontal)
 
-                if let hr = activity.averageHeartrate {
-                    HeartRateCard(avg: hr, max: activity.maxHeartrate)
+                if let hr = act.averageHeartrate {
+                    HeartRateCard(avg: hr, max: act.maxHeartrate)
                         .padding(.horizontal)
                 }
 
                 // Análisis IA de la sesión (lee la curva real de FC/ritmo/potencia de Strava)
-                if (isRunningActivity || isCyclingActivity) && (activity.averageHeartrate != nil || activity.averageWatts != nil) {
-                    ActivityAIAnalysisCard(activity: activity)
+                if (isRunningActivity || isCyclingActivity) && (act.averageHeartrate != nil || act.averageWatts != nil) {
+                    ActivityAIAnalysisCard(activity: act)
                         .padding(.horizontal)
                 }
 
                 // Economía de carrera (cálculo fijo) — solo tiene sentido en carrera
                 // continua; en intervalos el promedio engaña, así que se omite.
-                if isRunningActivity && activity.averageHeartrate != nil && !activity.isStructuredWorkout {
-                    RunningEconomyCard(activity: activity, recentRuns: recentSameSportActivities)
+                if isRunningActivity && act.averageHeartrate != nil && !act.isStructuredWorkout {
+                    RunningEconomyCard(activity: act, recentRuns: recentSameSportActivities)
                         .padding(.horizontal)
                 }
 
-                if let watts = activity.averageWatts {
-                    PowerCard(avg: watts, weighted: activity.weightedAverageWatts, kj: activity.kilojoules)
+                if let watts = act.averageWatts {
+                    PowerCard(avg: watts, weighted: act.weightedAverageWatts, kj: act.kilojoules)
                         .padding(.horizontal)
                 }
 
-                if let sufferScore = activity.sufferScore {
+                if let sufferScore = act.sufferScore {
                     SufferScoreCard(score: sufferScore)
                         .padding(.horizontal)
                 }
@@ -66,8 +72,12 @@ struct ActivityDetailView: View {
             .padding(.bottom, 32)
         }
         .background(Color(.systemGroupedBackground))
-        .navigationTitle(activity.name)
+        .navigationTitle(act.name)
         .navigationBarTitleDisplayMode(.inline)
+        .task {
+            guard detailed == nil, let token = stravaAuth.accessToken else { return }
+            detailed = try? await StravaAPI.shared.fetchActivity(id: activity.id, token: token)
+        }
     }
 }
 
