@@ -41,43 +41,6 @@ struct StravaActivity: Identifiable, Codable {
     }
 
     var summaryPolyline: String? { map?.summaryPolyline }
-    // Usa calories si está disponible (todos los deportes), si no kilojoules * 0.239 (ciclismo con potenciómetro)
-    var kcal: Double? { calories ?? kilojoules.map { $0 * 0.239 } }
-
-    // kcal garantizadas: medidas > Keytel HR-ajustada > MET × 70kg
-    var displayKcal: Double {
-        if let k = kcal, k > 1 { return k }
-        let hours = Double(movingTime) / 3600.0
-        let durationMin = hours * 60.0
-
-        // Fórmula Keytel 2005 (hombre 70kg): más precisa que MET cuando hay FC
-        // kcal/min = (-55.0969 + 0.6309×HR + 0.1988×70) / 4.184
-        if let hr = averageHeartrate, hr > 80 {
-            let kcalPerMin = max(0, (-41.18 + 0.6309 * hr)) / 4.184
-            if kcalPerMin > 0 { return kcalPerMin * durationMin }
-        }
-
-        // Fallback: MET × peso × h
-        let weight = UserProfile.weightKg
-        let met: Double
-        switch sportType.lowercased() {
-        case "run", "trail_run", "virtualrun":
-            let kmh = averageSpeed * 3.6
-            met = max(7.0, min(18.0, kmh * 1.05))
-        case "ride", "virtualride":
-            let kmh = averageSpeed * 3.6
-            met = max(5.0, min(15.0, kmh * 0.45))
-        case "ebikeride":             met = 4.0
-        case "swim":                  met = 7.0
-        case "hike":                  met = 6.0
-        case "walk":                  met = 3.8
-        case "weighttraining", "crossfit", "workout": met = 5.0
-        case "yoga", "pilates":       met = 2.5
-        default:                      met = 6.0
-        }
-        return met * weight * hours
-    }
-    var kcalIsEstimated: Bool { kcal == nil || (kcal ?? 0) <= 1 }
 
     enum CodingKeys: String, CodingKey {
         case id, name, type, map

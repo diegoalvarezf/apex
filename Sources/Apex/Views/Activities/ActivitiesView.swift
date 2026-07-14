@@ -394,11 +394,9 @@ struct ActivityCardView: View {
                     }
                 }
                 HStack {
-                    let kcal = activity.displayKcal
-                    MiniStat(
-                        value: "\(activity.kcalIsEstimated ? "~" : "")\(Int(kcal)) kcal",
-                        icon: "flame"
-                    )
+                    if activity.totalElevationGain > 0 {
+                        MiniStat(value: "\(Int(activity.totalElevationGain)) m", icon: "mountain.2")
+                    }
                     Spacer()
                     if let hr = activity.averageHeartrate {
                         MiniStat(value: "\(Int(hr)) bpm", icon: "heart")
@@ -446,10 +444,10 @@ struct ActivityRowView: View {
                     }
                     Label(activity.formattedDuration, systemImage: "clock")
                         .font(.caption2).foregroundColor(.secondary)
-                    let kcal = activity.displayKcal
-                    Label("\(activity.kcalIsEstimated ? "~" : "")\(Int(kcal)) kcal",
-                          systemImage: "flame.fill")
-                        .font(.caption2).foregroundColor(.orange)
+                    if activity.totalElevationGain > 0 {
+                        Label("\(Int(activity.totalElevationGain)) m", systemImage: "mountain.2")
+                            .font(.caption2).foregroundColor(.secondary)
+                    }
                 }
             }
 

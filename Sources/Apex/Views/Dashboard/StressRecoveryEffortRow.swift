@@ -536,7 +536,7 @@ struct EffortDetailView: View {
                         Text("Actividades de hoy").font(.headline)
                             .padding(.horizontal, 16).padding(.top, 16).padding(.bottom, 8)
                         ForEach(Array(todayActivities.enumerated()), id: \.element.id) { idx, act in
-                            TodayActivityRow(act: act, color: color, barColor: { k in k < 300 ? .blue : k < 600 ? .orange : .red })
+                            TodayActivityRow(act: act, color: color)
                             if idx < todayActivities.count - 1 { Divider().padding(.leading, 60) }
                         }
                         .padding(.bottom, 8)
@@ -595,7 +595,6 @@ struct EffortDetailView: View {
 private struct TodayActivityRow: View {
     let act: StravaActivity
     let color: Color
-    let barColor: (Double) -> Color
 
     var body: some View {
         HStack(spacing: 12) {
@@ -607,13 +606,11 @@ private struct TodayActivityRow: View {
                     .font(.caption).foregroundStyle(.secondary)
             }
             Spacer()
-            if let kj = act.kilojoules {
-                let kcal = kj * 0.239
+            if act.distance > 0 {
                 VStack(alignment: .trailing, spacing: 1) {
-                    Text("\(Int(kcal))")
+                    Text(act.formattedDistance)
                         .font(.system(.subheadline, design: .rounded)).fontWeight(.bold)
-                        .foregroundColor(barColor(kcal))
-                    Text("kcal").font(.caption2).foregroundStyle(.secondary)
+                    Text(act.formattedDuration).font(.caption2).foregroundStyle(.secondary)
                 }
             }
         }
