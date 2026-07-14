@@ -17,20 +17,29 @@ struct StressRecoveryEffortRow: View {
     var sleep: SleepData? = nil
     var sleepHistory: [SleepData] = []
 
-    // Estrés fisiológico = FC sobre reposo, normalizada por la reserva cardíaca.
-    // El valor diario es la MEDIA de las muestras horarias medidas (no un derivado
-    // del recovery): coincide con lo que muestra la gráfica horaria interior.
+    // Estrés fisiológico estilo Firstbeat: base autonómica por HRV (con suelo en
+    // reposo) + empuje por la FC del momento. El valor diario es la MEDIA de las
+    // muestras horarias, igual que la gráfica horaria interior.
     private var stressValue: Int {
         let s = todayHourlyStress
-        guard !s.isEmpty else { return max(0, 100 - (recoveryScore?.value ?? 50)) }
+        guard !s.isEmpty else { return Int(hrvBaseStress.rounded()) }
         return Int((s.map(\.value).reduce(0, +) / Double(s.count)).rounded())
+    }
+
+    // Base autonómica de estrés (HRV de hoy vs baseline personal de 60 días)
+    private var hrvBaseStress: Double {
+        let sorted = hrvHistory.sorted { $0.date > $1.date }
+        let today = sorted.first?.sdnn
+        let baseline = Array(sorted.dropFirst().map(\.sdnn))
+        return TrainingMetrics.hrvBaseStress(todaySDNN: today, baseline: baseline)
     }
 
     private func hourlyStress(samples: [MetricSample]) -> [MetricSample] {
         let rhr: Double = todayRHR ?? UserProfile.restingHR
         let maxHR = TrainingMetrics.observedMaxHR(hourlyHR: hourlyHR)
+        let base = hrvBaseStress
         return samples.map { s in
-            let stress: Double = max(0.0, min(100.0, (s.value - rhr) / (maxHR - rhr) * 100.0))
+            let stress = TrainingMetrics.physiologicalStress(hr: s.value, restingHR: rhr, maxHR: maxHR, hrvBase: base)
             return MetricSample(date: s.date, value: stress)
         }.sorted { $0.date < $1.date }
     }
@@ -165,7 +174,8 @@ struct StressRecoveryEffortRow: View {
             // Fila 2: Estrés · Esfuerzo
             NavigationLink(destination: StressDetailView(
                 value: stressValue, history: stressTrendHistory,
-                color: stressColor, activities: activities, recentHourlyHR: hourlyHR, restingHR: todayRHR
+                color: stressColor, activities: activities, recentHourlyHR: hourlyHR, restingHR: todayRHR,
+                hrvBase: hrvBaseStress
             )) {
                 PeakMetricTile(title: "Estrés", icon: "brain.head.profile",
                                value: stressValue, statusLabel: stressStatusLabel, statusColor: stressColor) {
@@ -197,6 +207,7 @@ struct StressDetailView: View {
     let activities: [StravaActivity]
     let recentHourlyHR: [MetricSample]   // últimos 7 días
     let restingHR: Double?
+    var hrvBase: Double = 30
 
     private let cal = Calendar.current
 
@@ -234,6 +245,7 @@ struct StressDetailView: View {
                         todayValue: i == 6 ? value : dayStress(for: availableDays[i]),
                         hourlyHR: recentHourlyHR.filter { cal.isDate($0.date, inSameDayAs: availableDays[i]) },
                         restingHR: restingHR,
+                        hrvBase: hrvBase,
                         color: color
                     )
                     .tag(i)
@@ -256,6 +268,7 @@ private struct DayStressPage: View {
     let todayValue: Int
     let hourlyHR: [MetricSample]
     let restingHR: Double?
+    var hrvBase: Double = 30
     let color: Color
 
     private var stressLabel: String {
@@ -267,7 +280,7 @@ private struct DayStressPage: View {
         let rhr = restingHR ?? UserProfile.restingHR
         let maxHR = TrainingMetrics.observedMaxHR(hourlyHR: hourlyHR)
         return hourlyHR.map { s in
-            let stress = max(0, min(100, (s.value - rhr) / (maxHR - rhr) * 100))
+            let stress = TrainingMetrics.physiologicalStress(hr: s.value, restingHR: rhr, maxHR: maxHR, hrvBase: hrvBase)
             return MetricSample(date: s.date, value: stress)
         }.sorted { $0.date < $1.date }
     }

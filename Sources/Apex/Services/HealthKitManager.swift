@@ -590,12 +590,32 @@ final class HealthKitManager: ObservableObject {
         }
         let adjustedSleepScore = max(0, min(100, sleepScore + circadianAdj))
 
-        // ── Composición PeakWatch: solo HRV + RHR ────────────────────────────
-        // PeakWatch doc: "two key physiological indicators: HRV and RHR"
-        // El sueño afecta Body Battery (carga), no Recovery
+        // ── Preparación por SUEÑO (por duración real, no solo calidad) ───────
+        // El déficit de sueño baja la disponibilidad aunque el HRV esté alto.
+        let sleepReadiness: Double
+        if let h = sleep.map({ $0.totalSleep / 3600.0 }) {
+            switch h {
+            case ..<4.5: sleepReadiness = 25
+            case ..<5.5: sleepReadiness = 40
+            case ..<6.0: sleepReadiness = 52
+            case ..<6.5: sleepReadiness = 63
+            case ..<7.0: sleepReadiness = 74
+            case ..<7.5: sleepReadiness = 86
+            default:     sleepReadiness = 95
+            }
+        } else {
+            sleepReadiness = 60
+        }
+
+        // ── Composición tipo "readiness" (Whoop / Oura / Garmin) ─────────────
+        // El HRV manda (estado autonómico), pero el sueño insuficiente y la carga
+        // aguda elevada bajan la disponibilidad. Ya no es HRV+RHR puro: una noche
+        // corta o la sobrecarga templan el score aunque el HRV esté alto.
         let composite = Int(
-            Double(hrvScore) * 0.70 +
-            Double(rhrScore) * 0.30
+            Double(hrvScore)      * 0.45 +
+            Double(rhrScore)      * 0.15 +
+            sleepReadiness        * 0.25 +
+            Double(trainingScore) * 0.15
         )
 
         return RecoveryScore(
@@ -642,12 +662,15 @@ final class HealthKitManager: ObservableObject {
     }
 
     // ACWR zones: <0.8 undertrained, 0.8-1.3 optimal, 1.3-1.5 elevated, >1.5 overreached
+    // Curva continua: máximo en la zona óptima baja (0.8-1.1) y descenso progresivo
+    // al acercarse al límite, para que 1.2-1.3 ya reste algo (no salte de 90 a 50).
     private func acwrToScore(_ acwr: Double) -> Int {
         switch acwr {
-        case ..<0.8:    return 65  // Poco cargado — no hay fatiga pero tampoco estímulo
-        case 0.8..<1.3: return 90  // Zona óptima
-        case 1.3..<1.5: return 50  // Elevado — algo de fatiga acumulada
-        default:        return 20  // Sobreentrenado — riesgo
+        case ..<0.8:     return 65  // Poco cargado — sin fatiga pero poco estímulo
+        case 0.8..<1.1:  return 90  // Zona óptima
+        case 1.1..<1.3:  return Int((90 - (acwr - 1.1) / 0.2 * 25).rounded())  // 90→65
+        case 1.3..<1.5:  return Int((65 - (acwr - 1.3) / 0.2 * 30).rounded())  // 65→35
+        default:         return 20  // Sobreentrenado — riesgo
         }
     }
 

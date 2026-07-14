@@ -112,26 +112,33 @@ diaria (estilo PeakWatch Exertion) debe tener resolución también a intensidad 
 `score = 100·(1 − e^(−TRIMP_diario / 90))`. Da ≈10-20 en descanso, ≈35-45 en día activo
 ligero, ≈80-95 en entreno duro. No procede de literatura; es la escala de presentación.
 
-## 6. Estrés fisiológico
+## 6. Estrés fisiológico (estilo Firstbeat)
 
 ```
-estrés_horario = (FC − FCreposo) / (FCmáx − FCreposo) × 100   (% reserva cardíaca)
+base_HRV       = 35 − z(SDNN_hoy vs baseline) · 14   (acotado 12-72; suelo en reposo)
+estrés_horario = base_HRV + HRr · 70                 (HRr = reserva cardíaca)
 estrés_diario  = media de las muestras horarias del día
 ```
 
-Basado en la reserva de frecuencia cardíaca (fórmula de Karvonen). No es el "inverso de
-la recuperación" (eso era incorrecto); es una medida directa a partir de la FC.
+Modelo tipo Firstbeat/Garmin: el **HRV** marca el tono autonómico de fondo (HRV alto →
+estrés bajo; HRV bajo → alto) con un **suelo en reposo** (siempre hay algo de tono, no cae a
+0 al estar sentado), y la **FC del momento** empuja el estrés al alzarse la actividad.
+Sustituye al %FC puro anterior, que en reposo daba ~5 (sin sentido de "estrés").
 
-- Karvonen MJ, Kentala E, Mustala O. *The effects of training on heart rate.* Ann Med Exp Biol Fenn. 1957.
+- Firstbeat Analytics — *Stress and Recovery Analysis Based on 24h HRV* (white paper).
+- Karvonen MJ, Kentala E, Mustala O. *The effects of training on heart rate.* Ann Med Exp Biol Fenn. 1957 (reserva cardíaca).
 
 ## 7. Recuperación (Recovery Score)
 
 ```
-score = 0.70 · HRV_score + 0.30 · RHR_score
+score = 0.45 · HRV_score + 0.15 · RHR_score + 0.25 · sueño + 0.15 · carga
 ```
 
-Cada componente es un **z-score** del valor de hoy contra el baseline de 60 días
-(excluyendo hoy). Anclaje: z=0 (en tu media) → 50 pts; ±1 SD ≈ ±17 pts.
+HRV y RHR son **z-scores** del valor de hoy contra el baseline de 60 días (z=0 → 50 pts,
+±1 SD ≈ ±17). El **sueño** entra por duración real (curva: 8h→95, 6h→52, 5h→40) y la
+**carga** por el score de ACWR. Modelo tipo *readiness* (Whoop/Oura/Garmin): el HRV manda,
+pero dormir poco o la sobrecarga **templan** el score aunque el HRV esté alto — antes era
+HRV+RHR puro y daba 90 con 5.9h de sueño.
 
 **FC en reposo (RHR).** Se usa la de HealthKit (`.restingHeartRate`). Cuando el reloj/pipeline
 no la escribe, se **deriva de la FC real**: mínimo de FC de cada día y **mediana** de esos

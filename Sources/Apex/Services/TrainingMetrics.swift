@@ -83,6 +83,33 @@ enum TrainingMetrics {
         return restingHR + frac * (maxHR - restingHR)
     }
 
+    // MARK: - Estrés fisiológico (estilo Firstbeat: HRV + FC)
+
+    // Nivel de estrés autonómico de BASE a partir del HRV (SDNN) frente al baseline
+    // personal: HRV alto (parasimpático) → estrés bajo; HRV bajo (simpático) → alto.
+    // A diferencia del %FC puro, tiene un SUELO en reposo (siempre hay algo de tono
+    // autonómico), como el estrés de Firstbeat/Garmin — no cae a 0 al estar sentado.
+    static func hrvBaseStress(todaySDNN: Double?, baseline: [Double]) -> Double {
+        guard let sdnn = todaySDNN else { return 30 }
+        if baseline.count >= 7 {
+            let mean = baseline.reduce(0, +) / Double(baseline.count)
+            let variance = baseline.map { ($0 - mean) * ($0 - mean) }.reduce(0, +) / Double(baseline.count)
+            let sd = max(sqrt(variance), 6.0)
+            let z = (sdnn - mean) / sd
+            return max(12.0, min(72.0, 35.0 - z * 14.0))
+        }
+        // Sin baseline: mapa absoluto suave (SDNN 76→~15, 40→30, 20→50)
+        return max(12.0, min(60.0, 70.0 - sdnn))
+    }
+
+    // Estrés instantáneo = base autonómica (HRV) + empuje por actividad (FC sobre
+    // reposo). Combina el tono de fondo con la demanda del momento.
+    static func physiologicalStress(hr: Double, restingHR: Double, maxHR: Double, hrvBase: Double) -> Double {
+        guard maxHR > restingHR else { return hrvBase }
+        let hrr = max(0.0, min(1.0, (hr - restingHR) / (maxHR - restingHR)))
+        return max(0.0, min(100.0, hrvBase + hrr * 70.0))
+    }
+
     // MARK: - Esfuerzo diario
 
     // Carga cardiovascular de un día completo (TRIMP de Banister continuo):
