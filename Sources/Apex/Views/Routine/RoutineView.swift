@@ -367,21 +367,38 @@ private struct ExerciseRow: View {
         }
     }
 
-    // Capsula con el último peso registrado + variación
+    // Capsula con el último registro + variación. Elige la métrica real del
+    // ejercicio: peso si lo hay, si no segundos (plancha/isometría) o reps (peso
+    // corporal). Así no muestra "0 kg" en ejercicios sin carga.
     @ViewBuilder private func loggedBadge(_ latest: LiftEntry) -> some View {
-        let delta = progress.lastDelta(for: exercise.id)
+        let all = progress.entries(for: exercise.id)
+        let prev = all.count >= 2 ? all[all.count - 2] : nil
+        let badge = metricBadge(latest: latest, prev: prev)
         HStack(spacing: 3) {
-            if let d = delta, d != 0 {
+            if let d = badge.delta, d != 0 {
                 Image(systemName: d > 0 ? "arrow.up" : "arrow.down")
                     .font(.system(size: 8, weight: .bold))
                     .foregroundColor(d > 0 ? .green : .orange)
             }
-            Text(fmtKg(latest.weight))
+            Text(badge.label)
                 .font(.caption2).fontWeight(.semibold)
                 .foregroundColor(accentColor)
         }
         .padding(.horizontal, 7).padding(.vertical, 2)
         .background(accentColor.opacity(0.12), in: Capsule())
+    }
+
+    private func metricBadge(latest: LiftEntry, prev: LiftEntry?) -> (label: String, delta: Double?) {
+        if latest.weight > 0 {
+            return (fmtKg(latest.weight), prev.map { latest.weight - $0.weight })
+        }
+        if let s = latest.seconds {
+            return ("\(s) s", prev?.seconds.map { Double(s - $0) })
+        }
+        if let r = latest.reps {
+            return ("\(r) reps", prev?.reps.map { Double(r - $0) })
+        }
+        return (fmtKg(latest.weight), nil)
     }
 
     private func fmtKg(_ w: Double) -> String {
