@@ -284,50 +284,95 @@ private struct SectionHeader: View {
 private struct BioAgeHeroCard: View {
     let result: BiologicalAgeResult
 
+    // Escala de la barra: de 18 a un techo por encima de tu edad real
+    private var minAge: Double { 18 }
+    private var maxAge: Double { Swift.max(Double(result.chronologicalAge) + 12, 45) }
+    private func pos(_ age: Double) -> Double {
+        Swift.max(0, Swift.min(1, (age - minAge) / (maxAge - minAge)))
+    }
+
+    private var deltaText: (label: String, value: String) {
+        let abs = Swift.abs(result.delta)
+        if abs < 0.5 { return ("En tu edad real", "") }
+        return (result.delta < 0 ? "Más joven" : "Mayor", String(format: "%.1f años", abs))
+    }
+
     var body: some View {
-        HStack(spacing: 20) {
-            VStack(alignment: .leading, spacing: 6) {
-                Label("Edad biológica", systemImage: "figure.walk.motion")
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(.secondary)
-
-                HStack(alignment: .firstTextBaseline, spacing: 4) {
-                    Text(String(format: "%.1f", result.biologicalAge))
-                        .font(.system(size: 40, weight: .bold, design: .rounded))
-                        .foregroundColor(result.deltaColor)
-                    Text("años")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                }
-
-                Text(result.deltaLabel)
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundColor(result.deltaColor)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 4)
-                    .background(result.deltaColor.opacity(0.12), in: Capsule())
+        VStack(alignment: .leading, spacing: 14) {
+            // Cabecera
+            HStack {
+                Text("Edad biológica").font(.headline)
+                Spacer()
+                Image(systemName: "figure.run")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(.secondary)
+                    .frame(width: 30, height: 30)
+                    .background(Color.primary.opacity(0.06), in: Circle())
             }
 
-            Spacer()
+            // Barra de ticks con marcador de edad real
+            AgeTickBar(bioPos: pos(result.biologicalAge), chronoPos: pos(Double(result.chronologicalAge)))
+                .frame(height: 30)
 
-            ZStack {
-                Circle()
-                    .stroke(Color.primary.opacity(0.07), lineWidth: 7)
-                    .frame(width: 76, height: 76)
-                Circle()
-                    .trim(from: 0, to: min(1, CGFloat(result.biologicalAge) / CGFloat(max(result.chronologicalAge + 10, 50))))
-                    .stroke(result.deltaColor, style: StrokeStyle(lineWidth: 7, lineCap: .round))
-                    .frame(width: 76, height: 76)
-                    .rotationEffect(.degrees(-90))
-                VStack(spacing: 0) {
-                    Text("\(result.chronologicalAge)")
-                        .font(.system(size: 14, weight: .bold, design: .rounded))
-                    Text("real").font(.system(size: 9)).foregroundColor(.secondary)
+            // Número grande
+            Text(String(format: "%.1f", result.biologicalAge))
+                .font(.system(size: 42, weight: .bold, design: .rounded))
+                .foregroundColor(.primary)
+
+            // Stats: delta (izq) · edad real (der)
+            HStack(alignment: .firstTextBaseline) {
+                HStack(spacing: 5) {
+                    Text(deltaText.label).foregroundStyle(.secondary)
+                    if !deltaText.value.isEmpty {
+                        Text(deltaText.value).foregroundColor(result.deltaColor).fontWeight(.semibold)
+                    }
+                }
+                Spacer()
+                HStack(spacing: 5) {
+                    Text("Edad real").foregroundStyle(.secondary)
+                    Text("\(result.chronologicalAge)").foregroundColor(.primary).fontWeight(.semibold)
                 }
             }
+            .font(.subheadline)
         }
         .padding(18)
         .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+    }
+}
+
+// Barra segmentada de edad: ticks con degradado teal→verde hasta la edad biológica
+// y una línea marcadora en la edad real (a la derecha del relleno = más joven).
+private struct AgeTickBar: View {
+    let bioPos: Double
+    let chronoPos: Double
+
+    private func tickColor(_ t: Double) -> Color {
+        let tt = Swift.max(0, Swift.min(1, t))
+        return Color(red: 0.10 + 0.20 * tt, green: 0.78 + 0.07 * tt, blue: 0.70 - 0.25 * tt)
+    }
+
+    var body: some View {
+        Canvas { ctx, size in
+            let n = 44
+            let gap: CGFloat = 3
+            let tickW = (size.width - gap * CGFloat(n - 1)) / CGFloat(n)
+            for i in 0..<n {
+                let frac = Double(i) / Double(n - 1)
+                let x = CGFloat(i) * (tickW + gap)
+                let filled = frac <= bioPos
+                let h: CGFloat = filled ? size.height : size.height * 0.62
+                let rect = CGRect(x: x, y: (size.height - h) / 2, width: tickW, height: h)
+                let path = Path(roundedRect: rect, cornerRadius: tickW / 2)
+                let shade: GraphicsContext.Shading = filled
+                    ? .color(tickColor(bioPos > 0 ? frac / bioPos : 0))
+                    : .color(.primary.opacity(0.13))
+                ctx.fill(path, with: shade)
+            }
+            // Marcador de edad real
+            let mx = size.width * chronoPos
+            let marker = Path(roundedRect: CGRect(x: mx - 1.5, y: 0, width: 3, height: size.height), cornerRadius: 1.5)
+            ctx.fill(marker, with: .color(.primary))
+        }
     }
 }
 

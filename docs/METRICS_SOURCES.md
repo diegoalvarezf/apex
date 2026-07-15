@@ -47,9 +47,17 @@ TSS = (segundos · NP · IF) / (FTP · 3600) · 100
 FTP ≈ 0.95 × mejor potencia normalizada en salidas ≥20 min
 ```
 
+**Corrección para trabajo intermitente (fuerza / series / intervalos):** el TRIMP de FC
+media infravalora estas sesiones porque los descansos entre series diluyen el promedio aunque
+los picos sean altos (Banister asume estado estacionario). Se corrige usando una **FC efectiva**
+desplazada hacia el pico real de la sesión: `FC_ef = FCmedia + 0.35·(FCmáx − FCmedia)`, solo en
+deportes de fuerza y en workouts marcados como intervalos. El cardio continuo no se toca.
+
 - Banister EW, Calvert TW. *Planning for future performance.* Can J Appl Sport Sci. 1980.
 - Morton RH, Fitz-Clarke JR, Banister EW. *Modeling human performance in running.* J Appl Physiol. 1990.
 - Coggan A, Allen H. *Training and Racing with a Power Meter.* VeloPress (definición de TSS/IF/NP/FTP).
+- Limitación del TRIMP de FC media en ejercicio intermitente: p.ej. Stagno KM et al. 2007;
+  Sanders D et al. 2017 (necesidad de ponderar los picos en trabajo interválico/fuerza).
 
 ## 2. ATL y CTL (medias móviles exponenciales)
 

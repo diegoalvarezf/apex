@@ -18,6 +18,19 @@ import Foundation
 enum TrainingMetrics {
 
     static let rideTypes: Set<String> = ["ride", "virtualride", "ebikeride", "mountainbikeride", "gravelride"]
+    static let strengthTypes: Set<String> = ["weighttraining", "crossfit", "workout"]
+
+    // FC efectiva para el TRIMP. En sesiones INTERMITENTES (fuerza, series/intervalos)
+    // la FC media infravalora el esfuerzo: los descansos entre series diluyen el
+    // promedio aunque los picos sean altos (limitación conocida del TRIMP de FC media,
+    // Banister asume estado estacionario). Se corrige desplazando la FC hacia los picos
+    // reales de la sesión (blend con la FC máxima). El cardio continuo no se toca.
+    static func effectiveHR(for act: StravaActivity, restingHR: Double, maxHR: Double) -> Double {
+        let avg = act.averageHeartrate ?? fallbackAvgHR(sport: act.sportType, restingHR: restingHR, maxHR: maxHR)
+        let intermittent = act.isStructuredWorkout || strengthTypes.contains(act.sportType.lowercased())
+        guard intermittent, let peak = act.maxHeartrate, peak > avg else { return avg }
+        return avg + 0.35 * (peak - avg)
+    }
 
     // MARK: - Banister TRIMP (carga por sesión, alimenta ATL/CTL)
 
@@ -62,7 +75,7 @@ enum TrainingMetrics {
            let ftp, ftp > 0, let np, np > 0 {
             return tss(seconds: Double(act.movingTime), normalizedPower: np, ftp: ftp)
         }
-        let avgHR = act.averageHeartrate ?? fallbackAvgHR(sport: act.sportType, restingHR: restingHR, maxHR: maxHR)
+        let avgHR = effectiveHR(for: act, restingHR: restingHR, maxHR: maxHR)
         return banisterTRIMP(minutes: Double(act.movingTime) / 60.0,
                              avgHR: avgHR, restingHR: restingHR, maxHR: maxHR, isMale: isMale)
     }
@@ -130,7 +143,7 @@ enum TrainingMetrics {
 
         for act in activities where cal.isDate(act.startDate, inSameDayAs: day) {
             let minutes = Double(act.movingTime) / 60.0
-            let hr = act.averageHeartrate ?? fallbackAvgHR(sport: act.sportType, restingHR: restingHR, maxHR: maxHR)
+            let hr = effectiveHR(for: act, restingHR: restingHR, maxHR: maxHR)
             total += banisterTRIMP(minutes: minutes, avgHR: hr, restingHR: restingHR, maxHR: maxHR, isMale: isMale)
             let startH = cal.component(.hour, from: act.startDate)
             let endH = min(23, startH + Int(ceil(minutes / 60.0)))
