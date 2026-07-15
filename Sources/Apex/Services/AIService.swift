@@ -118,6 +118,30 @@ final class AIService {
         return text
     }
 
+    /// Chat multi-turno con system prompt. `messages` = [["role":"user"/"assistant","content":...]].
+    func chatCompletion(messages: [[String: String]], system: String,
+                        model: String = ClaudeConfig.model, maxTokens: Int = 1024) async throws -> String {
+        guard let url = URL(string: "https://api.anthropic.com/v1/messages") else { throw AIError.invalidURL }
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue(ClaudeConfig.apiKey, forHTTPHeaderField: "x-api-key")
+        request.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
+        request.timeoutInterval = 120
+
+        let body: [String: Any] = [
+            "model": model, "max_tokens": maxTokens,
+            "system": system, "messages": messages
+        ]
+        request.httpBody = try JSONSerialization.data(withJSONObject: body)
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+        guard let http = response as? HTTPURLResponse, http.statusCode == 200 else { throw AIError.apiError }
+        let claudeResponse = try JSONDecoder().decode(ClaudeResponse.self, from: data)
+        guard let text = claudeResponse.firstText else { throw AIError.emptyResponse }
+        return text
+    }
+
     /// Extracts the first valid JSON object `{...}` from any text (handles markdown fences, preamble, etc.)
     static func extractJSON(from text: String) -> String? {
         var depth = 0

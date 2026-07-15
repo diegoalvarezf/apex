@@ -51,6 +51,11 @@ final class DashboardViewModel: ObservableObject {
 
     // MARK: - Resumen semanal IA (1×/semana, cacheado)
 
+    // Contexto para el chat del coach (público)
+    func coachContext(health: HealthKitManager, strengthSummary: String?) -> AICoachContext {
+        buildContext(health: health, strengthSummary: strengthSummary, localAlerts: nil)
+    }
+
     private func buildContext(health: HealthKitManager, strengthSummary: String?, localAlerts: String?) -> AICoachContext {
         AICoachContext(
             recentActivities: Array(activities.prefix(15)),

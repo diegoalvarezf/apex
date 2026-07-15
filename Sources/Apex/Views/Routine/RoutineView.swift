@@ -220,6 +220,16 @@ private struct DayDetailView: View {
                         }
                     }
                     .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+
+                    // Conclusión IA de cómo va este día de entreno
+                    if dayEntriesCount > 0 {
+                        AITextCard(
+                            title: "¿Cómo voy en este día?",
+                            subtitle: "Claude revisa la progresión de los ejercicios de este día y te da una conclusión.",
+                            cacheKey: "apex_routine_day_ai_\(day.name)_\(dayEntriesCount)",
+                            generate: { try await analyzeDay() }
+                        )
+                    }
                 }
                 .padding(.horizontal).padding(.top, 8).padding(.bottom, 16)
             }
@@ -263,6 +273,40 @@ private struct DayDetailView: View {
         case "core", "abdominales":                          return .core
         default:                                             return .other
         }
+    }
+
+    // MARK: - Conclusión IA del día
+
+    // Total de registros del día (sirve de firma para la caché: al añadir uno nuevo,
+    // se recalcula el análisis).
+    private var dayEntriesCount: Int {
+        day.exercises.reduce(0) { $0 + RoutineProgressStore.shared.entries(for: $1.id).count }
+    }
+
+    private func analyzeDay() async throws -> String {
+        let df = DateFormatter(); df.dateFormat = "d MMM"
+        func fmt(_ w: Double) -> String { w == w.rounded() ? "\(Int(w))" : String(format: "%.1f", w) }
+
+        var lines: [String] = [
+            "Día de entreno: \(day.name) — \(day.exercises.count) ejercicios.",
+            "Ejercicios y su progresión registrada (de más antiguo a reciente):"
+        ]
+        for ex in day.exercises {
+            let entries = RoutineProgressStore.shared.entries(for: ex.id)
+            var head = "- \(ex.name)\(ex.muscleGroup.isEmpty ? "" : " (\(ex.muscleGroup))") [\(ex.sets)×\(ex.reps)\(ex.weight.isEmpty ? "" : ", obj \(ex.weight)")]"
+            if entries.isEmpty { head += ": sin registros aún" }
+            lines.append(head)
+            for e in entries.suffix(6) {
+                var parts: [String] = []
+                if e.weight > 0 { parts.append("\(fmt(e.weight)) kg") }
+                if let r = e.reps { parts.append("\(r) reps") }
+                if let s = e.seconds { parts.append("\(s) s") }
+                lines.append("    \(df.string(from: e.date)) · \(parts.isEmpty ? "—" : parts.joined(separator: " · "))")
+            }
+        }
+
+        let system = "Eres un entrenador de fuerza. Te paso los ejercicios de un DÍA de una rutina y la progresión registrada de cada uno. Da una CONCLUSIÓN global de cómo le va al usuario en este entrenamiento: qué progresa, qué se estanca y el foco para la próxima vez. LEE EL NOMBRE de cada ejercicio para entender su TIPO y cómo progresa: por peso (con carga), por reps a peso corporal, o por segundos (isometrías como plancha). Español, TEXTO PLANO (sin markdown ni listas), 3-4 frases. Usa solo las cifras dadas; nunca inventes valores. TERMINA con una línea aparte que empiece por 'Conclusión: ' resumiendo en una frase lo más importante y el siguiente paso."
+        return try await AIService.shared.rawCompletion(prompt: lines.joined(separator: "\n"), system: system, maxTokens: 500)
     }
 }
 

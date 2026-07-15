@@ -50,6 +50,11 @@ struct InsightsView: View {
         return Array(Set(lines)).sorted().prefix(20).joined(separator: "\n")
     }
 
+    // Contexto de la app en texto para el chat del coach
+    private func chatContext() -> String {
+        dashVM.coachContext(health: healthKit, strengthSummary: strengthSummary()).contextText()
+    }
+
     private var smartTips: [SmartTip] {
         SmartTipsEngine.compute(
             recovery: healthKit.recoveryScore,
@@ -67,6 +72,13 @@ struct InsightsView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 16) {
+
+                    // ── Chat con el coach ─────────────────────────────────
+                    NavigationLink { CoachChatView(context: chatContext()) } label: {
+                        AskCoachCard()
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.horizontal)
 
                     // ── Resumen semanal IA ────────────────────────────────
                     if let summary = dashVM.weeklySummary {
@@ -144,6 +156,36 @@ struct InsightsView: View {
             .navigationTitle("IA Coach")
             .onAppear { analyzeIfStale() }
         }
+    }
+}
+
+// MARK: - Acceso al chat
+
+private struct AskCoachCard: View {
+    var body: some View {
+        HStack(spacing: 14) {
+            ZStack {
+                Circle().fill(LinearGradient(colors: [.purple.opacity(0.18), .blue.opacity(0.12)],
+                                             startPoint: .topLeading, endPoint: .bottomTrailing))
+                    .frame(width: 46, height: 46)
+                Image(systemName: "bubble.left.and.text.bubble.right.fill")
+                    .font(.system(size: 19))
+                    .foregroundStyle(LinearGradient(colors: [.purple, .blue], startPoint: .topLeading, endPoint: .bottomTrailing))
+            }
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Pregúntale al coach").font(.headline).foregroundStyle(.primary)
+                Text("Dudas sobre tu forma, entrenos o progreso").font(.caption).foregroundStyle(.secondary)
+            }
+            Spacer()
+            Image(systemName: "chevron.right").font(.caption.weight(.semibold)).foregroundStyle(.tertiary)
+        }
+        .padding(16)
+        .background(
+            LinearGradient(colors: [Color.purple.opacity(0.10), Color.blue.opacity(0.06)],
+                           startPoint: .topLeading, endPoint: .bottomTrailing),
+            in: RoundedRectangle(cornerRadius: 18, style: .continuous)
+        )
+        .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).stroke(Color.purple.opacity(0.18), lineWidth: 1))
     }
 }
 

@@ -321,6 +321,10 @@ struct AICoachContext {
         return parts
     }
 
+    // Contexto en texto plano para el chat del coach (reutiliza el mismo bloque
+    // de métricas que los insights).
+    func contextText() -> String { metricsBlock().joined(separator: "\n") }
+
     // Regla común: la IA interpreta, pero NO inventa cifras.
     private static let noInventarCifras = "REGLA IMPORTANTE: usa SOLO las cifras que aparecen explícitamente en los datos de arriba. Nunca inventes ni estimes números, porcentajes, pesos, ritmos o valores que no te hayan dado. Si no tienes un dato, habla de la tendencia sin poner una cifra."
 
