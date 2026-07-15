@@ -323,10 +323,11 @@ struct ExerciseProgressSheet: View {
         ]
         let df = DateFormatter(); df.dateFormat = "d MMM"
         for e in entries {
-            let reps = e.reps.map { " × \($0)" } ?? ""
-            lines.append("  \(df.string(from: e.date)) · \(formatKg(e.weight))\(reps)")
+            let reps = e.reps.map { " × \($0) reps" } ?? ""
+            let orm = e.oneRepMax.map { " (1RM est. ~\(formatKg($0)))" } ?? ""
+            lines.append("  \(df.string(from: e.date)) · \(formatKg(e.weight))\(reps)\(orm)")
         }
-        let system = "Eres un entrenador de fuerza. Analizas la progresión de un ejercicio (serie de pesos/reps por fecha) frente a su prescripción. Responde en español, TEXTO PLANO (sin markdown ni listas), 2-3 frases: ¿progresa, se estanca o conviene descargar? Ten en cuenta sobrecarga progresiva y que los estancamientos de 2-3 sesiones piden un cambio. Usa solo las cifras dadas; nunca inventes valores. TERMINA SIEMPRE con una línea aparte que empiece por 'Conclusión: ' y resuma en una frase el SIGUIENTE paso concreto (subir X kg, subir reps, mantener o deload)."
+        let system = "Eres un entrenador de fuerza. Analizas la progresión de un ejercicio (peso, reps y 1RM estimado por fecha) frente a su prescripción. Responde en español, TEXTO PLANO (sin markdown ni listas), 2-3 frases: ¿progresa, se estanca o conviene descargar? Cuando las reps varíen, valora la FUERZA REAL por el 1RM estimado (Epley), no solo el peso: p.ej. 80×10 puede ser más fuerte que 85×5. Ten en cuenta la sobrecarga progresiva y que los estancamientos de 2-3 sesiones piden un cambio. Usa solo las cifras dadas; nunca inventes valores. TERMINA SIEMPRE con una línea aparte que empiece por 'Conclusión: ' y resuma en una frase el SIGUIENTE paso concreto (subir X kg, subir reps, mantener o deload)."
         return try await AIService.shared.rawCompletion(prompt: lines.joined(separator: "\n"), system: system, maxTokens: 400)
     }
 }
