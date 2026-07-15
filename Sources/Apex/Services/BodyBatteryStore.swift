@@ -161,29 +161,23 @@ final class BodyBatteryStore {
                     hourlyDelta = -actDrain
                 } else if let hr = hourlyHR.first(where: { cal.component(.hour, from: $0.date) == hour }) {
                     let hrr = max(0.0, min(1.0, (hr.value - restingHR) / (maxHR - restingHR)))
-                    // Firstbeat: despierto la batería tiende a BAJAR salvo reposo genuino.
-                    // El reposo real (sentado tranquilo, siesta) recarga; la vida diaria
-                    // normal drena poco a poco; el esfuerzo drena fuerte.
-                    if hrr < 0.08 {
-                        hourlyDelta = +3.5    // reposo real (parasimpático dominante)
-                    } else if hrr < 0.18 {
-                        hourlyDelta = +0.5    // relajado
-                    } else if hrr < 0.35 {
-                        hourlyDelta = -2.0    // vida diaria normal (andar por casa, trabajo)
-                    } else if hrr < 0.50 {
-                        hourlyDelta = -hrr * hrr * 18.0
+                    // Firstbeat/Garmin: DESPIERTO la batería solo BAJA — estar despierto ya
+                    // tiene un coste, aunque estés sentado con FC baja. La recarga real ocurre
+                    // durmiendo, no de día. (Un día sedentario no debe "recuperar" batería.)
+                    if hrr < 0.12 {
+                        hourlyDelta = -1.0    // en reposo pero despierto: consumo basal lento
+                    } else if hrr < 0.25 {
+                        hourlyDelta = -1.8    // vida diaria normal (trabajo, andar por casa)
+                    } else if hrr < 0.40 {
+                        hourlyDelta = -hrr * hrr * 16.0
                     } else {
-                        hourlyDelta = -hrr * hrr * 40.0  // ejercicio sin registrar como actividad
+                        hourlyDelta = -hrr * hrr * 38.0  // ejercicio sin registrar como actividad
                     }
                 } else {
-                    hourlyDelta = -0.6        // sin datos de FC: consumo basal
+                    hourlyDelta = -0.8        // sin datos de FC: consumo basal
                 }
-                // Asimetría: la recarga es rápida con la batería baja y se aplana cerca de
-                // 100; el drenaje es rápido con la batería alta. (Factores separados.)
-                let factor = hourlyDelta >= 0
-                    ? max(0.3, 1.0 - battery / 100.0)
-                    : max(0.2, battery / 100.0)
-                battery += hourlyDelta * factor
+                // El drenaje es más rápido con la batería alta y se frena cerca del suelo.
+                battery += hourlyDelta * max(0.35, battery / 100.0)
             }
 
             // Garmin/Firstbeat acotan Body Battery en 5-100 (nunca llega a 0)

@@ -166,9 +166,10 @@ que se diluye en ejercicios intermitentes como el gimnasio), y la batería carga
 
 - **Drenaje de entrenamiento**: cada sesión de Strava drena según su TRIMP de Banister
   mediante curva saturante `65·(1−e^(−TRIMP/45))` — 50' de gym ≈ 33 pts, 1h Z2 ≈ 55.
-- **Vida diaria** (horas sin actividad): por FC sobre reposo. Despierto la batería tiende a
-  **bajar** salvo reposo genuino: FCr<0.08 (sentado tranquilo, siesta) recarga ~3.5/h; la vida
-  normal drena ~2/h; el esfuerzo drena fuerte (−HRr²·40).
+- **Vida diaria** (horas sin actividad): **despierto la batería solo BAJA** — estar despierto
+  ya tiene un coste aunque estés sentado con FC baja (reposo ~−1/h, vida normal ~−1.8/h,
+  esfuerzo −HRr²·38). La recarga ocurre **solo durmiendo**: un día sedentario NO recupera
+  batería (corrige la curva que se clavaba en 100 todo el día).
 - **Carga en sueño ADITIVA** (no anclada al Recovery, para no arrastrar su valor): se parte de
   la batería con la que te acostaste (drenada por el día y el entreno) y se le SUMA
   `calidad · horas · 6.5` (Firstbeat: noche completa de calidad ≈ +50, ~6.5/h). Así una noche
