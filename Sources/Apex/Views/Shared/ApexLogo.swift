@@ -1,27 +1,43 @@
 import SwiftUI
 
-// Marca de Apex: el kanji 山 (montaña / cima) en trazo redondeado con degradado.
-// Se dibuja en el espacio 1024×1024 del AppIcon para que coincida exactamente con
-// el icono, y se escala al tamaño que se le pida.
+// Marca de Apex: cumbre de dos picos con un sendero en negativo (referencias:
+// AllTrails / Strava / PeakWatch). Se dibuja en el espacio 1024×1024 del AppIcon
+// para que coincida exactamente con el icono, y se escala al tamaño que se le pida.
 
-// Solo la marca (los cuatro trazos), sin fondo. Tíntala sobre cualquier superficie.
+// Colores del degradado teal→azul de la marca
+private let apexTeal = Color(red: 0.176, green: 0.831, blue: 0.749)   // #2dd4bf
+private let apexBlue = Color(red: 0.231, green: 0.510, blue: 0.965)   // #3b82f6
+private let apexDark = Color(red: 0.043, green: 0.063, blue: 0.125)   // #0b1020 (sendero)
+
+// Solo la marca (montaña + sendero), sin fondo. Pensada para el tile oscuro.
 struct ApexMark: View {
     var body: some View {
         Canvas { ctx, size in
             let s = min(size.width, size.height) / 1024.0
-            func bar(_ x: CGFloat, _ y: CGFloat, _ w: CGFloat, _ h: CGFloat, _ r: CGFloat) -> Path {
-                Path(roundedRect: CGRect(x: x * s, y: y * s, width: w * s, height: h * s), cornerRadius: r * s)
-            }
-            var p = Path()
-            p.addPath(bar(350, 648, 324, 56, 28))   // base
-            p.addPath(bar(372, 436, 54, 236, 27))   // trazo izquierdo
-            p.addPath(bar(485, 300, 58, 372, 29))   // trazo central (el pico)
-            p.addPath(bar(600, 396, 54, 276, 27))   // trazo derecho
-            ctx.fill(p, with: .linearGradient(
-                Gradient(colors: [Color(red: 0.243, green: 0.773, blue: 0.961),
-                                  Color(red: 0.145, green: 0.388, blue: 0.922)]),
-                startPoint: CGPoint(x: size.width * 0.2, y: 0),
-                endPoint: CGPoint(x: size.width * 0.5, y: size.height)))
+            func P(_ x: CGFloat, _ y: CGFloat) -> CGPoint { CGPoint(x: x * s, y: y * s) }
+
+            // Silueta de dos picos
+            var peaks = Path()
+            peaks.move(to: P(205, 724))
+            peaks.addLine(to: P(389, 270))
+            peaks.addLine(to: P(518, 497))
+            peaks.addLine(to: P(637, 356))
+            peaks.addLine(to: P(821, 724))
+            peaks.closeSubpath()
+
+            let grad = GraphicsContext.Shading.linearGradient(
+                Gradient(colors: [apexTeal, apexBlue]),
+                startPoint: P(205, 724), endPoint: P(821, 300))
+            ctx.fill(peaks, with: grad)
+            // Esquinas redondeadas (trazo del mismo color con unión redonda)
+            ctx.stroke(peaks, with: grad, style: StrokeStyle(lineWidth: 24 * s, lineJoin: .round))
+
+            // Sendero en negativo subiendo al pico principal
+            var trail = Path()
+            trail.move(to: P(313, 724))
+            trail.addQuadCurve(to: P(389, 300), control: P(335, 518))
+            ctx.stroke(trail, with: .color(apexDark),
+                       style: StrokeStyle(lineWidth: 26 * s, lineCap: .round))
         }
         .accessibilityLabel("Apex")
     }
