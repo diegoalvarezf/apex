@@ -91,6 +91,12 @@ struct DashboardView: View {
                 dashboardContent()
             }
             .background(Color(.systemGroupedBackground))
+            .refreshable {
+                await healthKit.loadAll()
+                if let token = stravaAuth.accessToken {
+                    await dashVM.loadActivities(token: token)
+                }
+            }
             .navigationTitle(Date.now.formatted(.dateTime.weekday(.wide).day().month(.wide)))
             .navigationBarTitleDisplayMode(.large)
             .onChange(of: dashVM.trainingLoad) { _, load in
