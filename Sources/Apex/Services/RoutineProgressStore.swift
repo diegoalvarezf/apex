@@ -9,6 +9,7 @@ struct LiftEntry: Codable, Identifiable {
     var weight: Double      // kg (0 = peso corporal)
     var reps: Int?          // opcional
     var seconds: Int?       // opcional — ejercicios por tiempo (plancha, isometría)
+    var meters: Int?        // opcional — ejercicios por distancia (farmer walk, paseos)
 
     // 1RM estimado (Epley) solo si hay peso Y reps
     var oneRepMax: Double? {
@@ -48,9 +49,9 @@ final class RoutineProgressStore: ObservableObject {
 
     // MARK: - Mutación
 
-    func add(weight: Double, reps: Int?, seconds: Int? = nil, date: Date = Date(), for exerciseID: UUID) {
+    func add(weight: Double, reps: Int?, seconds: Int? = nil, meters: Int? = nil, date: Date = Date(), for exerciseID: UUID) {
         var list = byExercise[exerciseID.uuidString] ?? []
-        list.append(LiftEntry(date: date, weight: weight, reps: reps, seconds: seconds))
+        list.append(LiftEntry(date: date, weight: weight, reps: reps, seconds: seconds, meters: meters))
         byExercise[exerciseID.uuidString] = list
         persist()
     }

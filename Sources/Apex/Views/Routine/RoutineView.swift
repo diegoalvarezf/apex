@@ -301,6 +301,7 @@ private struct DayDetailView: View {
                 if e.weight > 0 { parts.append("\(fmt(e.weight)) kg") }
                 if let r = e.reps { parts.append("\(r) reps") }
                 if let s = e.seconds { parts.append("\(s) s") }
+                if let m = e.meters { parts.append("\(m) m") }
                 lines.append("    \(df.string(from: e.date)) · \(parts.isEmpty ? "—" : parts.joined(separator: " · "))")
             }
         }
@@ -438,6 +439,9 @@ private struct ExerciseRow: View {
         }
         if let s = latest.seconds {
             return ("\(s) s", prev?.seconds.map { Double(s - $0) })
+        }
+        if let m = latest.meters {
+            return ("\(m) m", prev?.meters.map { Double(m - $0) })
         }
         if let r = latest.reps {
             return ("\(r) reps", prev?.reps.map { Double(r - $0) })

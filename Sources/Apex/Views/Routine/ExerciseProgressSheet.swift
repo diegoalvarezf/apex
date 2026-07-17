@@ -23,6 +23,7 @@ struct ExerciseProgressSheet: View {
     @State private var weightText = ""
     @State private var repsText = ""
     @State private var secondsText = ""
+    @State private var metersText = ""
     @State private var entryDate = Date()
     @State private var showAdd = false
     @State private var showEdit = false
@@ -33,32 +34,36 @@ struct ExerciseProgressSheet: View {
     // Qué métrica progresa este ejercicio: peso (con carga), tiempo (plancha,
     // isometría) o reps a peso corporal (elevaciones, dominadas…). Se deduce de
     // lo que se va registrando.
-    private enum TrackMode { case weight, reps, time }
+    private enum TrackMode { case weight, reps, time, distance }
     private var trackMode: TrackMode {
         if entries.contains(where: { $0.weight > 0 }) { return .weight }
         if entries.contains(where: { ($0.seconds ?? 0) > 0 }) { return .time }
+        if entries.contains(where: { ($0.meters ?? 0) > 0 }) { return .distance }
         if entries.contains(where: { ($0.reps ?? 0) > 0 }) { return .reps }
         return .weight
     }
     private func metricValue(_ e: LiftEntry) -> Double {
         switch trackMode {
-        case .weight: return e.weight
-        case .time:   return Double(e.seconds ?? 0)
-        case .reps:   return Double(e.reps ?? 0)
+        case .weight:   return e.weight
+        case .time:     return Double(e.seconds ?? 0)
+        case .distance: return Double(e.meters ?? 0)
+        case .reps:     return Double(e.reps ?? 0)
         }
     }
     private func metricLabel(_ v: Double) -> String {
         switch trackMode {
-        case .weight: return formatKg(v)
-        case .time:   return "\(Int(v)) s"
-        case .reps:   return "\(Int(v)) reps"
+        case .weight:   return formatKg(v)
+        case .time:     return "\(Int(v)) s"
+        case .distance: return "\(Int(v)) m"
+        case .reps:     return "\(Int(v)) reps"
         }
     }
     private var chartTitle: String {
         switch trackMode {
-        case .weight: return "Progresión de peso"
-        case .time:   return "Progresión (segundos)"
-        case .reps:   return "Progresión (reps)"
+        case .weight:   return "Progresión de peso"
+        case .time:     return "Progresión (segundos)"
+        case .distance: return "Progresión (metros)"
+        case .reps:     return "Progresión (reps)"
         }
     }
 
@@ -268,6 +273,10 @@ struct ExerciseProgressSheet: View {
                     TextField("ej. 60", text: $secondsText)
                         .keyboardType(.numberPad)
                 }
+                Section("Metros (opcional — farmer walk, paseos)") {
+                    TextField("ej. 40", text: $metersText)
+                        .keyboardType(.numberPad)
+                }
                 Section {
                     DatePicker("Fecha", selection: $entryDate, displayedComponents: .date)
                 }
@@ -305,9 +314,10 @@ struct ExerciseProgressSheet: View {
         Double(weightText.replacingOccurrences(of: ",", with: "."))
     }
     private var parsedSeconds: Int? { Int(secondsText) }
-    // Se puede guardar si hay al menos un dato (peso, reps o segundos)
+    private var parsedMeters: Int? { Int(metersText) }
+    // Se puede guardar si hay al menos un dato (peso, reps, segundos o metros)
     private var hasAnyInput: Bool {
-        (parsedWeight ?? 0) > 0 || Int(repsText) != nil || parsedSeconds != nil
+        (parsedWeight ?? 0) > 0 || Int(repsText) != nil || parsedSeconds != nil || parsedMeters != nil
     }
 
     private func prefillFromLast() {
@@ -315,8 +325,9 @@ struct ExerciseProgressSheet: View {
             weightText = last.weight > 0 ? formatNumber(last.weight) : ""
             repsText = last.reps.map(String.init) ?? ""
             secondsText = last.seconds.map(String.init) ?? ""
+            metersText = last.meters.map(String.init) ?? ""
         } else {
-            weightText = ""; repsText = ""; secondsText = ""
+            weightText = ""; repsText = ""; secondsText = ""; metersText = ""
         }
         entryDate = Date()
     }
@@ -326,6 +337,7 @@ struct ExerciseProgressSheet: View {
         weightText = e.weight > 0 ? formatNumber(e.weight) : ""
         repsText = e.reps.map(String.init) ?? ""
         secondsText = e.seconds.map(String.init) ?? ""
+        metersText = e.meters.map(String.init) ?? ""
         entryDate = e.date
         showAdd = true
     }
@@ -337,10 +349,11 @@ struct ExerciseProgressSheet: View {
             updated.weight = w
             updated.reps = Int(repsText)
             updated.seconds = parsedSeconds
+            updated.meters = parsedMeters
             updated.date = entryDate
             store.update(updated, for: exercise.id)
         } else {
-            store.add(weight: w, reps: Int(repsText), seconds: parsedSeconds, date: entryDate, for: exercise.id)
+            store.add(weight: w, reps: Int(repsText), seconds: parsedSeconds, meters: parsedMeters, date: entryDate, for: exercise.id)
         }
         showAdd = false
         editingEntry = nil
@@ -358,9 +371,12 @@ struct ExerciseProgressSheet: View {
     private func entrySubtitle(_ e: LiftEntry) -> String? {
         switch trackMode {
         case .weight:
-            guard let reps = e.reps else { return nil }
-            return "\(reps) reps\(e.oneRepMax.map { " · 1RM ~\(formatKg($0))" } ?? "")"
-        case .time, .reps:
+            var parts: [String] = []
+            if let reps = e.reps { parts.append("\(reps) reps") }
+            if let m = e.meters { parts.append("\(m) m") }
+            if let orm = e.oneRepMax { parts.append("1RM ~\(formatKg(orm))") }
+            return parts.isEmpty ? nil : parts.joined(separator: " · ")
+        case .time, .reps, .distance:
             return e.weight > 0 ? "+\(formatKg(e.weight)) lastre" : nil
         }
     }
@@ -385,6 +401,7 @@ struct ExerciseProgressSheet: View {
             if e.weight > 0 { parts.append(formatKg(e.weight)) }
             if let r = e.reps { parts.append("\(r) reps") }
             if let s = e.seconds { parts.append("\(s) s") }
+            if let m = e.meters { parts.append("\(m) m") }
             if let orm = e.oneRepMax { parts.append("1RM est. ~\(formatKg(orm))") }
             let desc = parts.isEmpty ? "—" : parts.joined(separator: " · ")
             lines.append("  \(df.string(from: e.date)) · \(desc)")
