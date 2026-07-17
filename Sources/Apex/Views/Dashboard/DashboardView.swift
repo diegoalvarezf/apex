@@ -92,10 +92,14 @@ struct DashboardView: View {
             }
             .background(Color(.systemGroupedBackground))
             .refreshable {
-                await healthKit.loadAll()
-                if let token = stravaAuth.accessToken {
-                    await dashVM.loadActivities(token: token)
-                }
+                // En paralelo para que el spinner no se quede colgado
+                async let health: Void = healthKit.loadAll()
+                async let strava: Void = {
+                    if let token = stravaAuth.accessToken {
+                        await dashVM.loadActivities(token: token)
+                    }
+                }()
+                _ = await (health, strava)
             }
             .navigationTitle(Date.now.formatted(.dateTime.weekday(.wide).day().month(.wide)))
             .navigationBarTitleDisplayMode(.large)

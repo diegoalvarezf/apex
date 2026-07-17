@@ -111,7 +111,7 @@ enum TrainingMetrics {
             let z = (sdnn - mean) / sd
             // Pendiente suave: una bajada de HRV eleva el estrés, pero sin dispararlo
             // (una noche con HRV algo bajo no debe leer "estrés muy alto").
-            return max(10.0, min(62.0, 28.0 - z * 8.0))
+            return max(8.0, min(60.0, 23.0 - z * 8.0))
         }
         // Sin baseline: mapa absoluto suave (SDNN 76→~15, 40→30, 20→50)
         return max(12.0, min(60.0, 70.0 - sdnn))
