@@ -107,9 +107,11 @@ enum TrainingMetrics {
         if baseline.count >= 7 {
             let mean = baseline.reduce(0, +) / Double(baseline.count)
             let variance = baseline.map { ($0 - mean) * ($0 - mean) }.reduce(0, +) / Double(baseline.count)
-            let sd = max(sqrt(variance), 6.0)
+            let sd = max(sqrt(variance), 7.0)
             let z = (sdnn - mean) / sd
-            return max(12.0, min(72.0, 35.0 - z * 14.0))
+            // Pendiente suave: una bajada de HRV eleva el estrés, pero sin dispararlo
+            // (una noche con HRV algo bajo no debe leer "estrés muy alto").
+            return max(10.0, min(62.0, 28.0 - z * 8.0))
         }
         // Sin baseline: mapa absoluto suave (SDNN 76→~15, 40→30, 20→50)
         return max(12.0, min(60.0, 70.0 - sdnn))
