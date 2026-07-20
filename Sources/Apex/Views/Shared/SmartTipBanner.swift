@@ -57,8 +57,22 @@ struct SmartTipBanner: View {
                     .frame(width: 3).padding(.vertical, 8)
             }
             .contentShape(Rectangle())
-            // Tocar el texto despliega la alerta completa
+            // Tocar despliega la alerta completa
             .onTapGesture { withAnimation(.spring(response: 0.3)) { expanded.toggle() } }
+            // Deslizar en horizontal pasa de alerta (sin robar el scroll vertical)
+            .gesture(
+                DragGesture(minimumDistance: 20)
+                    .onEnded { value in
+                        guard tips.count > 1,
+                              abs(value.translation.width) > abs(value.translation.height),
+                              abs(value.translation.width) > 40 else { return }
+                        withAnimation(.spring(response: 0.35)) {
+                            current = value.translation.width < 0
+                                ? (current + 1) % tips.count
+                                : (current - 1 + tips.count) % tips.count
+                        }
+                    }
+            )
             .transition(.asymmetric(insertion: .push(from: .top), removal: .push(from: .bottom)))
             .animation(.spring(response: 0.4), value: current)
         }
