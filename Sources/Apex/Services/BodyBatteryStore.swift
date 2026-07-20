@@ -1,14 +1,18 @@
 import Foundation
 import SwiftUI
 
-// Body Battery estilo PeakWatch (doc.peakwatch.co/en/battery.html):
-// - El valor del final del día es el punto de partida del día siguiente
-// - El sueño carga en función del Recovery Score y de la duración real dormida
-// - El estrés físico (FC sobre reposo) depleciona; estrés muy bajo recarga levemente
-// - Cargar/descargar cuesta más cerca de los límites (factor asimétrico)
+// Body Battery (metodología Firstbeat/Garmin, ver docs/METRICS_SOURCES.md):
+// - El valor del final del día es el punto de partida del día siguiente.
+// - CARGA: solo durmiendo. El total de la noche = calidad × horas realmente
+//   dormidas × 6.5 (noche completa de calidad ≈ +50), repartido por hora con más
+//   carga al principio (el sueño profundo se concentra en la primera mitad).
+// - DRENAJE: despierto la batería solo baja (estar despierto ya cuesta), y los
+//   entrenos drenan según su TRIMP con curva saturante estilo EPOC.
+// - El drenaje es más rápido con la batería alta y se frena cerca del suelo.
+// - Acotado a 5-100, como Garmin.
 //
-// PeakWatch no publica fórmulas exactas; las constantes de carga/descarga de este
-// fichero son calibración propia de Apex documentada en cada línea.
+// Firstbeat/Garmin no publican fórmulas exactas; las constantes de carga/descarga
+// son calibración propia de Apex, documentada línea a línea.
 final class BodyBatteryStore {
     static let shared = BodyBatteryStore()
     private let storageKey = "apex_body_battery_snapshots"
@@ -48,7 +52,6 @@ final class BodyBatteryStore {
             let dayActs = activities.filter { cal.isDate($0.startDate, inSameDayAs: day) }
             let sim = simulateDay(
                 day: day,
-                recovery: recovery(for: day),
                 hourlyHR: dayHR,
                 sleep: sleep,
                 startBattery: battery,
@@ -88,7 +91,6 @@ final class BodyBatteryStore {
     // Simulación reutilizable para cualquier día (se usa también en el detalle histórico)
     func simulateDay(
         day: Date,
-        recovery: Double,
         hourlyHR: [MetricSample],
         sleep: SleepData?,
         startBattery: Double,
@@ -108,15 +110,13 @@ final class BodyBatteryStore {
         // Duración REAL dormida (HealthKit), no la ventana en cama
         let sleepDurationH = sleep.map { $0.totalSleep / 3600.0 } ?? windowH
 
-        // Carga de sueño ADITIVA (estilo Firstbeat): una noche completa de calidad
-        // (~8 h) recarga ~50 pts (≈6.5/h); el sueño corto o de baja calidad carga en
-        // proporción. Se parte de la batería con la que te acostaste (drenada por el
-        // día y el entreno) y se le SUMA la recarga — no se ancla al Recovery, para
-        // no arrastrar su valor. Así una noche corta tras entrenar deja una batería
-        // moderada, no llena.
-        let sleepQuality  = max(0.4, min(1.0, Double(sleep?.score ?? 60) / 85.0))
-        let sleepCharge   = sleepQuality * sleepDurationH * 6.5
-        let wakeupBattery = max(0.0, min(100.0, startBattery + sleepCharge))
+        // Carga de sueño POR HORA (estilo Firstbeat): el total de la noche es
+        // calidad × horas realmente dormidas × 6.5 (noche completa de calidad ≈ +50),
+        // repartido entre las horas de la ventana de sueño. Al ser por hora, una noche
+        // que cruza medianoche se reparte correctamente entre los dos días naturales
+        // (antes las horas previas a las 00:00 contaban como despierto y DRENABAN).
+        let sleepQuality = max(0.4, min(1.0, Double(sleep?.score ?? 60) / 85.0))
+        let hourlyCharge = sleepQuality * 6.5 * (sleepDurationH / max(windowH, 1.0))
 
         // Drenaje por carga de entrenamiento repartido por hora (estilo EPOC de
         // Firstbeat): cada sesión drena según su TRIMP, no según el promedio de FC
@@ -143,17 +143,21 @@ final class BodyBatteryStore {
             let isAsleep: Bool
             let hoursIntoSleep: Double
             if sleepHour >= wakeHour {
-                isAsleep = hour < wakeHour
-                hoursIntoSleep = Double(24 - sleepHour + hour)
+                // La noche cruza medianoche: duermes tanto antes como después de las 00:00
+                isAsleep = hour < wakeHour || hour >= sleepHour
+                hoursIntoSleep = hour >= sleepHour
+                    ? Double(hour - sleepHour)
+                    : Double(24 - sleepHour + hour)
             } else {
                 isAsleep = hour >= sleepHour && hour < wakeHour
                 hoursIntoSleep = isAsleep ? Double(hour - sleepHour) : 0
             }
 
             if isAsleep {
-                // Curva logarítmica: carga rápida al inicio de la noche, se aplana al final
-                let progress = min(1.0, hoursIntoSleep / windowH)
-                battery = startBattery + (wakeupBattery - startBattery) * Foundation.log10(1.0 + 9.0 * progress)
+                // Más carga al principio de la noche (sueño profundo); la media del
+                // factor es 1.0, así que el total de la noche se conserva.
+                let progress = min(1.0, max(0.0, hoursIntoSleep / max(windowH, 1.0)))
+                battery += hourlyCharge * (1.3 - 0.6 * progress)
             } else {
                 let hourlyDelta: Double
                 if let actDrain = activityDrainByHour[hour] {

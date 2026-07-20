@@ -98,7 +98,6 @@ struct BodyBatteryDetailView: View {
         let prevDay = availableDays[index - 1]
         let prev = BodyBatteryStore.shared.simulateDay(
             day: prevDay,
-            recovery: dayRecovery(for: prevDay),
             hourlyHR: hoursFor(day: prevDay),
             sleep: sleepFor(day: prevDay),
             startBattery: startBattery(for: index - 1),
@@ -150,7 +149,6 @@ private struct DayBatteryPage: View {
         }
         return BodyBatteryStore.shared.simulateDay(
             day: day,
-            recovery: Double(score),
             hourlyHR: hourlyHR,
             sleep: sleep,
             startBattery: startBattery,
