@@ -20,6 +20,11 @@ struct DashboardView: View {
         )
     }
 
+    private func reloadStrava() async {
+        guard let token = stravaAuth.accessToken else { return }
+        await dashVM.loadActivities(token: token)
+    }
+
     private func refreshWidget() {
         guard let score = healthKit.recoveryScore else { return }
         let battery = BodyBatteryStore.shared.currentBattery(
@@ -95,11 +100,7 @@ struct DashboardView: View {
             .refreshable {
                 // En paralelo para que el spinner no se quede colgado
                 async let health: Void = healthKit.loadAll()
-                async let strava: Void = {
-                    if let token = stravaAuth.accessToken {
-                        await dashVM.loadActivities(token: token)
-                    }
-                }()
+                async let strava: Void = reloadStrava()
                 _ = await (health, strava)
             }
             .navigationTitle(Date.now.formatted(.dateTime.weekday(.wide).day().month(.wide)))
@@ -147,7 +148,9 @@ struct DashboardView: View {
 
     @ViewBuilder
     private func dashboardContent() -> some View {
-        LazyVStack(spacing: 16) {
+        // VStack (no Lazy): con LazyVStack el scroll se quedaba pillado al usar
+        // "deslizar para recargar", porque el contenido se re-mide durante el gesto.
+        VStack(spacing: 16) {
             if !smartTips.isEmpty {
                 SmartTipBanner(tips: smartTips).padding(.horizontal)
             }
