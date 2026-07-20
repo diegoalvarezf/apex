@@ -273,6 +273,21 @@ private struct DayStressPage: View {
     var hrvBase: Double = 30
     let color: Color
 
+    // Consejo IA con los datos reales de estrés
+    private func stressAdvice() async throws -> String {
+        var lines = [
+            "Estrés fisiológico hoy: \(todayValue)/100.",
+            "Base autonómica por HRV: \(Int(hrvBase.rounded()))/100 (más alta = HRV bajo frente a su media)."
+        ]
+        if let rhr = restingHR { lines.append("FC en reposo: \(Int(rhr)) bpm.") }
+        let maxHR = TrainingMetrics.observedMaxHR(hourlyHR: hourlyHR)
+        if let peak = hourlyHR.map(\.value).max() {
+            lines.append("FC máxima del día: \(Int(peak)) bpm (FCmáx de referencia \(Int(maxHR))).")
+        }
+        let system = "Eres un entrenador experto en recuperación y sistema nervioso autónomo. Con los datos de estrés fisiológico del usuario, dale acciones CONCRETAS para bajar el estrés HOY (respiración, paseo suave en Z1, sueño, mover o suavizar el entreno). Español, TEXTO PLANO sin markdown ni listas, 2-3 frases. Usa solo las cifras dadas; nunca inventes valores. TERMINA con una línea aparte que empiece por 'Conclusión: ' con la acción más importante de hoy."
+        return try await AIService.shared.rawCompletion(prompt: lines.joined(separator: "\n"), system: system, maxTokens: 400)
+    }
+
     private var stressLabel: String {
         todayValue < 30 ? "Bajo — sistema descansado"
             : todayValue < 60 ? "Moderado" : "Elevado — prioriza descanso"
@@ -303,11 +318,12 @@ private struct DayStressPage: View {
                     barColorFn: { v in v < 30 ? .green : v < 60 ? .orange : .red }
                 )
 
-                TipsCard(title: "Reduce el estrés fisiológico", tips: [
-                    ("moon.fill", "El sueño profundo es el mayor regenerador del sistema nervioso"),
-                    ("figure.walk", "Caminar suave (Z1) reduce el cortisol en 20 minutos"),
-                    ("leaf.fill", "La respiración 4-7-8 activa el nervio vago en minutos"),
-                ])
+                AITextCard(
+                    title: "Cómo bajar tu estrés hoy",
+                    subtitle: "Claude mira tu estrés, HRV y FC y te dice qué hacer hoy.",
+                    cacheKey: "apex_stress_tips_\(aiDayKey(day))_\(todayValue)",
+                    generate: { try await stressAdvice() }
+                )
             }
             .padding(.top).padding(.bottom, 32).padding(.horizontal)
         }
@@ -323,6 +339,32 @@ struct RecoveryDetailView: View {
     let hrvHistory: [HRVData]
     let rhrHistory: [MetricSample]
     let todayRHR: Double?
+
+    // Consejo IA con los datos reales de recuperación
+    private func recoveryAdvice() async throws -> String {
+        var lines: [String] = []
+        if let s = score {
+            lines.append("Recuperación hoy: \(s.value)/100 (componentes — HRV:\(s.hrvScore) FCreposo:\(s.restingHRScore) sueño:\(s.sleepScore) carga:\(s.trainingLoadScore)).")
+        }
+        if let hrv = hrvHistory.first { lines.append("HRV hoy: \(Int(hrv.sdnn)) ms.") }
+        let hrvVals = hrvHistory.prefix(14).map(\.sdnn)
+        if hrvVals.count >= 3 {
+            let mean = hrvVals.reduce(0, +) / Double(hrvVals.count)
+            lines.append("HRV media 14 días: \(Int(mean.rounded())) ms.")
+        }
+        if let rhr = todayRHR { lines.append("FC en reposo hoy: \(Int(rhr)) bpm.") }
+        let rhrVals = rhrHistory.prefix(14).map(\.value)
+        if rhrVals.count >= 3 {
+            let mean = rhrVals.reduce(0, +) / Double(rhrVals.count)
+            lines.append("FC reposo media 14 días: \(Int(mean.rounded())) bpm.")
+        }
+        if history.count >= 3 {
+            let recent = history.suffix(7).map { String(Int($0.value)) }
+            lines.append("Recuperación últimos días: \(recent.joined(separator: "→")).")
+        }
+        let system = "Eres un entrenador de élite experto en recuperación. Con los datos del usuario (HRV y FC en reposo frente a su media, sueño y carga), dile qué hacer para mejorar su recuperación. Interpreta la TENDENCIA, no solo el valor de hoy. Español, TEXTO PLANO sin markdown ni listas, 2-3 frases. Usa solo las cifras dadas; nunca inventes valores. TERMINA con una línea aparte que empiece por 'Conclusión: ' con el siguiente paso concreto."
+        return try await AIService.shared.rawCompletion(prompt: lines.joined(separator: "\n"), system: system, maxTokens: 400)
+    }
 
     private var todayHRV: Double? { hrvHistory.first?.sdnn }
     private var hrvBaseline: Double? {
@@ -407,11 +449,12 @@ struct RecoveryDetailView: View {
                     .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
                 }
 
-                TipsCard(title: "Mejora tu recuperación", tips: [
-                    ("bed.double.fill", "Mantén un horario de sueño consistente para maximizar HRV"),
-                    ("chart.line.uptrend.xyaxis", "Observa la tendencia semanal, no solo el valor de hoy"),
-                    ("fork.knife", "Proteínas + carbohidratos post-entreno aceleran la recuperación"),
-                ])
+                AITextCard(
+                    title: "Cómo mejorar tu recuperación",
+                    subtitle: "Claude lee tu HRV, FC en reposo y su tendencia y te da el siguiente paso.",
+                    cacheKey: "apex_recovery_tips_\(aiDayKey(Date()))_\(score?.value ?? 0)",
+                    generate: { try await recoveryAdvice() }
+                )
             }
             .padding(.top).padding(.bottom, 32).padding(.horizontal)
         }
@@ -431,6 +474,34 @@ struct EffortDetailView: View {
     let history: [MetricSample]
     let color: Color
     let activities: [StravaActivity]
+
+    // Consejo IA con el esfuerzo real del usuario
+    private func effortAdvice() async throws -> String {
+        let cal = Calendar.current
+        var lines = ["Esfuerzo de hoy: \(value)/100 (TRIMP diario normalizado)."]
+        if history.count >= 2 {
+            let recent = history.suffix(7).map { String(Int($0.value)) }
+            lines.append("Esfuerzo últimos días: \(recent.joined(separator: "→")).")
+        }
+        let today = cal.startOfDay(for: Date())
+        let todayActs = activities.filter { $0.startDate >= today }
+        if todayActs.isEmpty {
+            lines.append("Hoy no hay sesiones registradas.")
+        } else {
+            lines.append("Sesiones de hoy:")
+            for a in todayActs {
+                let hr = a.averageHeartrate.map { " · FC \(Int($0))" } ?? ""
+                lines.append("  \(a.name) · \(a.formattedDuration)\(hr)")
+            }
+        }
+        if let from = cal.date(byAdding: .day, value: -7, to: Date()) {
+            let week = activities.filter { $0.startDate >= from }
+            let h = week.reduce(0.0) { $0 + Double($1.movingTime) } / 3600.0
+            lines.append(String(format: "Últimos 7 días: %d sesiones, %.1f h.", week.count, h))
+        }
+        let system = "Eres un entrenador de élite. Con el esfuerzo diario del usuario (TRIMP) y sus sesiones, dile si hoy toca empujar, mantener o descansar, y cómo enfocar los próximos días. Ten en cuenta que la supercompensación ocurre en el descanso y que conviene alternar días de carga alta y baja. Español, TEXTO PLANO sin markdown ni listas, 2-3 frases. Usa solo las cifras dadas; nunca inventes valores. TERMINA con una línea aparte que empiece por 'Conclusión: ' con la recomendación principal."
+        return try await AIService.shared.rawCompletion(prompt: lines.joined(separator: "\n"), system: system, maxTokens: 400)
+    }
 
     private let zoneNames  = ["Z1 Muy suave", "Z2 Aeróbico", "Z3 Umbral", "Z4 Anaeróbico", "Z5 Máximo"]
     private let zoneColors: [Color] = [.gray, .blue, .green, .orange, .red]
@@ -586,11 +657,12 @@ struct EffortDetailView: View {
                     .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
                 }
 
-                TipsCard(title: "Sobre el TRIMP", tips: [
-                    ("bolt.fill", "El TRIMP pondera exponencialmente la intensidad: Z4/Z5 cuentan mucho más que Z1"),
-                    ("arrow.up.arrow.down", "Alterna días de carga alta (>60) con días de recuperación (<25)"),
-                    ("bed.double.fill", "La supercompensación ocurre en el descanso — no en el entreno"),
-                ])
+                AITextCard(
+                    title: "Cómo enfocar tu carga",
+                    subtitle: "Claude analiza tu esfuerzo de hoy y de la semana y te dice si empujar o descansar.",
+                    cacheKey: "apex_effort_tips_\(aiDayKey(Date()))_\(value)",
+                    generate: { try await effortAdvice() }
+                )
             }
             .padding(.top).padding(.bottom, 32).padding(.horizontal)
         }
@@ -753,20 +825,8 @@ struct FactorBarRow: View {
     }
 }
 
-private struct TipsCard: View {
-    let title: String; let tips: [(String, String)]
-    var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text(title).font(.headline)
-            Divider()
-            ForEach(tips, id: \.0) { icon, text in
-                HStack(alignment: .top, spacing: 10) {
-                    Image(systemName: icon).font(.caption).foregroundColor(.accentColor).frame(width: 16)
-                    Text(text).font(.subheadline).foregroundColor(.secondary)
-                }
-            }
-        }
-        .padding(16)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-    }
+// Clave de día para cachear los consejos IA (se regeneran al cambiar de día o de valor)
+fileprivate func aiDayKey(_ date: Date) -> String {
+    let f = DateFormatter(); f.dateFormat = "yyyy-MM-dd"
+    return f.string(from: date)
 }
