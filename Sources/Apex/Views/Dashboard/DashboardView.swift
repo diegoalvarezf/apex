@@ -200,9 +200,9 @@ struct DashboardView: View {
             vo2MaxData: healthKit.vo2MaxData,
             respiratoryData: healthKit.respiratoryData,
             wristTempData: healthKit.wristTempData,
-            daylightData: healthKit.daylightData
+            daylightData: healthKit.daylightData,
+            bloodOxygen: healthKit.bloodOxygen
         )
-        .padding(.horizontal)
     }
 
     @ViewBuilder
