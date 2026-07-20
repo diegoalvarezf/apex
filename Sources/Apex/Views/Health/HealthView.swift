@@ -2,6 +2,7 @@ import SwiftUI
 
 struct HealthView: View {
     @EnvironmentObject var healthKit: HealthKitManager
+    @EnvironmentObject var dashVM: DashboardViewModel
 
     var body: some View {
         NavigationStack {
@@ -134,26 +135,75 @@ struct HealthView: View {
             SectionHeader(title: "Actividad", icon: "figure.run")
 
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
-                if let dl = healthKit.daylightData {
-                    NavigationLink(destination: MetricDetailView(config: MetricConfig(
-                        title: "Luz diurna", icon: "sun.max.fill", color: .yellow,
-                        unit: "min hoy", value: "\(dl.todayMinutes)",
-                        samples: dl.samples, higherIsBetter: true, normalRange: 20...120,
-                        explanation: "La exposición a la luz natural sincroniza el ritmo circadiano y mejora el sueño. Mínimo 20-30 min diarios."
-                    ))) {
-                        PWMetricCard(icon: "sun.max.fill", color: .yellow,
-                                     title: "Luz diurna", value: "\(dl.todayMinutes)", unit: "min hoy",
-                                     status: daylightStatus(dl.todayMinutes), samples: dl.samples)
-                    }.buttonStyle(.plain)
-                }
+                NavigationLink(destination: HeartRateZonesView()) {
+                    ActivityStatCard(title: "Zona 1–3 / sem.", value: "\(weeklyZone13)", unit: "min",
+                                     level: zone13Level)
+                }.buttonStyle(.plain)
 
                 NavigationLink(destination: HeartRateZonesView()) {
-                    PWMetricCard(icon: "waveform.path.ecg.rectangle.fill", color: .orange,
-                                 title: "Zonas FC", value: "Ver", unit: "detalle",
-                                 status: .info, samples: [])
+                    ActivityStatCard(title: "Zona 4–5 / sem.", value: "\(weeklyZone45)", unit: "min",
+                                     level: zone45Level)
                 }.buttonStyle(.plain)
+
+                ActivityStatCard(title: "Fuerza / sem.", value: "\(weeklyStrength)", unit: "min",
+                                 level: strengthLevel)
+
+                ActivityStatCard(title: "Pasos", value: "\(healthKit.todaySummary?.steps ?? 0)", unit: "",
+                                 level: stepsLevel)
+
+                ActivityStatCard(title: "Pisos subidos", value: "\(healthKit.todayFlights)", unit: "",
+                                 level: flightsLevel)
             }
         }
+    }
+
+    // MARK: - Cálculo de la sección Actividad
+
+    private var weekActivities: [StravaActivity] {
+        let from = Calendar.current.date(byAdding: .day, value: -7, to: Date()) ?? Date()
+        return dashVM.activities.filter { $0.startDate >= from }
+    }
+
+    // Clasifica cada sesión por su FC media respecto a la FCmáx: Z1-3 <80%, Z4-5 ≥80%
+    private func weeklyMinutes(highIntensity: Bool) -> Int {
+        let maxHR = TrainingMetrics.observedMaxHR(hourlyHR: healthKit.recentHourlyHR)
+        guard maxHR > 0 else { return 0 }
+        let mins = weekActivities.reduce(0.0) { acc, a in
+            guard let hr = a.averageHeartrate else { return acc }
+            let pct = hr / maxHR
+            let isHigh = pct >= 0.80
+            guard isHigh == highIntensity else { return acc }
+            return acc + Double(a.movingTime) / 60.0
+        }
+        return Int(mins.rounded())
+    }
+    private var weeklyZone13: Int { weeklyMinutes(highIntensity: false) }
+    private var weeklyZone45: Int { weeklyMinutes(highIntensity: true) }
+
+    private var weeklyStrength: Int {
+        let mins = weekActivities
+            .filter { TrainingMetrics.strengthTypes.contains($0.sportType.lowercased()) }
+            .reduce(0.0) { $0 + Double($1.movingTime) / 60.0 }
+        return Int(mins.rounded())
+    }
+
+    // Niveles: 0 bajo · 1 medio · 2 bueno · 3 excelente
+    // Referencias OMS: 150 min/sem moderado (Z1-3), 75 min/sem vigoroso (Z4-5),
+    // 2 sesiones de fuerza/sem, 10.000 pasos/día.
+    private var zone13Level: Int {
+        switch weeklyZone13 { case ..<60: 0; case ..<120: 1; case ..<180: 2; default: 3 }
+    }
+    private var zone45Level: Int {
+        switch weeklyZone45 { case ..<15: 0; case ..<30: 1; case ..<75: 2; default: 3 }
+    }
+    private var strengthLevel: Int {
+        switch weeklyStrength { case ..<30: 0; case ..<60: 1; case ..<100: 2; default: 3 }
+    }
+    private var stepsLevel: Int {
+        switch healthKit.todaySummary?.steps ?? 0 { case ..<5000: 0; case ..<7500: 1; case ..<10000: 2; default: 3 }
+    }
+    private var flightsLevel: Int {
+        switch healthKit.todayFlights { case ..<5: 0; case ..<10: 1; case ..<15: 2; default: 3 }
     }
 
     @ViewBuilder
@@ -225,14 +275,6 @@ struct HealthView: View {
         }
     }
 
-    private func daylightStatus(_ v: Int) -> HealthMetricStatus {
-        switch v {
-        case 45...: return .excellent
-        case 20..<45: return .good
-        case 10..<20: return .normal
-        default: return .low
-        }
-    }
 }
 
 // MARK: - Status enum
@@ -372,6 +414,80 @@ private struct AgeTickBar: View {
             let mx = size.width * chronoPos
             let marker = Path(roundedRect: CGRect(x: mx - 1.5, y: 0, width: 3, height: size.height), cornerRadius: 1.5)
             ctx.fill(marker, with: .color(.primary))
+        }
+    }
+}
+
+// Tarjeta de actividad: título + chevron, valor grande, estado y barra de nivel vertical
+private struct ActivityStatCard: View {
+    let title: String
+    let value: String
+    let unit: String
+    let level: Int          // 0 bajo · 1 medio · 2 bueno · 3 excelente
+
+    private var status: (label: String, icon: String, color: Color) {
+        switch level {
+        case 0:  return ("Bajo", "chevron.down.circle.fill", .red)
+        case 1:  return ("Medio", "minus.circle.fill", .yellow)
+        case 2:  return ("Bueno", "checkmark.circle.fill", .green)
+        default: return ("Excelente", "hand.thumbsup.circle.fill", .blue)
+        }
+    }
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 8) {
+            VStack(alignment: .leading, spacing: 0) {
+                HStack(spacing: 4) {
+                    Text(title).font(.subheadline).foregroundStyle(.secondary)
+                        .lineLimit(1).minimumScaleFactor(0.8)
+                    Image(systemName: "chevron.right")
+                        .font(.caption2.weight(.semibold)).foregroundStyle(.secondary)
+                }
+                Spacer(minLength: 14)
+                HStack(alignment: .firstTextBaseline, spacing: 2) {
+                    Text(value)
+                        .font(.system(size: 26, weight: .bold, design: .rounded))
+                        .foregroundStyle(.primary)
+                        .lineLimit(1).minimumScaleFactor(0.6)
+                    if !unit.isEmpty {
+                        Text(unit).font(.caption).foregroundStyle(.secondary)
+                    }
+                }
+                HStack(spacing: 4) {
+                    Image(systemName: status.icon).font(.caption)
+                    Text(status.label).font(.subheadline).fontWeight(.medium)
+                }
+                .foregroundStyle(status.color)
+            }
+            Spacer(minLength: 0)
+            LevelBar(level: level)
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, minHeight: 130, alignment: .topLeading)
+        .background(Color(.secondarySystemGroupedBackground),
+                    in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+    }
+}
+
+// Barra vertical de 4 niveles; el activo se muestra alto y en color
+private struct LevelBar: View {
+    let level: Int
+    private let colors: [Color] = [.red, .yellow, .green, .blue]   // 0 abajo → 3 arriba
+
+    var body: some View {
+        VStack(spacing: 5) {
+            ForEach((0..<4).reversed(), id: \.self) { i in
+                if i == level {
+                    Capsule().fill(colors[i])
+                        .frame(width: 9, height: 44)
+                        .overlay(
+                            Circle().fill(.white.opacity(0.95)).frame(width: 5, height: 5)
+                        )
+                } else {
+                    Capsule().fill(colors[i].opacity(0.22))
+                        .frame(width: 9, height: 9)
+                }
+            }
         }
     }
 }

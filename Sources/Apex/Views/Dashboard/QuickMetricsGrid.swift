@@ -130,29 +130,32 @@ struct QuickMetricsGrid: View {
                 }
                 .buttonStyle(.plain)
 
-                // Luz diurna
-                NavigationLink(destination: metricDetail(
-                    title: "Luz diurna",
-                    icon: "sun.max.fill",
-                    color: .yellow,
-                    value: daylightData.map { "\($0.todayMinutes)" } ?? summary?.daylightMinutes.map { "\($0)" } ?? "--",
-                    unit: "min hoy",
-                    samples: daylightData?.samples ?? [],
-                    higherIsBetter: true,
-                    normalRange: 20...120,
-                    explanation: "La exposición a la luz natural regula el ritmo circadiano, mejora el sueño y el estado de ánimo. Se recomiendan al menos 20-30 minutos diarios."
-                )) {
-                    MetricTile(
-                        icon: "sun.max.fill", color: .yellow,
+                // Luz diurna: solo si hay datos (la mide el Apple Watch; con otros
+                // relojes no existe y quedaría un tile vacío)
+                if let dl = daylightData {
+                    NavigationLink(destination: metricDetail(
                         title: "Luz diurna",
-                        value: daylightData.map { "\($0.todayMinutes)" } ?? "--",
+                        icon: "sun.max.fill",
+                        color: .yellow,
+                        value: "\(dl.todayMinutes)",
                         unit: "min hoy",
-                        trend: daylightData?.trend,
+                        samples: dl.samples,
                         higherIsBetter: true,
-                        samples: daylightData?.samples.suffix(14).map { $0 } ?? []
-                    )
+                        normalRange: 20...120,
+                        explanation: "La exposición a la luz natural regula el ritmo circadiano, mejora el sueño y el estado de ánimo. Se recomiendan al menos 20-30 minutos diarios."
+                    )) {
+                        MetricTile(
+                            icon: "sun.max.fill", color: .yellow,
+                            title: "Luz diurna",
+                            value: "\(dl.todayMinutes)",
+                            unit: "min hoy",
+                            trend: dl.trend,
+                            higherIsBetter: true,
+                            samples: dl.samples.suffix(14).map { $0 }
+                        )
+                    }
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
             }
         }
     }

@@ -20,6 +20,7 @@ final class HealthKitManager: ObservableObject {
     @Published var heartRateZones: [HeartRateZone] = []
     @Published var restingHRHistory: [MetricSample] = []
     @Published var restingHRIsDerived = false   // true si la FC reposo se estimó de la FC (sin dato nativo)
+    @Published var todayFlights: Int = 0        // pisos subidos hoy
     @Published var recoveryHistory: [MetricSample] = []
     @Published var biologicalAge: BiologicalAgeResult?
     @Published var sleepAge: SleepAgeResult?
@@ -39,7 +40,7 @@ final class HealthKitManager: ObservableObject {
         var types = Set<HKObjectType>()
         let ids: [HKQuantityTypeIdentifier] = [
             .heartRateVariabilitySDNN, .restingHeartRate, .vo2Max,
-            .stepCount, .activeEnergyBurned, .respiratoryRate,
+            .stepCount, .flightsClimbed, .activeEnergyBurned, .respiratoryRate,
             .appleSleepingWristTemperature, .timeInDaylight,
             .bodyMass, .bodyMassIndex, .heartRate, .oxygenSaturation
         ]
@@ -89,6 +90,7 @@ final class HealthKitManager: ObservableObject {
         async let spo2 = fetchLatestQuantity(.oxygenSaturation, unit: .percent())
         async let maxHR30 = fetchMaxHR30Days()
         async let rhrDerivedSeries = fetchRestingHRSeries()
+        async let flights = fetchTodayFlights()
 
         let (sleepData, hrvData, rhrRaw, rhrHistRaw, vo2Data, stepsVal, calsVal, respData, wtData, dlData, bodyData, workoutCals, hrByHour, spo2Val, maxHRVal, rhrSeries) =
             await (sleep, hrv, rhr, rhrHistory, vo2, steps, calories, respiratory, wristTemp, daylight, body, recentWorkoutCalories, hourlyHR, spo2, maxHR30, rhrDerivedSeries)
@@ -99,6 +101,7 @@ final class HealthKitManager: ObservableObject {
         let rhrVal = rhrRaw ?? Self.median(rhrSeries.map(\.value))
         let rhrHist = rhrHistRaw.isEmpty ? rhrSeries : rhrHistRaw
         restingHRIsDerived = rhrRaw == nil && rhrVal != nil
+        todayFlights = await flights
 
         // Persistir para las calculadoras (TRIMP, zonas, battery):
         // FCmáx observada 30 días (metodología PeakWatch), FC reposo y sexo biológico
@@ -465,6 +468,18 @@ final class HealthKitManager: ObservableObject {
         let predicate = HKQuery.predicateForSamples(withStart: start, end: Date())
         return await withCheckedContinuation { continuation in
             let query = HKStatisticsQuery(quantityType: stepType, quantitySamplePredicate: predicate, options: .cumulativeSum) { _, stats, _ in
+                continuation.resume(returning: Int(stats?.sumQuantity()?.doubleValue(for: .count()) ?? 0))
+            }
+            store.execute(query)
+        }
+    }
+
+    private func fetchTodayFlights() async -> Int {
+        guard let type = HKQuantityType.quantityType(forIdentifier: .flightsClimbed) else { return 0 }
+        let start = Calendar.current.startOfDay(for: Date())
+        let predicate = HKQuery.predicateForSamples(withStart: start, end: Date())
+        return await withCheckedContinuation { continuation in
+            let query = HKStatisticsQuery(quantityType: type, quantitySamplePredicate: predicate, options: .cumulativeSum) { _, stats, _ in
                 continuation.resume(returning: Int(stats?.sumQuantity()?.doubleValue(for: .count()) ?? 0))
             }
             store.execute(query)
