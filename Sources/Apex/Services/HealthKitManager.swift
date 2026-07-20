@@ -21,6 +21,7 @@ final class HealthKitManager: ObservableObject {
     @Published var restingHRHistory: [MetricSample] = []
     @Published var restingHRIsDerived = false   // true si la FC reposo se estimó de la FC (sin dato nativo)
     @Published var todayFlights: Int = 0        // pisos subidos hoy
+    @Published var bloodOxygenHistory: [MetricSample] = []   // SpO2 30 días
     @Published var bodyFatPercent: Double?      // % grasa corporal (báscula inteligente)
     @Published var leanBodyMassKg: Double?      // masa magra en kg
     @Published var recoveryHistory: [MetricSample] = []
@@ -94,6 +95,7 @@ final class HealthKitManager: ObservableObject {
         async let maxHR30 = fetchMaxHR30Days()
         async let rhrDerivedSeries = fetchRestingHRSeries()
         async let flights = fetchTodayFlights()
+        async let spo2Hist = fetchQuantitySamples(.oxygenSaturation, days: 30, unit: .percent())
         async let bodyFat = fetchLatestQuantity(.bodyFatPercentage, unit: .percent())
         async let leanMass = fetchLatestQuantity(.leanBodyMass, unit: .gramUnit(with: .kilo))
 
@@ -107,6 +109,7 @@ final class HealthKitManager: ObservableObject {
         let rhrHist = rhrHistRaw.isEmpty ? rhrSeries : rhrHistRaw
         restingHRIsDerived = rhrRaw == nil && rhrVal != nil
         todayFlights = await flights
+        bloodOxygenHistory = await spo2Hist.map { MetricSample(date: $0.date, value: $0.value * 100) }
         bodyFatPercent = await bodyFat.map { $0 * 100 }   // HealthKit da 0-1
         leanBodyMassKg = await leanMass
 

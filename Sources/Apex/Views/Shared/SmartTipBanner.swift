@@ -6,12 +6,13 @@ struct SmartTipBanner: View {
     let tips: [SmartTip]
     @State private var current = 0
     @State private var dismissed = false
+    @State private var expanded = false
 
     var body: some View {
         if dismissed || tips.isEmpty { EmptyView() }
         else {
             let tip = tips[current]
-            HStack(spacing: 12) {
+            HStack(alignment: .top, spacing: 12) {
                 Image(systemName: tip.icon)
                     .font(.system(size: 17, weight: .semibold))
                     .foregroundColor(tip.color)
@@ -21,23 +22,32 @@ struct SmartTipBanner: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(tip.title)
                         .font(.subheadline).fontWeight(.semibold).foregroundColor(.primary)
-                        .lineLimit(1)
+                        .lineLimit(expanded ? nil : 1)
+                        .fixedSize(horizontal: false, vertical: expanded)
                     Text(tip.detail)
                         .font(.caption).foregroundColor(.secondary)
-                        .lineLimit(2)
+                        .lineLimit(expanded ? nil : 2)
+                        .fixedSize(horizontal: false, vertical: expanded)
                 }
 
                 Spacer(minLength: 0)
 
-                VStack(spacing: 4) {
-                    // Dismiss
+                VStack(spacing: 6) {
+                    // Cerrar
                     Button { withAnimation { dismissed = true } } label: {
                         Image(systemName: "xmark").font(.caption2).foregroundStyle(.tertiary)
                     }
-                    // Paginator
+                    // Pasar a la siguiente alerta
                     if tips.count > 1 {
-                        Text("\(current + 1)/\(tips.count)").font(.system(size: 9)).foregroundColor(.secondary)
+                        Button {
+                            withAnimation { current = (current + 1) % tips.count }
+                        } label: {
+                            Text("\(current + 1)/\(tips.count)")
+                                .font(.system(size: 9)).foregroundColor(.secondary)
+                        }
                     }
+                    Image(systemName: expanded ? "chevron.up" : "chevron.down")
+                        .font(.system(size: 9, weight: .semibold)).foregroundStyle(.tertiary)
                 }
             }
             .padding(12)
@@ -47,10 +57,8 @@ struct SmartTipBanner: View {
                     .frame(width: 3).padding(.vertical, 8)
             }
             .contentShape(Rectangle())
-            .onTapGesture {
-                guard tips.count > 1 else { return }
-                withAnimation { current = (current + 1) % tips.count }
-            }
+            // Tocar el texto despliega la alerta completa
+            .onTapGesture { withAnimation(.spring(response: 0.3)) { expanded.toggle() } }
             .transition(.asymmetric(insertion: .push(from: .top), removal: .push(from: .bottom)))
             .animation(.spring(response: 0.4), value: current)
         }

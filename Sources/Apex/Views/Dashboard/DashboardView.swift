@@ -201,7 +201,9 @@ struct DashboardView: View {
             respiratoryData: healthKit.respiratoryData,
             wristTempData: healthKit.wristTempData,
             daylightData: healthKit.daylightData,
-            bloodOxygen: healthKit.bloodOxygen
+            bloodOxygen: healthKit.bloodOxygen,
+            rhrHistory: healthKit.restingHRHistory,
+            bloodOxygenHistory: healthKit.bloodOxygenHistory
         )
     }
 

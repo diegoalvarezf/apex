@@ -10,6 +10,8 @@ struct QuickMetricsGrid: View {
     let wristTempData: WristTempData?
     let daylightData: DaylightData?
     var bloodOxygen: Double? = nil
+    var rhrHistory: [MetricSample] = []
+    var bloodOxygenHistory: [MetricSample] = []
 
     @ObservedObject private var layout = HealthLayoutStore.shared
 
@@ -41,7 +43,7 @@ struct QuickMetricsGrid: View {
                     NavigationLink(destination: metricDetail(
                         title: "FC en reposo", icon: "heart.fill", color: .red,
                         value: summary?.restingHR.map { String(format: "%.0f", $0) } ?? "--", unit: "bpm",
-                        samples: [], higherIsBetter: false, normalRange: 40...70,
+                        samples: rhrHistory, higherIsBetter: false, normalRange: 40...70,
                         explanation: "Una frecuencia cardíaca en reposo baja indica un corazón eficiente."
                     )) {
                         MetricColumn(icon: "heart.fill", color: .red,
@@ -69,7 +71,7 @@ struct QuickMetricsGrid: View {
                     NavigationLink(destination: metricDetail(
                         title: "Oxígeno en sangre", icon: "drop.fill", color: .pink,
                         value: bloodOxygen.map { String(format: "%.0f", $0) } ?? "--", unit: "%",
-                        samples: [], higherIsBetter: true, normalRange: 95...100,
+                        samples: bloodOxygenHistory, higherIsBetter: true, normalRange: 95...100,
                         explanation: "La saturación de oxígeno en sangre (SpO2) indica cuánto oxígeno transportan tus glóbulos rojos. Un valor ≥95% es normal en adultos sanos."
                     )) {
                         MetricColumn(icon: "drop.fill", color: .pink,
