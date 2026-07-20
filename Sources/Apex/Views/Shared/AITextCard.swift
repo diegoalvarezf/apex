@@ -33,25 +33,21 @@ struct AITextCard: View {
                     Text("Analizando…").font(.subheadline).foregroundStyle(.secondary)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
+            } else if let error {
+                Text(error).font(.caption).foregroundStyle(.red)
             } else {
                 Text(subtitle).font(.caption).foregroundStyle(.secondary)
-                Button { run() } label: {
-                    Label("Analizar con IA", systemImage: "sparkles")
-                        .font(.subheadline).fontWeight(.semibold)
-                        .frame(maxWidth: .infinity).padding(.vertical, 10)
-                        .background(LinearGradient(colors: [.purple, .blue], startPoint: .leading, endPoint: .trailing))
-                        .foregroundStyle(.white)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                }
             }
-
-            if let error { Text(error).font(.caption).foregroundStyle(.red) }
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Color(.secondarySystemGroupedBackground))
         .clipShape(RoundedRectangle(cornerRadius: 14))
-        .onAppear { text = UserDefaults.standard.string(forKey: cacheKey) }
+        .onAppear {
+            text = UserDefaults.standard.string(forKey: cacheKey)
+            // Automático: si no hay nada cacheado para esta clave, se genera solo
+            if text == nil { run() }
+        }
     }
 
     private func run() {
