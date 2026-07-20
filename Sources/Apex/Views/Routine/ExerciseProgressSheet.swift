@@ -20,6 +20,37 @@ struct ExerciseProgressSheet: View {
         return exercise
     }
 
+    // Día de la rutina que contiene este ejercicio (para el contexto de sesión)
+    private var parentDay: GymDay? {
+        for r in routineVM.routines {
+            for d in r.days where d.exercises.contains(where: { $0.id == exercise.id }) { return d }
+        }
+        return nil
+    }
+
+    // Los demás ejercicios del mismo día y su progresión: un ejercicio no progresa
+    // en el vacío — el orden en la sesión y lo que se hizo antes (mismo grupo
+    // muscular, empuje/tirón) explican muchos estancamientos.
+    private func sessionContext() -> [String] {
+        guard let day = parentDay, day.exercises.count > 1 else { return [] }
+        var lines = ["", "CONTEXTO DE LA SESIÓN — este ejercicio se hace dentro del día \"\(day.name)\", en este orden:"]
+        for (i, ex) in day.exercises.enumerated() {
+            let entries = RoutineProgressStore.shared.entries(for: ex.id).suffix(3)
+            let prog: String = entries.isEmpty ? "sin registros" : entries.map { e in
+                var p: [String] = []
+                if e.weight > 0 { p.append(formatKg(e.weight)) }
+                if let r = e.reps { p.append("\(r) reps") }
+                if let s = e.seconds { p.append("\(s)s") }
+                if let m = e.meters { p.append("\(m)m") }
+                return p.isEmpty ? "—" : p.joined(separator: " ")
+            }.joined(separator: " → ")
+            let mark = ex.id == exercise.id ? "   ← EL QUE ANALIZAS" : ""
+            let group = ex.muscleGroup.isEmpty ? "" : " (\(ex.muscleGroup))"
+            lines.append("  \(i + 1). \(ex.name)\(group) [\(ex.sets)×\(ex.reps)]: \(prog)\(mark)")
+        }
+        return lines
+    }
+
     @State private var weightText = ""
     @State private var repsText = ""
     @State private var secondsText = ""
@@ -406,7 +437,9 @@ struct ExerciseProgressSheet: View {
             let desc = parts.isEmpty ? "—" : parts.joined(separator: " · ")
             lines.append("  \(df.string(from: e.date)) · \(desc)")
         }
-        let system = "Eres un entrenador de fuerza. Analizas la progresión de un ejercicio frente a su prescripción. LEE EL NOMBRE del ejercicio para entender qué es y cómo progresa (no es lo mismo un femoral sentado que tumbado, ni una plancha que un press). Los ejercicios pueden medirse por PESO (con carga), por SEGUNDOS (isometrías como plancha: más tiempo = progreso) o por REPS a peso corporal (elevaciones, dominadas: más reps = progreso). Responde en español, TEXTO PLANO (sin markdown ni listas), 2-3 frases: ¿progresa, se estanca o conviene descargar? Con peso y reps variables, valora la FUERZA REAL por el 1RM estimado (Epley), no solo el peso (80×10 puede ser más fuerte que 85×5). Ten en cuenta la sobrecarga progresiva y que 2-3 sesiones estancadas piden un cambio. Usa solo las cifras dadas; nunca inventes valores. TERMINA SIEMPRE con una línea aparte que empiece por 'Conclusión: ' y resuma en una frase el SIGUIENTE paso concreto (subir peso/reps/segundos, mantener o descargar) acorde al TIPO de ejercicio."
+        lines += sessionContext()
+
+        let system = "Eres un entrenador de fuerza. Analizas la progresión de un ejercicio frente a su prescripción. LEE EL NOMBRE del ejercicio para entender qué es y cómo progresa (no es lo mismo un femoral sentado que tumbado, ni una plancha que un press). Los ejercicios pueden medirse por PESO (con carga), por SEGUNDOS (isometrías como plancha: más tiempo = progreso), por METROS (farmer walk) o por REPS a peso corporal. IMPORTANTE: si te dan el CONTEXTO DE LA SESIÓN, úsalo — un ejercicio no progresa aislado: su ORDEN en el día y los ejercicios previos del mismo grupo muscular o patrón (empuje/tirón) explican muchos estancamientos. Si este ejercicio se estanca pero los anteriores subieron, dilo así en vez de sugerir sin más que suba peso. Español, TEXTO PLANO sin markdown ni listas, 2-3 frases. Con peso y reps variables, valora la FUERZA REAL por el 1RM estimado (Epley), no solo el peso (80×10 puede ser más fuerte que 85×5). Usa solo las cifras dadas; nunca inventes valores. TERMINA SIEMPRE con una línea aparte que empiece por 'Conclusión: ' y resuma en una frase el SIGUIENTE paso concreto (subir peso/reps/segundos, mantener o descargar) acorde al TIPO de ejercicio."
         return try await AIService.shared.rawCompletion(prompt: lines.joined(separator: "\n"), system: system, maxTokens: 400)
     }
 }
