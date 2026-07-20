@@ -3,6 +3,8 @@ import SwiftUI
 struct HealthView: View {
     @EnvironmentObject var healthKit: HealthKitManager
     @EnvironmentObject var dashVM: DashboardViewModel
+    @ObservedObject private var layout = HealthLayoutStore.shared
+    @State private var showEdit = false
 
     var body: some View {
         NavigationStack {
@@ -12,10 +14,15 @@ struct HealthView: View {
                 } else {
                     ScrollView {
                         VStack(spacing: 24) {
-                            bioAgeSection()
-                            vitalsSection()
-                            activitySection()
-                            bodySection()
+                            ForEach(layout.sectionOrder) { section in
+                                switch section {
+                                case .bioAge:   bioAgeSection()
+                                case .vitals:   vitalsSection()
+                                case .activity: activitySection()
+                                case .body:     bodySection()
+                                }
+                            }
+                            editPageButton
                         }
                         .padding(.horizontal)
                         .padding(.top, 12)
@@ -26,7 +33,24 @@ struct HealthView: View {
             .background(Color(.systemGroupedBackground))
             .navigationTitle("Salud")
             .refreshable { await healthKit.loadAll() }
+            .sheet(isPresented: $showEdit) { EditHealthPageView(layout: layout) }
         }
+    }
+
+    private var editPageButton: some View {
+        Button { showEdit = true } label: {
+            HStack {
+                Spacer()
+                Text("Editar página").font(.subheadline).foregroundStyle(.secondary)
+                Image(systemName: "slider.horizontal.3").font(.subheadline).foregroundStyle(.secondary)
+                Spacer()
+            }
+            .padding(.vertical, 16)
+            .background(Color(.secondarySystemGroupedBackground),
+                        in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .padding(.top, 4)
     }
 
     // MARK: - Secciones
@@ -47,7 +71,7 @@ struct HealthView: View {
             SectionHeader(title: "Métricas corporales", icon: "waveform.path.ecg")
 
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
-                if let hrv = healthKit.hrvHistory.first {
+                if layout.isVisible(.hrv), let hrv = healthKit.hrvHistory.first {
                     let samples = healthKit.hrvHistory.map { MetricSample(date: $0.date, value: $0.sdnn) }
                     NavigationLink(destination: MetricDetailView(config: MetricConfig(
                         title: "HRV", icon: "waveform.path.ecg", color: .green,
@@ -61,7 +85,7 @@ struct HealthView: View {
                     }.buttonStyle(.plain)
                 }
 
-                if let rhr = healthKit.todaySummary?.restingHR {
+                if layout.isVisible(.restingHR), let rhr = healthKit.todaySummary?.restingHR {
                     NavigationLink(destination: MetricDetailView(config: MetricConfig(
                         title: "FC en reposo", icon: "heart.fill", color: .red,
                         unit: "bpm", value: String(format: "%.0f", rhr),
@@ -74,7 +98,7 @@ struct HealthView: View {
                     }.buttonStyle(.plain)
                 }
 
-                if let vo2 = healthKit.vo2MaxData {
+                if layout.isVisible(.vo2max), let vo2 = healthKit.vo2MaxData {
                     NavigationLink(destination: MetricDetailView(config: MetricConfig(
                         title: "VO₂Max", icon: "lungs.fill", color: .blue,
                         unit: "ml/kg/min", value: String(format: "%.1f", vo2.current),
@@ -87,7 +111,7 @@ struct HealthView: View {
                     }.buttonStyle(.plain)
                 }
 
-                if let resp = healthKit.respiratoryData {
+                if layout.isVisible(.respiratory), let resp = healthKit.respiratoryData {
                     NavigationLink(destination: MetricDetailView(config: MetricConfig(
                         title: "Frec. respiratoria", icon: "wind", color: .cyan,
                         unit: "resp/min", value: String(format: "%.0f", resp.current),
@@ -100,7 +124,7 @@ struct HealthView: View {
                     }.buttonStyle(.plain)
                 }
 
-                if let spo2 = healthKit.bloodOxygen {
+                if layout.isVisible(.spo2), let spo2 = healthKit.bloodOxygen {
                     NavigationLink(destination: MetricDetailView(config: MetricConfig(
                         title: "Oxígeno en sangre", icon: "drop.fill", color: .pink,
                         unit: "%", value: String(format: "%.0f", spo2),
@@ -113,7 +137,7 @@ struct HealthView: View {
                     }.buttonStyle(.plain)
                 }
 
-                if let wrist = healthKit.wristTempData {
+                if layout.isVisible(.wristTemp), let wrist = healthKit.wristTempData {
                     NavigationLink(destination: MetricDetailView(config: MetricConfig(
                         title: "Temp. muñeca", icon: "thermometer.medium", color: .purple,
                         unit: "°C desv.", value: String(format: "%+.1f°", wrist.deviation),
@@ -135,24 +159,46 @@ struct HealthView: View {
             SectionHeader(title: "Actividad", icon: "figure.run")
 
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
-                NavigationLink(destination: HeartRateZonesView()) {
-                    ActivityStatCard(title: "Zona 1–3 / sem.", value: "\(weeklyZone13)", unit: "min",
-                                     level: zone13Level)
-                }.buttonStyle(.plain)
+                if layout.isVisible(.zone13) {
+                    NavigationLink(destination: HeartRateZonesView()) {
+                        ActivityStatCard(title: "Zona 1–3 / sem.", value: "\(weeklyZone13)", unit: "min",
+                                         level: zone13Level)
+                    }.buttonStyle(.plain)
+                }
 
-                NavigationLink(destination: HeartRateZonesView()) {
-                    ActivityStatCard(title: "Zona 4–5 / sem.", value: "\(weeklyZone45)", unit: "min",
-                                     level: zone45Level)
-                }.buttonStyle(.plain)
+                if layout.isVisible(.zone45) {
+                    NavigationLink(destination: HeartRateZonesView()) {
+                        ActivityStatCard(title: "Zona 4–5 / sem.", value: "\(weeklyZone45)", unit: "min",
+                                         level: zone45Level)
+                    }.buttonStyle(.plain)
+                }
 
-                ActivityStatCard(title: "Fuerza / sem.", value: "\(weeklyStrength)", unit: "min",
-                                 level: strengthLevel)
+                if layout.isVisible(.strength) {
+                    ActivityStatCard(title: "Fuerza / sem.", value: "\(weeklyStrength)", unit: "min",
+                                     level: strengthLevel)
+                }
 
-                ActivityStatCard(title: "Pasos", value: "\(healthKit.todaySummary?.steps ?? 0)", unit: "",
-                                 level: stepsLevel)
+                if layout.isVisible(.steps) {
+                    ActivityStatCard(title: "Pasos", value: "\(healthKit.todaySummary?.steps ?? 0)", unit: "",
+                                     level: stepsLevel)
+                }
 
-                ActivityStatCard(title: "Pisos subidos", value: "\(healthKit.todayFlights)", unit: "",
-                                 level: flightsLevel)
+                if layout.isVisible(.flights) {
+                    ActivityStatCard(title: "Pisos subidos", value: "\(healthKit.todayFlights)", unit: "",
+                                     level: flightsLevel)
+                }
+
+                // Luz diurna: solo la mide el Apple Watch (oculta por defecto)
+                if layout.isVisible(.daylight) {
+                    ActivityStatCard(
+                        title: "Luz diurna",
+                        value: healthKit.daylightData.map { "\($0.todayMinutes)" } ?? "--",
+                        unit: healthKit.daylightData != nil ? "min" : "",
+                        level: healthKit.daylightData.map { dl in
+                            switch dl.todayMinutes { case ..<10: 0; case ..<20: 1; case ..<45: 2; default: 3 }
+                        }
+                    )
+                }
             }
         }
     }
@@ -211,10 +257,80 @@ struct HealthView: View {
         VStack(alignment: .leading, spacing: 10) {
             SectionHeader(title: "Composición corporal", icon: "figure.stand")
 
-            NavigationLink(destination: BodyCompositionView()) {
-                BodyCompositionRow(composition: healthKit.bodyComposition)
+            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
+                if layout.isVisible(.weight) {
+                    NavigationLink(destination: BodyCompositionView()) {
+                        ActivityStatCard(
+                            title: "Peso",
+                            value: healthKit.bodyComposition?.weightKg.map { String(format: "%.1f", $0) } ?? "--",
+                            unit: healthKit.bodyComposition?.weightKg != nil ? "kg" : "",
+                            level: healthKit.bodyComposition?.weightKg != nil ? 2 : nil,
+                            status: weightStatus
+                        )
+                    }.buttonStyle(.plain)
+                }
+
+                if layout.isVisible(.bmi) {
+                    NavigationLink(destination: BodyCompositionView()) {
+                        ActivityStatCard(
+                            title: "IMC",
+                            value: healthKit.bodyComposition?.bmi.map { String(format: "%.1f", $0) } ?? "--",
+                            unit: healthKit.bodyComposition?.bmi != nil ? "kg/m²" : "",
+                            level: bmiLevel,
+                            status: bmiStatus
+                        )
+                    }.buttonStyle(.plain)
+                }
+
+                if layout.isVisible(.bodyFat) {
+                    ActivityStatCard(
+                        title: "Grasa corporal",
+                        value: healthKit.bodyFatPercent.map { String(format: "%.1f", $0) } ?? "--",
+                        unit: healthKit.bodyFatPercent != nil ? "%" : "",
+                        level: healthKit.bodyFatPercent.map { f in
+                            switch f { case ..<10: 2; case ..<20: 3; case ..<25: 2; default: 1 }
+                        }
+                    )
+                }
+
+                if layout.isVisible(.leanMass) {
+                    ActivityStatCard(
+                        title: "Masa magra",
+                        value: healthKit.leanBodyMassKg.map { String(format: "%.1f", $0) } ?? "--",
+                        unit: healthKit.leanBodyMassKg != nil ? "kg" : "",
+                        level: healthKit.leanBodyMassKg != nil ? 2 : nil
+                    )
+                }
             }
-            .buttonStyle(.plain)
+        }
+    }
+
+    // Peso: sin "bueno/malo" — se informa de la tendencia
+    private var weightStatus: CardStatus? {
+        guard healthKit.bodyComposition?.weightKg != nil else { return nil }
+        let samples = healthKit.bodyComposition?.samples ?? []
+        guard samples.count >= 2, let last = samples.last?.value else {
+            return CardStatus(label: "Estable", icon: "arrow.right.circle.fill", color: .blue)
+        }
+        let prev = samples[samples.count - 2].value
+        let diff = last - prev
+        if diff > 0.5  { return CardStatus(label: "Subiendo", icon: "arrow.up.circle.fill", color: .orange) }
+        if diff < -0.5 { return CardStatus(label: "Bajando", icon: "arrow.down.circle.fill", color: .teal) }
+        return CardStatus(label: "Estable", icon: "arrow.right.circle.fill", color: .blue)
+    }
+
+    // IMC según OMS: <18.5 bajo peso · 18.5-25 normal · 25-30 sobrepeso · >30 obesidad
+    private var bmiLevel: Int? {
+        guard let bmi = healthKit.bodyComposition?.bmi else { return nil }
+        switch bmi { case ..<18.5: return 1; case ..<25: return 2; case ..<30: return 1; default: return 0 }
+    }
+    private var bmiStatus: CardStatus? {
+        guard let bmi = healthKit.bodyComposition?.bmi else { return nil }
+        switch bmi {
+        case ..<18.5: return CardStatus(label: "Bajo peso", icon: "minus.circle.fill", color: .yellow)
+        case ..<25:   return CardStatus(label: "Rango normal", icon: "checkmark.circle.fill", color: .green)
+        case ..<30:   return CardStatus(label: "Sobrepeso", icon: "minus.circle.fill", color: .yellow)
+        default:      return CardStatus(label: "Obesidad", icon: "chevron.down.circle.fill", color: .red)
         }
     }
 
@@ -419,19 +535,33 @@ private struct AgeTickBar: View {
 }
 
 // Tarjeta de actividad: título + chevron, valor grande, estado y barra de nivel vertical
+struct CardStatus {
+    let label: String
+    let icon: String
+    let color: Color
+
+    static func level(_ l: Int) -> CardStatus {
+        switch l {
+        case 0:  return CardStatus(label: "Bajo", icon: "chevron.down.circle.fill", color: .red)
+        case 1:  return CardStatus(label: "Medio", icon: "minus.circle.fill", color: .yellow)
+        case 2:  return CardStatus(label: "Bueno", icon: "checkmark.circle.fill", color: .green)
+        default: return CardStatus(label: "Excelente", icon: "hand.thumbsup.circle.fill", color: .blue)
+        }
+    }
+    static let noData = CardStatus(label: "Sin datos aún", icon: "", color: .secondary)
+}
+
 private struct ActivityStatCard: View {
     let title: String
     let value: String
     let unit: String
-    let level: Int          // 0 bajo · 1 medio · 2 bueno · 3 excelente
+    var level: Int?                     // 0 bajo · 1 medio · 2 bueno · 3 excelente · nil sin datos
+    var status: CardStatus? = nil       // estado propio (si no, se deduce del nivel)
 
-    private var status: (label: String, icon: String, color: Color) {
-        switch level {
-        case 0:  return ("Bajo", "chevron.down.circle.fill", .red)
-        case 1:  return ("Medio", "minus.circle.fill", .yellow)
-        case 2:  return ("Bueno", "checkmark.circle.fill", .green)
-        default: return ("Excelente", "hand.thumbsup.circle.fill", .blue)
-        }
+    private var effectiveStatus: CardStatus {
+        if let status { return status }
+        guard let level else { return .noData }
+        return .level(level)
     }
 
     var body: some View {
@@ -454,13 +584,15 @@ private struct ActivityStatCard: View {
                     }
                 }
                 HStack(spacing: 4) {
-                    Image(systemName: status.icon).font(.caption)
-                    Text(status.label).font(.subheadline).fontWeight(.medium)
+                    if !effectiveStatus.icon.isEmpty {
+                        Image(systemName: effectiveStatus.icon).font(.caption)
+                    }
+                    Text(effectiveStatus.label).font(.subheadline).fontWeight(.medium)
                 }
-                .foregroundStyle(status.color)
+                .foregroundStyle(effectiveStatus.color)
             }
             Spacer(minLength: 0)
-            LevelBar(level: level)
+            LevelBar(level: level, color: effectiveStatus.color)
         }
         .padding(14)
         .frame(maxWidth: .infinity, minHeight: 130, alignment: .topLeading)
@@ -471,21 +603,19 @@ private struct ActivityStatCard: View {
 
 // Barra vertical de 4 niveles; el activo se muestra alto y en color
 private struct LevelBar: View {
-    let level: Int
-    private let colors: [Color] = [.red, .yellow, .green, .blue]   // 0 abajo → 3 arriba
+    let level: Int?
+    let color: Color
 
     var body: some View {
         VStack(spacing: 5) {
             ForEach((0..<4).reversed(), id: \.self) { i in
-                if i == level {
-                    Capsule().fill(colors[i])
+                if let level, i == level {
+                    Capsule().fill(color)
                         .frame(width: 9, height: 44)
-                        .overlay(
-                            Circle().fill(.white.opacity(0.95)).frame(width: 5, height: 5)
-                        )
+                        .overlay(Circle().fill(.white.opacity(0.95)).frame(width: 5, height: 5))
                 } else {
-                    Capsule().fill(colors[i].opacity(0.22))
-                        .frame(width: 9, height: 9)
+                    Capsule().fill(Color.primary.opacity(0.12))
+                        .frame(width: 9, height: level == nil ? 20 : 9)
                 }
             }
         }

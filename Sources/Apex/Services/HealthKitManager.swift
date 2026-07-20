@@ -21,6 +21,8 @@ final class HealthKitManager: ObservableObject {
     @Published var restingHRHistory: [MetricSample] = []
     @Published var restingHRIsDerived = false   // true si la FC reposo se estimó de la FC (sin dato nativo)
     @Published var todayFlights: Int = 0        // pisos subidos hoy
+    @Published var bodyFatPercent: Double?      // % grasa corporal (báscula inteligente)
+    @Published var leanBodyMassKg: Double?      // masa magra en kg
     @Published var recoveryHistory: [MetricSample] = []
     @Published var biologicalAge: BiologicalAgeResult?
     @Published var sleepAge: SleepAgeResult?
@@ -42,7 +44,8 @@ final class HealthKitManager: ObservableObject {
             .heartRateVariabilitySDNN, .restingHeartRate, .vo2Max,
             .stepCount, .flightsClimbed, .activeEnergyBurned, .respiratoryRate,
             .appleSleepingWristTemperature, .timeInDaylight,
-            .bodyMass, .bodyMassIndex, .heartRate, .oxygenSaturation
+            .bodyMass, .bodyMassIndex, .heartRate, .oxygenSaturation,
+            .bodyFatPercentage, .leanBodyMass
         ]
         for id in ids {
             if let t = HKQuantityType.quantityType(forIdentifier: id) { types.insert(t) }
@@ -91,6 +94,8 @@ final class HealthKitManager: ObservableObject {
         async let maxHR30 = fetchMaxHR30Days()
         async let rhrDerivedSeries = fetchRestingHRSeries()
         async let flights = fetchTodayFlights()
+        async let bodyFat = fetchLatestQuantity(.bodyFatPercentage, unit: .percent())
+        async let leanMass = fetchLatestQuantity(.leanBodyMass, unit: .gramUnit(with: .kilo))
 
         let (sleepData, hrvData, rhrRaw, rhrHistRaw, vo2Data, stepsVal, calsVal, respData, wtData, dlData, bodyData, workoutCals, hrByHour, spo2Val, maxHRVal, rhrSeries) =
             await (sleep, hrv, rhr, rhrHistory, vo2, steps, calories, respiratory, wristTemp, daylight, body, recentWorkoutCalories, hourlyHR, spo2, maxHR30, rhrDerivedSeries)
@@ -102,6 +107,8 @@ final class HealthKitManager: ObservableObject {
         let rhrHist = rhrHistRaw.isEmpty ? rhrSeries : rhrHistRaw
         restingHRIsDerived = rhrRaw == nil && rhrVal != nil
         todayFlights = await flights
+        bodyFatPercent = await bodyFat.map { $0 * 100 }   // HealthKit da 0-1
+        leanBodyMassKg = await leanMass
 
         // Persistir para las calculadoras (TRIMP, zonas, battery):
         // FCmáx observada 30 días (metodología PeakWatch), FC reposo y sexo biológico
