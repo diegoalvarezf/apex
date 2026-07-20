@@ -120,7 +120,8 @@ struct StressRecoveryEffortRow: View {
         BodyBatteryStore.shared.hourlyBattery(
             recoveryScore: recoveryScore, sleepHistory: sleepHistory,
             hourlyHR: hourlyHR, restingHR: todayRHR,
-            recoveryHistory: recoveryHistory, activities: activities)
+            recoveryHistory: recoveryHistory, activities: activities,
+            hrvHistory: hrvHistory.map { MetricSample(date: $0.date, value: $0.sdnn) })
     }
     private var currentBattery: Int {
         Int(batteryHourlySamples.last?.value ?? Double(recoveryScore?.value ?? 0))
@@ -151,7 +152,8 @@ struct StressRecoveryEffortRow: View {
             // Fila 1: Body Battery · Recuperación
             NavigationLink(destination: BodyBatteryDetailView(
                 score: recoveryScore, recentHourlyHR: hourlyHR, restingHR: todayRHR,
-                sleepHistory: sleepHistory, recoveryHistory: recoveryHistory, activities: activities
+                sleepHistory: sleepHistory, recoveryHistory: recoveryHistory, activities: activities,
+                hrvHistory: hrvSamples
             )) {
                 PeakMetricTile(title: "Body Battery", icon: "bolt.heart.fill",
                                value: currentBattery, statusLabel: batteryStatusLabel, statusColor: batteryColor) {

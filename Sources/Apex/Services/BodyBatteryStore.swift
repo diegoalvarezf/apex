@@ -31,7 +31,8 @@ final class BodyBatteryStore {
         hourlyHR: [MetricSample],
         restingHR: Double?,
         recoveryHistory: [MetricSample] = [],
-        activities: [StravaActivity] = []
+        activities: [StravaActivity] = [],
+        hrvHistory: [MetricSample] = []
     ) -> [MetricSample] {
         let recoveryToday = Double(recoveryScore?.value ?? 65)
         let rhr = restingHR ?? UserProfile.restingHR
@@ -50,13 +51,19 @@ final class BodyBatteryStore {
             let dayHR = hourlyHR.filter { cal.isDate($0.date, inSameDayAs: day) }
             let sleep = sleepHistory.first { cal.isDate($0.date, inSameDayAs: day) }
             let dayActs = activities.filter { cal.isDate($0.startDate, inSameDayAs: day) }
+            // HRV de esa noche y baseline personal previo (para modular la carga)
+            let nightHRV = hrvHistory.first { cal.isDate($0.date, inSameDayAs: day) }?.value
+            let baseline = hrvHistory.filter { $0.date < cal.startOfDay(for: day) }.map(\.value)
+
             let sim = simulateDay(
                 day: day,
                 hourlyHR: dayHR,
                 sleep: sleep,
                 startBattery: battery,
                 restingHR: rhr,
-                activities: dayActs
+                activities: dayActs,
+                nightHRV: nightHRV,
+                hrvBaseline: baseline
             )
             battery = sim.last?.value ?? battery
             storeValue(battery, for: day)
@@ -71,11 +78,13 @@ final class BodyBatteryStore {
         hourlyHR: [MetricSample],
         restingHR: Double?,
         recoveryHistory: [MetricSample] = [],
-        activities: [StravaActivity] = []
+        activities: [StravaActivity] = [],
+        hrvHistory: [MetricSample] = []
     ) -> Int {
         let samples = hourlyBattery(recoveryScore: recoveryScore, sleepHistory: sleepHistory,
                                     hourlyHR: hourlyHR, restingHR: restingHR,
-                                    recoveryHistory: recoveryHistory, activities: activities)
+                                    recoveryHistory: recoveryHistory, activities: activities,
+                                    hrvHistory: hrvHistory)
         return Int(samples.last?.value ?? Double(recoveryScore?.value ?? 0))
     }
 
@@ -88,6 +97,20 @@ final class BodyBatteryStore {
         return 65.0 * (1.0 - Foundation.exp(-trimp / 45.0))
     }
 
+    // Factor de recuperación autonómica de la noche a partir del HRV frente al
+    // baseline personal. Firstbeat mide la recuperación nocturna con HRV, no solo
+    // con la duración del sueño: dormir 8h con el HRV hundido recupera menos que
+    // dormir 8h con el HRV alto. Se limita a ±25% para que MODULE la carga del
+    // sueño, no la sustituya (solo tenemos un valor por noche, no latido a latido).
+    func hrvRecoveryFactor(nightHRV: Double?, baseline: [Double]) -> Double {
+        guard let h = nightHRV, baseline.count >= 7 else { return 1.0 }
+        let mean = baseline.reduce(0, +) / Double(baseline.count)
+        let variance = baseline.map { ($0 - mean) * ($0 - mean) }.reduce(0, +) / Double(baseline.count)
+        let sd = max(sqrt(variance), 7.0)
+        let z = (h - mean) / sd
+        return max(0.75, min(1.25, 1.0 + z * 0.12))
+    }
+
     // Simulación reutilizable para cualquier día (se usa también en el detalle histórico)
     func simulateDay(
         day: Date,
@@ -95,7 +118,9 @@ final class BodyBatteryStore {
         sleep: SleepData?,
         startBattery: Double,
         restingHR: Double,
-        activities: [StravaActivity] = []
+        activities: [StravaActivity] = [],
+        nightHRV: Double? = nil,
+        hrvBaseline: [Double] = []
     ) -> [MetricSample] {
         let maxHR    = TrainingMetrics.observedMaxHR(hourlyHR: hourlyHR)
         let wakeHour  = sleep.map { cal.component(.hour, from: $0.sleepEnd)   } ?? 7
@@ -115,8 +140,11 @@ final class BodyBatteryStore {
         // repartido entre las horas de la ventana de sueño. Al ser por hora, una noche
         // que cruza medianoche se reparte correctamente entre los dos días naturales
         // (antes las horas previas a las 00:00 contaban como despierto y DRENABAN).
+        // La calidad combina la arquitectura del sueño (score: duración, profundo,
+        // eficiencia) con la recuperación autonómica real de esa noche (HRV).
         let sleepQuality = max(0.4, min(1.0, Double(sleep?.score ?? 60) / 85.0))
-        let hourlyCharge = sleepQuality * 6.5 * (sleepDurationH / max(windowH, 1.0))
+        let autonomic    = hrvRecoveryFactor(nightHRV: nightHRV, baseline: hrvBaseline)
+        let hourlyCharge = sleepQuality * autonomic * 6.5 * (sleepDurationH / max(windowH, 1.0))
 
         // Drenaje por carga de entrenamiento repartido por hora (estilo EPOC de
         // Firstbeat): cada sesión drena según su TRIMP, no según el promedio de FC

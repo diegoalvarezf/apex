@@ -28,7 +28,8 @@ struct DashboardView: View {
             hourlyHR: healthKit.recentHourlyHR,
             restingHR: healthKit.todaySummary?.restingHR,
             recoveryHistory: healthKit.recoveryHistory,
-            activities: dashVM.activities
+            activities: dashVM.activities,
+            hrvHistory: healthKit.hrvHistory.map { MetricSample(date: $0.date, value: $0.sdnn) }
         )
         // Mismo cálculo de esfuerzo que el tile del dashboard (Edwards TRIMP diario)
         let rhr = healthKit.todaySummary?.restingHR ?? UserProfile.restingHR

@@ -180,8 +180,13 @@ que se diluye en ejercicios intermitentes como el gimnasio), y la batería carga
   batería (corrige la curva que se clavaba en 100 todo el día).
 - **Carga en sueño ADITIVA** (no anclada al Recovery, para no arrastrar su valor): se parte de
   la batería con la que te acostaste (drenada por el día y el entreno) y se le SUMA
-  `calidad · horas · 6.5` (Firstbeat: noche completa de calidad ≈ +50, ~6.5/h). Así una noche
-  corta tras entrenar deja la batería moderada, no llena (corrige el 88 vs 66 de PeakWatch).
+  `calidad · autonómico · horas · 6.5` (Firstbeat: noche completa de calidad ≈ +50, ~6.5/h),
+  repartido **por hora** — así una noche que cruza medianoche se reparte bien entre los dos
+  días naturales (antes las horas previas a las 00:00 contaban como despierto y drenaban).
+- **Modulación por HRV de la noche**: Firstbeat mide la recuperación nocturna con **HRV**, no
+  solo con la duración. El factor autonómico = z-score del HRV de esa noche vs baseline
+  personal, acotado a **±25%**: dormir 8 h con el HRV hundido recupera menos que con el HRV
+  alto. Acotado porque solo se dispone de un valor por noche (no latido a latido como Firstbeat).
 - **Asimetría**: la recarga es rápida con la batería baja y se aplana cerca de 100; el drenaje
   es rápido con la batería alta (factores separados). Acotado a **5-100** (Garmin).
 

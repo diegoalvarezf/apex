@@ -8,6 +8,7 @@ struct BodyBatteryDetailView: View {
     let sleepHistory: [SleepData]
     let recoveryHistory: [MetricSample]   // score diario
     var activities: [StravaActivity] = []
+    var hrvHistory: [MetricSample] = []   // SDNN por día (modula la carga del sueño)
 
     private let cal = Calendar.current
 
@@ -60,7 +61,8 @@ struct BodyBatteryDetailView: View {
                         sleep: sleepFor(day: availableDays[i]),
                         startBattery: startBattery(for: i),
                         activities: activities.filter { cal.isDate($0.startDate, inSameDayAs: availableDays[i]) },
-                        weekActivities: activities
+                        weekActivities: activities,
+                        hrvHistory: hrvHistory
                     )
                     .tag(i)
                 }
@@ -123,6 +125,7 @@ private struct DayBatteryPage: View {
     let startBattery: Double
     var activities: [StravaActivity] = []
     var weekActivities: [StravaActivity] = []
+    var hrvHistory: [MetricSample] = []
 
     private let cal = Calendar.current
 
@@ -144,7 +147,8 @@ private struct DayBatteryPage: View {
                 hourlyHR: weekHourlyHR,
                 restingHR: restingHR,
                 recoveryHistory: recoveryHistory,
-                activities: weekActivities
+                activities: weekActivities,
+                hrvHistory: hrvHistory
             )
         }
         return BodyBatteryStore.shared.simulateDay(
@@ -153,7 +157,9 @@ private struct DayBatteryPage: View {
             sleep: sleep,
             startBattery: startBattery,
             restingHR: restingHR ?? 55.0,
-            activities: activities
+            activities: activities,
+            nightHRV: hrvHistory.first { cal.isDate($0.date, inSameDayAs: day) }?.value,
+            hrvBaseline: hrvHistory.filter { $0.date < cal.startOfDay(for: day) }.map(\.value)
         )
     }
 
