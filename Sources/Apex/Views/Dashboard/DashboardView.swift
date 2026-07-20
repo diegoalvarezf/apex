@@ -7,6 +7,12 @@ struct DashboardView: View {
 
     @State private var showProfile = false
 
+    // Alertas del día: las escribe la IA (cacheadas 1×/día). Si aún no hay o falló
+    // la llamada, se usan las reglas locales como red de seguridad.
+    private var displayedTips: [SmartTip] {
+        dashVM.aiAlerts.isEmpty ? smartTips : dashVM.aiAlerts.map(\.asSmartTip)
+    }
+
     private var smartTips: [SmartTip] {
         SmartTipsEngine.compute(
             recovery: healthKit.recoveryScore,
@@ -143,6 +149,7 @@ struct DashboardView: View {
                 ProfileSheet()
             }
             .onAppear { refreshWidget() }
+            .task { await dashVM.loadAlertsIfStale(health: healthKit) }
         }
     }
 
@@ -151,8 +158,8 @@ struct DashboardView: View {
         // VStack (no Lazy): con LazyVStack el scroll se quedaba pillado al usar
         // "deslizar para recargar", porque el contenido se re-mide durante el gesto.
         VStack(spacing: 16) {
-            if !smartTips.isEmpty {
-                SmartTipBanner(tips: smartTips).padding(.horizontal)
+            if !displayedTips.isEmpty {
+                SmartTipBanner(tips: displayedTips).padding(.horizontal)
             }
             metricsRow()
             sleepLink()

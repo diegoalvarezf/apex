@@ -15,8 +15,13 @@ final class DashboardViewModel: ObservableObject {
     @Published var isLoadingWeekly = false
     @Published var error: String?
 
+    @Published var aiAlerts: [AIAlert] = []
+    @Published var aiAlertsAt: Date?
+
     private let insightsKey = "apex_ai_insights_v1"
     private let insightsDateKey = "apex_ai_insights_date_v1"
+    private let alertsKey = "apex_ai_alerts_v1"
+    private let alertsDateKey = "apex_ai_alerts_date_v1"
     private let weeklyKey = "apex_ai_weekly_v1"
     private let weeklyDateKey = "apex_ai_weekly_date_v1"
 
@@ -40,6 +45,39 @@ final class DashboardViewModel: ObservableObject {
         insightsGeneratedAt = UserDefaults.standard.object(forKey: insightsDateKey) as? Date
         weeklySummary = UserDefaults.standard.string(forKey: weeklyKey)
         weeklySummaryAt = UserDefaults.standard.object(forKey: weeklyDateKey) as? Date
+        if let data = UserDefaults.standard.data(forKey: alertsKey),
+           let decoded = try? JSONDecoder().decode([AIAlert].self, from: data) {
+            aiAlerts = decoded
+        }
+        aiAlertsAt = UserDefaults.standard.object(forKey: alertsDateKey) as? Date
+    }
+
+    // MARK: - Alertas del día escritas por la IA (1×/día, cacheadas)
+
+    private struct AlertsWrapper: Decodable { let alerts: [AIAlert] }
+
+    func loadAlertsIfStale(health: HealthKitManager, strengthSummary: String? = nil) async {
+        // Solo una vez al día: el resto se sirve de caché
+        if let at = aiAlertsAt, Calendar.current.isDateInToday(at), !aiAlerts.isEmpty { return }
+        guard !activities.isEmpty || health.recoveryScore != nil else { return }
+
+        let context = buildContext(health: health, strengthSummary: strengthSummary, localAlerts: nil)
+        do {
+            let text = try await AIService.shared.rawCompletion(
+                prompt: context.buildAlertsPrompt(), maxTokens: 700)
+            guard let json = AIService.extractJSON(from: text),
+                  let data = json.data(using: .utf8),
+                  let parsed = try? JSONDecoder().decode(AlertsWrapper.self, from: data),
+                  !parsed.alerts.isEmpty else { return }
+            aiAlerts = parsed.alerts
+            aiAlertsAt = Date()
+            if let enc = try? JSONEncoder().encode(aiAlerts) {
+                UserDefaults.standard.set(enc, forKey: alertsKey)
+            }
+            UserDefaults.standard.set(aiAlertsAt, forKey: alertsDateKey)
+        } catch {
+            // Sin red o fallo de la API: se mantienen las reglas locales
+        }
     }
 
     private func saveCachedInsights() {

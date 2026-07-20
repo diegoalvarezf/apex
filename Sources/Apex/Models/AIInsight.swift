@@ -75,6 +75,37 @@ struct SmartTip: Identifiable {
     enum Urgency: Int { case info = 0, warn = 1, alert = 2 }
 }
 
+// Alerta escrita por la IA con los datos del usuario. Se cachea (Codable) y se
+// convierte a SmartTip para reutilizar las mismas tarjetas de la UI.
+struct AIAlert: Codable, Identifiable {
+    var id = UUID()
+    let title: String
+    let detail: String
+    let urgency: String    // alert | warn | info
+    let category: String   // recovery | sleep | hrv | load | activity
+
+    private enum CodingKeys: String, CodingKey { case title, detail, urgency, category }
+
+    var asSmartTip: SmartTip {
+        let u: SmartTip.Urgency
+        switch urgency.lowercased() {
+        case "alert": u = .alert
+        case "warn":  u = .warn
+        default:      u = .info
+        }
+        let icon: String, color: Color
+        switch category.lowercased() {
+        case "sleep":    icon = "moon.fill";           color = .purple
+        case "hrv":      icon = "waveform.path.ecg";   color = u == .alert ? .red : .orange
+        case "load":     icon = "flame.fill";          color = .orange
+        case "activity": icon = "figure.walk";         color = .blue
+        default:         icon = u == .alert ? "exclamationmark.triangle.fill" : "arrow.down.heart.fill"
+                         color = u == .alert ? .red : (u == .warn ? .orange : .green)
+        }
+        return SmartTip(icon: icon, color: color, title: title, detail: detail, urgency: u)
+    }
+}
+
 enum SmartTipsEngine {
     static func compute(
         recovery: RecoveryScore?,
@@ -324,6 +355,31 @@ struct AICoachContext {
     // Contexto en texto plano para el chat del coach (reutiliza el mismo bloque
     // de métricas que los insights).
     func contextText() -> String { metricsBlock().joined(separator: "\n") }
+
+    // Alertas cortas del día (sustituyen a las reglas locales cuando hay IA).
+    func buildAlertsPrompt() -> String {
+        var parts = ["Eres un entrenador deportivo. A partir de los datos de HOY del usuario, escribe las ALERTAS del día: lo que necesita saber de un vistazo nada más abrir la app.", ""]
+        parts += metricsBlock()
+        parts.append("""
+
+Devuelve entre 2 y 4 alertas, ordenadas de más a menos importante. Cada una debe ser ACCIONABLE y basarse en sus cifras concretas (recuperación, sueño, HRV, carga, sesiones). Cruza señales cuando aporte (p. ej. HRV bajo + carga alta + poco sueño = una sola alerta que lo explique), en vez de repetir lo obvio por separado.
+
+\(AICoachContext.noInventarCifras)
+
+Responde SOLO con este JSON exacto (sin markdown):
+{
+  "alerts": [
+    {
+      "title": "Titular corto con la cifra clave (máx 7 palabras)",
+      "detail": "Una frase con qué hacer hoy",
+      "urgency": "alert|warn|info",
+      "category": "recovery|sleep|hrv|load|activity"
+    }
+  ]
+}
+""")
+        return parts.joined(separator: "\n")
+    }
 
     // Regla común: la IA interpreta, pero NO inventa cifras.
     private static let noInventarCifras = "REGLA IMPORTANTE: usa SOLO las cifras que aparecen explícitamente en los datos de arriba. Nunca inventes ni estimes números, porcentajes, pesos, ritmos o valores que no te hayan dado. Si no tienes un dato, habla de la tendencia sin poner una cifra."

@@ -21,6 +21,8 @@ struct InsightsView: View {
                                              localAlerts: localAlerts())
             await dashVM.loadWeeklySummaryIfStale(health: healthKit,
                                                   strengthSummary: strengthSummary())
+            await dashVM.loadAlertsIfStale(health: healthKit,
+                                           strengthSummary: strengthSummary())
         }
     }
 
@@ -55,6 +57,11 @@ struct InsightsView: View {
         dashVM.coachContext(health: healthKit, strengthSummary: strengthSummary()).contextText()
     }
 
+    // Alertas del día: escritas por la IA (1×/día); reglas locales de fallback
+    private var displayedTips: [SmartTip] {
+        dashVM.aiAlerts.isEmpty ? smartTips : dashVM.aiAlerts.map(\.asSmartTip)
+    }
+
     private var smartTips: [SmartTip] {
         SmartTipsEngine.compute(
             recovery: healthKit.recoveryScore,
@@ -87,19 +94,19 @@ struct InsightsView: View {
                     }
 
                     // ── Sugerencias locales (instantáneas) ────────────────
-                    if !smartTips.isEmpty {
+                    if !displayedTips.isEmpty {
                         VStack(alignment: .leading, spacing: 10) {
                             Label("Alertas de hoy", systemImage: "sparkles")
                                 .font(.headline)
                                 .padding(.horizontal, 4)
 
-                            SmartTipsList(tips: smartTips, showAll: showAllTips)
+                            SmartTipsList(tips: displayedTips, showAll: showAllTips)
 
-                            if smartTips.count > 3 {
+                            if displayedTips.count > 3 {
                                 Button {
                                     withAnimation { showAllTips.toggle() }
                                 } label: {
-                                    Text(showAllTips ? "Ver menos" : "Ver \(smartTips.count - 3) más")
+                                    Text(showAllTips ? "Ver menos" : "Ver \(displayedTips.count - 3) más")
                                         .font(.subheadline)
                                         .foregroundColor(.accentColor)
                                 }
