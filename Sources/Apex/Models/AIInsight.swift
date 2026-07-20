@@ -285,7 +285,9 @@ struct AICoachContext {
         var parts: [String] = []
 
         if let recovery = recoveryScore {
-            parts.append("RECUPERACIÓN: \(recovery.value)/100 — HRV:\(recovery.hrvScore) FCreposo:\(recovery.restingHRScore)")
+            // OJO: los componentes son PUNTUACIONES 0-100, no bpm ni ms. Se etiquetan
+            // explícitamente porque si no la IA los confunde con los valores medidos.
+            parts.append("RECUPERACIÓN: \(recovery.value)/100 (sub-puntuaciones sobre 100, NO son bpm ni ms — HRV: \(recovery.hrvScore)/100, FC reposo: \(recovery.restingHRScore)/100, sueño: \(recovery.sleepScore)/100, carga: \(recovery.trainingLoadScore)/100)")
         }
         if let load = trainingLoad {
             let acwrLabel: String

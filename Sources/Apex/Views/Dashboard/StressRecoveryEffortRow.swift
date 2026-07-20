@@ -344,7 +344,7 @@ struct RecoveryDetailView: View {
     private func recoveryAdvice() async throws -> String {
         var lines: [String] = []
         if let s = score {
-            lines.append("Recuperación hoy: \(s.value)/100 (componentes — HRV:\(s.hrvScore) FCreposo:\(s.restingHRScore) sueño:\(s.sleepScore) carga:\(s.trainingLoadScore)).")
+            lines.append("Recuperación hoy: \(s.value)/100 (sub-puntuaciones sobre 100, NO son bpm ni ms — HRV: \(s.hrvScore)/100, FC reposo: \(s.restingHRScore)/100, sueño: \(s.sleepScore)/100, carga: \(s.trainingLoadScore)/100).")
         }
         if let hrv = hrvHistory.first { lines.append("HRV hoy: \(Int(hrv.sdnn)) ms.") }
         let hrvVals = hrvHistory.prefix(14).map(\.sdnn)
