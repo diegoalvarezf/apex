@@ -63,19 +63,8 @@ struct QuickMetricsGrid: View {
                     }.buttonStyle(.plain)
                 }
 
-                if layout.isVisible(.respiratory) {
-                    NavigationLink(destination: metricDetail(
-                        title: "Frec. respiratoria", icon: "wind", color: .cyan,
-                        value: respiratoryData.map { String(format: "%.1f", $0.current) } ?? "--", unit: "resp/min",
-                        samples: respiratoryData?.samples ?? [], higherIsBetter: false, normalRange: 12...20,
-                        explanation: "La frecuencia respiratoria nocturna es sensible a enfermedad, estrés y sobreentrenamiento."
-                    )) {
-                        MetricColumn(icon: "lungs.fill", color: .blue,
-                                     value: respiratoryData?.current, unit: "BrPM", decimals: 1,
-                                     display: 8...25, normal: 12...20)
-                    }.buttonStyle(.plain)
-                }
-
+                // La frecuencia respiratoria se ve en Salud; en Inicio se prioriza
+                // el oxígeno en sangre para no apretar demasiado las columnas.
                 if layout.isVisible(.spo2) {
                     NavigationLink(destination: metricDetail(
                         title: "Oxígeno en sangre", icon: "drop.fill", color: .pink,
