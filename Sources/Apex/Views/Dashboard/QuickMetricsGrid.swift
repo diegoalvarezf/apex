@@ -50,6 +50,19 @@ struct QuickMetricsGrid: View {
                     }.buttonStyle(.plain)
                 }
 
+                if layout.isVisible(.vo2max) {
+                    NavigationLink(destination: metricDetail(
+                        title: "VO₂Max", icon: "lungs.fill", color: .blue,
+                        value: vo2MaxData.map { String(format: "%.1f", $0.current) } ?? "--", unit: "ml/kg/min",
+                        samples: vo2MaxData?.samples ?? [], higherIsBetter: true, normalRange: 35...60,
+                        explanation: "El VO₂Max es el predictor más potente de rendimiento aeróbico y longevidad."
+                    )) {
+                        MetricColumn(icon: "figure.run", color: .mint,
+                                     value: vo2MaxData?.current, unit: "VO₂", decimals: 1,
+                                     display: 25...65, normal: 35...60)
+                    }.buttonStyle(.plain)
+                }
+
                 if layout.isVisible(.respiratory) {
                     NavigationLink(destination: metricDetail(
                         title: "Frec. respiratoria", icon: "wind", color: .cyan,
@@ -89,20 +102,6 @@ struct QuickMetricsGrid: View {
                     }.buttonStyle(.plain)
                 }
 
-                // Luz diurna: solo la mide el Apple Watch. Oculta por defecto desde
-                // "Editar página" (Salud); respeta ese mismo ajuste aquí.
-                if layout.isVisible(.daylight), let dl = daylightData {
-                    NavigationLink(destination: metricDetail(
-                        title: "Luz diurna", icon: "sun.max.fill", color: .yellow,
-                        value: "\(dl.todayMinutes)", unit: "min hoy",
-                        samples: dl.samples, higherIsBetter: true, normalRange: 20...120,
-                        explanation: "La exposición a la luz natural regula el ritmo circadiano, mejora el sueño y el estado de ánimo. Se recomiendan al menos 20-30 minutos diarios."
-                    )) {
-                        MetricColumn(icon: "sun.max.fill", color: .yellow,
-                                     value: Double(dl.todayMinutes), unit: "min", decimals: 0,
-                                     display: 0...120, normal: 20...120)
-                    }.buttonStyle(.plain)
-                }
             }
         }
         .padding(16)
