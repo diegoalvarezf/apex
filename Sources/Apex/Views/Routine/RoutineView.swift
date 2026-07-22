@@ -38,11 +38,16 @@ private struct RoutineListView: View {
     @EnvironmentObject var routineVM: RoutineViewModel
     @Binding var showImport: Bool
 
+    // La rutina más reciente (por fecha) se resalta en otro color
+    private var newestID: UUID? {
+        routineVM.routines.max(by: { $0.updatedAt < $1.updatedAt })?.id
+    }
+
     var body: some View {
         List {
             ForEach(routineVM.routines) { routine in
                 NavigationLink(destination: RoutineDetailView(routine: routine)) {
-                    RoutineRowCard(routine: routine)
+                    RoutineRowCard(routine: routine, isNewest: routine.id == newestID)
                 }
                 .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
                 .listRowBackground(Color.clear)
@@ -59,19 +64,36 @@ private struct RoutineListView: View {
 
 private struct RoutineRowCard: View {
     let routine: GymRoutine
+    var isNewest: Bool = false
+    @State private var exportURL: ExportFile?
+
+    private var accent: Color { isNewest ? .green : .purple }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 3) {
-                    Text(routine.name)
-                        .font(.headline)
+                    HStack(spacing: 8) {
+                        Text(routine.name).font(.headline)
+                        if isNewest {
+                            Text("Actual").font(.caption2).fontWeight(.bold)
+                                .padding(.horizontal, 8).padding(.vertical, 2)
+                                .background(Color.green.opacity(0.18), in: Capsule())
+                                .foregroundColor(.green)
+                        }
+                    }
                     Text(routine.updatedAt, format: .dateTime.day().month(.abbreviated).year())
                         .font(.caption).foregroundStyle(.secondary)
                 }
                 Spacer()
+                // Exportar la rutina a JSON
+                Button { exportURL = ExportFile(routine: routine) } label: {
+                    Image(systemName: "square.and.arrow.up").font(.subheadline)
+                        .foregroundColor(.secondary)
+                }
+                .buttonStyle(.plain)
                 Image(systemName: "dumbbell.fill")
-                    .foregroundColor(.purple).font(.title3)
+                    .foregroundColor(accent).font(.title3)
             }
 
             if !routine.aiSummary.isEmpty {
@@ -87,15 +109,48 @@ private struct RoutineRowCard: View {
                         Text(day.shortName)
                             .font(.caption2).fontWeight(.semibold)
                             .padding(.horizontal, 10).padding(.vertical, 5)
-                            .background(Color.purple.opacity(0.1), in: Capsule())
-                            .foregroundColor(.purple)
+                            .background(accent.opacity(0.12), in: Capsule())
+                            .foregroundColor(accent)
                     }
                 }
             }
         }
         .padding(14)
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(isNewest ? Color.green.opacity(0.5) : Color.clear, lineWidth: 1.5)
+        )
+        .sheet(item: $exportURL) { file in
+            ShareSheet(items: [file.url])
+        }
     }
+}
+
+// Escribe la rutina en un JSON temporal para compartir/descargar
+struct ExportFile: Identifiable {
+    let id = UUID()
+    let url: URL
+
+    init(routine: GymRoutine) {
+        let enc = JSONEncoder()
+        enc.outputFormatting = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
+        enc.dateEncodingStrategy = .iso8601
+        let data = (try? enc.encode(routine)) ?? Data()
+        let safe = routine.name.replacingOccurrences(of: "/", with: "-")
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("\(safe).json")
+        try? data.write(to: url)
+        self.url = url
+    }
+}
+
+struct ShareSheet: UIViewControllerRepresentable {
+    let items: [Any]
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        UIActivityViewController(activityItems: items, applicationActivities: nil)
+    }
+    func updateUIViewController(_ vc: UIActivityViewController, context: Context) {}
 }
 
 // MARK: - Detalle de una rutina (selector de día + ejercicios)
