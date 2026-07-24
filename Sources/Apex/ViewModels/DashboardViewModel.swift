@@ -17,6 +17,7 @@ final class DashboardViewModel: ObservableObject {
 
     @Published var aiAlerts: [AIAlert] = []
     @Published var aiAlertsAt: Date?
+    @Published var isLoadingAlerts = false
 
     private let insightsKey = "apex_ai_insights_v1"
     private let insightsDateKey = "apex_ai_insights_date_v1"
@@ -60,6 +61,9 @@ final class DashboardViewModel: ObservableObject {
         // Solo una vez al día: el resto se sirve de caché
         if let at = aiAlertsAt, Calendar.current.isDateInToday(at), !aiAlerts.isEmpty { return }
         guard !activities.isEmpty || health.recoveryScore != nil else { return }
+        guard !isLoadingAlerts else { return }
+        isLoadingAlerts = true
+        defer { isLoadingAlerts = false }
 
         let context = buildContext(health: health, strengthSummary: strengthSummary, localAlerts: nil)
         do {

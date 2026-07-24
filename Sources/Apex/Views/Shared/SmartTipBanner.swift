@@ -134,3 +134,23 @@ private struct SmartTipRow: View {
         .buttonStyle(.plain)
     }
 }
+
+// Banner con spinner mientras la IA genera las alertas del día
+struct AlertsLoadingBanner: View {
+    var body: some View {
+        HStack(spacing: 12) {
+            ProgressView()
+                .frame(width: 34, height: 34)
+                .background(Color.secondary.opacity(0.12), in: Circle())
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Preparando tus alertas de hoy")
+                    .font(.subheadline).fontWeight(.semibold).foregroundColor(.primary)
+                Text("Claude está leyendo tus datos…")
+                    .font(.caption).foregroundColor(.secondary)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(12)
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+    }
+}

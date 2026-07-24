@@ -93,8 +93,10 @@ struct InsightsView: View {
                             .padding(.horizontal)
                     }
 
-                    // ── Sugerencias locales (instantáneas) ────────────────
-                    if !displayedTips.isEmpty {
+                    // ── Alertas del día ───────────────────────────────────
+                    if dashVM.isLoadingAlerts && dashVM.aiAlerts.isEmpty {
+                        AlertsLoadingBanner().padding(.horizontal)
+                    } else if !displayedTips.isEmpty {
                         VStack(alignment: .leading, spacing: 10) {
                             Label("Alertas de hoy", systemImage: "sparkles")
                                 .font(.headline)

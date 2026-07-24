@@ -158,7 +158,9 @@ struct DashboardView: View {
         // VStack (no Lazy): con LazyVStack el scroll se quedaba pillado al usar
         // "deslizar para recargar", porque el contenido se re-mide durante el gesto.
         VStack(spacing: 16) {
-            if !displayedTips.isEmpty {
+            if dashVM.isLoadingAlerts && dashVM.aiAlerts.isEmpty {
+                AlertsLoadingBanner().padding(.horizontal)
+            } else if !displayedTips.isEmpty {
                 SmartTipBanner(tips: displayedTips).padding(.horizontal)
             }
             metricsRow()
