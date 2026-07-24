@@ -20,19 +20,24 @@ struct AITextCard: View {
                     .foregroundStyle(LinearGradient(colors: [.purple, .blue], startPoint: .topLeading, endPoint: .bottomTrailing))
                 Text(title).font(.headline)
                 Spacer()
-                if text != nil && !isLoading {
+                if isLoading {
+                    ProgressView()
+                } else if text != nil {
                     Button { run() } label: { Image(systemName: "arrow.clockwise").font(.caption) }
                 }
             }
 
-            if let text {
-                AIAnalysisBody(text: text)
-            } else if isLoading {
+            if isLoading {
+                // Mientras (re)genera, se muestra el spinner aunque ya hubiera texto
                 HStack(spacing: 10) {
                     ProgressView()
-                    Text("Analizando…").font(.subheadline).foregroundStyle(.secondary)
+                    Text(text == nil ? "Analizando…" : "Actualizando…")
+                        .font(.subheadline).foregroundStyle(.secondary)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.vertical, 4)
+            } else if let text {
+                AIAnalysisBody(text: text)
             } else if let error {
                 Text(error).font(.caption).foregroundStyle(.red)
             } else {
