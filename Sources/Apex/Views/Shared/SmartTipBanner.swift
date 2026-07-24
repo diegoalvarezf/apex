@@ -11,71 +11,75 @@ struct SmartTipBanner: View {
     var body: some View {
         if dismissed || tips.isEmpty { EmptyView() }
         else {
-            let tip = tips[current]
-            HStack(alignment: .top, spacing: 12) {
-                Image(systemName: tip.icon)
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundColor(tip.color)
-                    .frame(width: 34, height: 34)
-                    .background(tip.color.opacity(0.12), in: Circle())
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(tip.title)
-                        .font(.subheadline).fontWeight(.semibold).foregroundColor(.primary)
-                        .lineLimit(expanded ? nil : 1)
-                        .fixedSize(horizontal: false, vertical: expanded)
-                    Text(tip.detail)
-                        .font(.caption).foregroundColor(.secondary)
-                        .lineLimit(expanded ? nil : 2)
-                        .fixedSize(horizontal: false, vertical: expanded)
-                }
-
-                Spacer(minLength: 0)
-
-                VStack(spacing: 6) {
-                    // Cerrar
-                    Button { withAnimation { dismissed = true } } label: {
-                        Image(systemName: "xmark").font(.caption2).foregroundStyle(.tertiary)
+            VStack(spacing: 6) {
+                // Paginación nativa: desliza fino y no interfiere con el resto de la app
+                TabView(selection: $current) {
+                    ForEach(Array(tips.enumerated()), id: \.offset) { idx, tip in
+                        tipCard(tip)
+                            .padding(.horizontal, 1)
+                            .tag(idx)
                     }
-                    // Pasar a la siguiente alerta
-                    if tips.count > 1 {
-                        Button {
-                            withAnimation { current = (current + 1) % tips.count }
-                        } label: {
-                            Text("\(current + 1)/\(tips.count)")
-                                .font(.system(size: 9)).foregroundColor(.secondary)
+                }
+                .tabViewStyle(.page(indexDisplayMode: .never))
+                .frame(height: expanded ? expandedHeight : 84)
+                .animation(.spring(response: 0.3), value: expanded)
+
+                // Puntos indicadores (solo si hay varias)
+                if tips.count > 1 {
+                    HStack(spacing: 6) {
+                        ForEach(tips.indices, id: \.self) { i in
+                            Circle()
+                                .fill(i == current ? Color.primary.opacity(0.6) : Color.primary.opacity(0.2))
+                                .frame(width: 5, height: 5)
                         }
                     }
-                    Image(systemName: expanded ? "chevron.up" : "chevron.down")
-                        .font(.system(size: 9, weight: .semibold)).foregroundStyle(.tertiary)
                 }
             }
-            .padding(12)
-            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-            .overlay(alignment: .leading) {
-                RoundedRectangle(cornerRadius: 3).fill(tip.color)
-                    .frame(width: 3).padding(.vertical, 8)
-            }
-            .contentShape(Rectangle())
-            // Tocar despliega la alerta completa
-            .onTapGesture { withAnimation(.spring(response: 0.3)) { expanded.toggle() } }
-            // Deslizar en horizontal pasa de alerta (sin robar el scroll vertical)
-            .gesture(
-                DragGesture(minimumDistance: 20)
-                    .onEnded { value in
-                        guard tips.count > 1,
-                              abs(value.translation.width) > abs(value.translation.height),
-                              abs(value.translation.width) > 40 else { return }
-                        withAnimation(.spring(response: 0.35)) {
-                            current = value.translation.width < 0
-                                ? (current + 1) % tips.count
-                                : (current - 1 + tips.count) % tips.count
-                        }
-                    }
-            )
-            .transition(.asymmetric(insertion: .push(from: .top), removal: .push(from: .bottom)))
-            .animation(.spring(response: 0.4), value: current)
         }
+    }
+
+    // Altura cuando está desplegada (para que quepa el texto largo)
+    private var expandedHeight: CGFloat { 150 }
+
+    @ViewBuilder
+    private func tipCard(_ tip: SmartTip) -> some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: tip.icon)
+                .font(.system(size: 17, weight: .semibold))
+                .foregroundColor(tip.color)
+                .frame(width: 34, height: 34)
+                .background(tip.color.opacity(0.12), in: Circle())
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(tip.title)
+                    .font(.subheadline).fontWeight(.semibold).foregroundColor(.primary)
+                    .lineLimit(expanded ? nil : 1)
+                    .fixedSize(horizontal: false, vertical: expanded)
+                Text(tip.detail)
+                    .font(.caption).foregroundColor(.secondary)
+                    .lineLimit(expanded ? nil : 2)
+                    .fixedSize(horizontal: false, vertical: expanded)
+            }
+
+            Spacer(minLength: 0)
+
+            VStack(spacing: 8) {
+                Button { withAnimation { dismissed = true } } label: {
+                    Image(systemName: "xmark").font(.caption2).foregroundStyle(.tertiary)
+                }
+                Image(systemName: expanded ? "chevron.up" : "chevron.down")
+                    .font(.system(size: 10, weight: .semibold)).foregroundStyle(.tertiary)
+            }
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .topLeading)
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .overlay(alignment: .leading) {
+            RoundedRectangle(cornerRadius: 3).fill(tip.color)
+                .frame(width: 3).padding(.vertical, 8)
+        }
+        .contentShape(Rectangle())
+        .onTapGesture { withAnimation(.spring(response: 0.3)) { expanded.toggle() } }
     }
 }
 
