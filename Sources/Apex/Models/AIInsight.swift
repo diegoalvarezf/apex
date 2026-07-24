@@ -285,9 +285,11 @@ struct AICoachContext {
         var parts: [String] = []
 
         if let recovery = recoveryScore {
-            // OJO: los componentes son PUNTUACIONES 0-100, no bpm ni ms. Se etiquetan
-            // explícitamente porque si no la IA los confunde con los valores medidos.
-            parts.append("RECUPERACIÓN: \(recovery.value)/100 — la app la etiqueta como \"\(recovery.label)\"; usa ESA palabra si te refieres a ella, no inventes otra (sub-puntuaciones sobre 100, NO son bpm ni ms — HRV: \(recovery.hrvScore)/100, FC reposo: \(recovery.restingHRScore)/100, sueño: \(recovery.sleepScore)/100, carga: \(recovery.trainingLoadScore)/100)")
+            // Se describe QUÉ componente empuja arriba o abajo (en cualitativo), sin
+            // exponer las sub-puntuaciones /100: al usuario le confunden y no aparecen
+            // en la app. La IA debe hablar con los valores reales (ms, bpm, horas).
+            func tone(_ s: Int) -> String { s >= 62 ? "favorable" : s <= 42 ? "por debajo de tu media" : "en tu media" }
+            parts.append("RECUPERACIÓN: \(recovery.value)/100, etiquetada como \"\(recovery.label)\" (usa ESA palabra, no inventes otra). Qué la mueve: HRV \(tone(recovery.hrvScore)), FC reposo \(tone(recovery.restingHRScore)), sueño \(tone(recovery.sleepScore)), carga \(tone(recovery.trainingLoadScore)). Al explicarlo usa los VALORES REALES de abajo (HRV en ms, FC reposo en bpm), NUNCA puntuaciones sobre 100.")
         }
         if let load = trainingLoad {
             let acwrLabel: String
