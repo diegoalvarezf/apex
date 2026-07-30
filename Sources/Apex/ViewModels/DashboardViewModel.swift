@@ -21,8 +21,8 @@ final class DashboardViewModel: ObservableObject {
 
     private let insightsKey = "apex_ai_insights_v1"
     private let insightsDateKey = "apex_ai_insights_date_v1"
-    private let alertsKey = "apex_ai_alerts_v4"
-    private let alertsDateKey = "apex_ai_alerts_date_v4"
+    private let alertsKey = "apex_ai_alerts_v5"
+    private let alertsDateKey = "apex_ai_alerts_date_v5"
     private let weeklyKey = "apex_ai_weekly_v1"
     private let weeklyDateKey = "apex_ai_weekly_date_v1"
 

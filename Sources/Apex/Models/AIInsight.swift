@@ -280,9 +280,16 @@ struct AICoachContext {
 
     // Bloque de datos compartido por insights y resumen semanal
     private func metricsBlock() -> [String] {
-        let cal = Calendar.current
+        var cal = Calendar.current
+        cal.firstWeekday = 2   // la semana empieza en LUNES (España)
         let now = Date()
         var parts: [String] = []
+
+        // Perfil del usuario para el contexto de la IA
+        let df = DateFormatter(); df.locale = Locale(identifier: "es_ES")
+        df.dateFormat = "EEEE d 'de' MMMM"
+        parts.append("PERFIL: usuario en España (zona horaria de Madrid). La semana empieza el LUNES. Hoy es \(df.string(from: now)). Usa horas y fechas en formato español.")
+        parts.append("")
 
         if let recovery = recoveryScore {
             // Se describe QUÉ componente empuja arriba o abajo (en cualitativo), sin
