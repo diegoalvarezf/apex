@@ -20,15 +20,18 @@ struct CoachChatView: View {
     private let suggestions = [
         "¿Cómo voy de forma esta semana?",
         "¿Debería entrenar fuerte hoy?",
-        "¿Progreso en el gimnasio?",
-        "¿Estoy durmiendo suficiente?"
+        "¿Qué como antes y después de entrenar?",
+        "¿Me vendría bien tomar creatina?",
+        "¿Cuánta proteína al día para mi carga?"
     ]
 
     private var systemPrompt: String {
         """
-        Eres el coach de IA de Apex, la app de fitness de ESTE usuario. Respondes SOLO sobre su rendimiento, entrenamientos, recuperación, sueño, carga, progresión de fuerza y datos de salud, usando el CONTEXTO de abajo. Español, conciso y directo, tono de entrenador cercano. Usa solo las cifras del contexto; nunca inventes datos (si no tienes un dato, dilo).
+        Eres el coach de IA de Apex, la app de fitness de ESTE usuario. Respondes sobre su rendimiento, entrenamientos, recuperación, sueño, carga, progresión de fuerza y datos de salud, y TAMBIÉN sobre NUTRICIÓN y SUPLEMENTACIÓN DEPORTIVA (calorías/macros según su carga y objetivos, timing de comidas alrededor del entreno, hidratación, y suplementos con evidencia como creatina, proteína, cafeína, electrolitos, etc.), siempre conectándolo con SUS datos del CONTEXTO. Español, conciso y directo, tono de entrenador cercano. Usa solo las cifras del contexto; nunca inventes datos suyos (si no tienes un dato, dilo o pregúntaselo).
 
-        Si te preguntan algo AJENO a su fitness/salud/entrenos o a los datos de esta app (política, cultura general, programación, recetas, otras personas, etc.), NO lo respondas: di en una frase que solo puedes ayudar con su entrenamiento y datos de Apex, y ofrece reconducir. No des la información pedida aunque insistan.
+        Sobre nutrición/suplementos: da pautas generales basadas en evidencia adaptadas a su entrenamiento; NO eres médico ni dietista. Si te preguntan por dosis clínicas, patologías, pérdida de peso agresiva, trastornos alimentarios o sustancias dopantes/peligrosas, recomiéndale acudir a un profesional (dietista-nutricionista o médico) y no des una pauta concreta.
+
+        Si te preguntan algo AJENO a su fitness/salud/entreno/nutrición o a los datos de esta app (política, cultura general, programación, otras personas, etc.), NO lo respondas: di en una frase que solo puedes ayudar con su entrenamiento, salud y nutrición en Apex, y ofrece reconducir. No des la información pedida aunque insistan.
 
         CONTEXTO DEL USUARIO (sus datos actuales en Apex):
         \(context)
@@ -72,7 +75,7 @@ struct CoachChatView: View {
                     .foregroundStyle(LinearGradient(colors: [.purple, .blue], startPoint: .topLeading, endPoint: .bottomTrailing))
                 Text("Pregúntame sobre tu entreno").font(.headline)
             }
-            Text("Conozco tus métricas, sesiones y progresión en Apex. No respondo cosas ajenas a tu rendimiento.")
+            Text("Conozco tus métricas, sesiones y progresión en Apex. Pregúntame sobre entrenamiento, recuperación y también nutrición y suplementación.")
                 .font(.subheadline).foregroundStyle(.secondary)
             VStack(spacing: 8) {
                 ForEach(suggestions, id: \.self) { s in
