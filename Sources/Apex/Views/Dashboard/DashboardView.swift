@@ -108,6 +108,8 @@ struct DashboardView: View {
                 async let health: Void = healthKit.loadAll()
                 async let strava: Void = reloadStrava()
                 _ = await (health, strava)
+                // loadAlertsIfStale solo llama a la IA si las alertas NO son de hoy
+                await dashVM.loadAlertsIfStale(health: healthKit)
             }
             .navigationTitle(Date.now.formatted(.dateTime.weekday(.wide).day().month(.wide)))
             .navigationBarTitleDisplayMode(.large)
