@@ -4,9 +4,21 @@ import SwiftUI
 // Usage: SmartTipBanner(tips: computedTips)
 struct SmartTipBanner: View {
     let tips: [SmartTip]
+    var updatedAt: Date? = nil        // cuándo generó la IA estas alertas
+    var isAI: Bool = false            // true si vienen de la IA (no reglas locales)
     @State private var current = 0
     @State private var dismissed = false
     @State private var expanded = false
+
+    // "Actualizado hoy 9:31" / "Actualizado ayer" — para saber si están al día
+    private var freshnessText: String? {
+        guard isAI, let at = updatedAt else { return nil }
+        let cal = Calendar.current
+        if cal.isDateInToday(at) {
+            return "Actualizado hoy " + at.formatted(date: .omitted, time: .shortened)
+        }
+        return "Actualizado " + at.formatted(.relative(presentation: .named))
+    }
 
     var body: some View {
         if dismissed || tips.isEmpty { EmptyView() }
@@ -24,16 +36,30 @@ struct SmartTipBanner: View {
                 .frame(height: expanded ? expandedHeight : 84)
                 .animation(.spring(response: 0.3), value: expanded)
 
-                // Puntos indicadores (solo si hay varias)
-                if tips.count > 1 {
-                    HStack(spacing: 6) {
-                        ForEach(tips.indices, id: \.self) { i in
-                            Circle()
-                                .fill(i == current ? Color.primary.opacity(0.6) : Color.primary.opacity(0.2))
-                                .frame(width: 5, height: 5)
+                // Fila inferior: puntos indicadores + sello de actualización
+                HStack {
+                    if let freshnessText {
+                        HStack(spacing: 4) {
+                            Image(systemName: "sparkles").font(.system(size: 9))
+                            Text(freshnessText).font(.system(size: 10))
+                        }
+                        .foregroundStyle(.tertiary)
+                    }
+                    Spacer()
+                    if tips.count > 1 {
+                        HStack(spacing: 6) {
+                            ForEach(tips.indices, id: \.self) { i in
+                                Circle()
+                                    .fill(i == current ? Color.primary.opacity(0.6) : Color.primary.opacity(0.2))
+                                    .frame(width: 5, height: 5)
+                            }
                         }
                     }
+                    Spacer()
+                    // equilibra el sello de la izquierda para centrar los puntos
+                    if freshnessText != nil { Color.clear.frame(width: 1, height: 1) }
                 }
+                .padding(.horizontal, 4)
             }
         }
     }

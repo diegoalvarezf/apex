@@ -98,9 +98,17 @@ struct InsightsView: View {
                         AlertsLoadingBanner().padding(.horizontal)
                     } else if !displayedTips.isEmpty {
                         VStack(alignment: .leading, spacing: 10) {
-                            Label("Alertas de hoy", systemImage: "sparkles")
-                                .font(.headline)
-                                .padding(.horizontal, 4)
+                            HStack {
+                                Label("Alertas de hoy", systemImage: "sparkles").font(.headline)
+                                Spacer()
+                                if !dashVM.aiAlerts.isEmpty, let at = dashVM.aiAlertsAt {
+                                    Text(Calendar.current.isDateInToday(at)
+                                         ? "Hoy " + at.formatted(date: .omitted, time: .shortened)
+                                         : at.formatted(.relative(presentation: .named)))
+                                        .font(.caption2).foregroundStyle(.secondary)
+                                }
+                            }
+                            .padding(.horizontal, 4)
 
                             SmartTipsList(tips: displayedTips, showAll: showAllTips)
 
