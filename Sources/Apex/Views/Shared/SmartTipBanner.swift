@@ -24,6 +24,17 @@ struct SmartTipBanner: View {
         if dismissed || tips.isEmpty { EmptyView() }
         else {
             VStack(spacing: 6) {
+                // Sello de actualización arriba (no descentra los puntos de abajo)
+                if let freshnessText {
+                    HStack(spacing: 4) {
+                        Image(systemName: "sparkles").font(.system(size: 9))
+                        Text(freshnessText).font(.system(size: 10))
+                        Spacer()
+                    }
+                    .foregroundStyle(.tertiary)
+                    .padding(.horizontal, 4)
+                }
+
                 // Paginación nativa: desliza fino y no interfiere con el resto de la app
                 TabView(selection: $current) {
                     ForEach(Array(tips.enumerated()), id: \.offset) { idx, tip in
@@ -36,30 +47,16 @@ struct SmartTipBanner: View {
                 .frame(height: expanded ? expandedHeight : 84)
                 .animation(.spring(response: 0.3), value: expanded)
 
-                // Fila inferior: puntos indicadores + sello de actualización
-                HStack {
-                    if let freshnessText {
-                        HStack(spacing: 4) {
-                            Image(systemName: "sparkles").font(.system(size: 9))
-                            Text(freshnessText).font(.system(size: 10))
-                        }
-                        .foregroundStyle(.tertiary)
-                    }
-                    Spacer()
-                    if tips.count > 1 {
-                        HStack(spacing: 6) {
-                            ForEach(tips.indices, id: \.self) { i in
-                                Circle()
-                                    .fill(i == current ? Color.primary.opacity(0.6) : Color.primary.opacity(0.2))
-                                    .frame(width: 5, height: 5)
-                            }
+                // Puntos indicadores, centrados
+                if tips.count > 1 {
+                    HStack(spacing: 6) {
+                        ForEach(tips.indices, id: \.self) { i in
+                            Circle()
+                                .fill(i == current ? Color.primary.opacity(0.6) : Color.primary.opacity(0.2))
+                                .frame(width: 5, height: 5)
                         }
                     }
-                    Spacer()
-                    // equilibra el sello de la izquierda para centrar los puntos
-                    if freshnessText != nil { Color.clear.frame(width: 1, height: 1) }
                 }
-                .padding(.horizontal, 4)
             }
         }
     }
