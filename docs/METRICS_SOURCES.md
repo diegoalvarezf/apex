@@ -241,11 +241,20 @@ Datos normativos (medias por década, ml·kg⁻¹·min⁻¹):
 | 70–79 | 34.7 | 27.1 |
 | 80–89 | 31.4 | 24.4 |
 
-El VO2max **domina** el número (enfoque "honesto con el VO2max", igual que Garmin/CERG):
-la edad de fitness es directamente la edad normativa de tu VO2max. FC en reposo, HRV, IMC,
-sueño y actividad son un **ajuste fino a media potencia** (están correlacionados con el
-VO2max, no se duplican). Nota: HealthKit puede infravalorar el VO2max si no corres al aire
-libre, y las medias del HUNT son de una cohorte en forma (una persona "media" saldrá mayor).
+La edad la determina **SOLO el VO2max** (edad de fitness pura, método publicado de
+Nes et al. 2011 / HUNT, el mismo que usa Garmin). FC en reposo, HRV, IMC, sueño y actividad
+se muestran como **contexto complementario, sin sumarse al número**: no hay ninguna fórmula
+publicada que combine esos marcadores con el VO2max en una sola "edad", así que combinarlos
+con pesos propios sería inventar. (El modelo previo mezclaba VO2max + secundarios con pesos
+de calibración propia; se retiró por no ser verídico.)
+
+- Nes BM, et al. *Estimating VO2peak from a nonexercise prediction model: the HUNT Study.*
+  Med Sci Sports Exerc. 2011.
+- Alternativa validada NO usada (requiere analítica de sangre): Levine ME, et al. *PhenoAge.*
+  Aging. 2018 — 9 biomarcadores sanguíneos; Apex no dispone de ellos.
+
+Nota: HealthKit puede infravalorar el VO2max si no corres al aire libre, y las medias del
+HUNT son de una cohorte noruega en forma (una persona "media" saldrá mayor de su edad real).
 
 - Loe H, Steinshamn S, Wisløff U. *Aerobic Capacity Reference Data in 3816 Healthy Men and
   Women 20–90 Years.* PLoS One. 2013;8(5):e64319. (tabla normativa de VO2max)

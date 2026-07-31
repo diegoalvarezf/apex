@@ -13,7 +13,7 @@ struct BiologicalAgeCard: View {
             }
 
             VStack(alignment: .leading, spacing: 2) {
-                Text("Edad biológica")
+                Text("Edad de fitness")
                     .font(.subheadline)
                 Text(result.deltaLabel)
                     .font(.caption).foregroundColor(result.deltaColor)

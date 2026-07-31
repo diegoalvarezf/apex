@@ -308,112 +308,64 @@ struct BiologicalAgeResult {
     ) -> BiologicalAgeResult {
 
         var factors: [BiologicalAgeFactor] = []
-        var totalDelta = 0.0
 
-        // ── VO2Max — eje de la edad de fitness (Loe 2013, HUNT) ─────
-        // Edad de fitness = edad a la que la media poblacional de VO2max iguala tu
-        // valor medido (definición de Garmin/CERG). Es el predictor de longevidad
-        // más validado, así que DOMINA el número (enfoque "honesto con el VO2max").
-        // Nota: HealthKit puede infravalorarlo si no corres al aire libre.
+        // ── EDAD DE FITNESS — método publicado y validado (Nes et al. 2011, HUNT) ──
+        // Definición: la edad a la que la media poblacional de VO2max iguala tu valor.
+        // Es la ÚNICA "edad" a partir de wearables con respaldo científico (la usa
+        // Garmin). SOLO depende del VO2max — no se mezcla con otros marcadores con
+        // pesos inventados. HealthKit puede infravalorar el VO2max si no corres fuera.
+        let age: Double
         if let v = vo2Max {
-            let fitnessAge = FitnessAgeNorms.fitnessAge(vo2Max: v, male: isMale)
-            let d = fitnessAge - Double(chronologicalAge)
-            totalDelta += d
+            age = FitnessAgeNorms.fitnessAge(vo2Max: v, male: isMale)
             let expected = FitnessAgeNorms.expectedVO2max(age: Double(chronologicalAge), male: isMale)
             factors.append(.init(
                 name: "VO₂Max",
                 icon: "lungs.fill",
                 color: .cyan,
-                ageDelta: d,
+                ageDelta: age - Double(chronologicalAge),
                 valueLabel: String(format: "%.1f ml/kg/min (media %.0f a tu edad)", v, expected),
-                explanation: "La capacidad aeróbica máxima es el predictor más potente de longevidad. Tu edad de fitness es la edad a la que la media de VO₂Max de la población (estudio HUNT, 3.816 adultos) iguala tu valor medido."
+                explanation: "Tu edad de fitness es la edad a la que la media poblacional de VO₂Max iguala tu valor medido (estudio HUNT, Nes 2011, >4.600 adultos). Es el método validado que usa Garmin. Nota: las normas HUNT son de una población en forma, así que la referencia es exigente."
             ))
+        } else {
+            // Sin VO2max no hay edad de fitness; se muestra la edad real
+            age = Double(chronologicalAge)
         }
 
-        // Marcadores secundarios como AJUSTE FINO sobre la edad de fitness. Con
-        // VO2max presente están correlacionados con él, así que van a media potencia
-        // para no duplicar el efecto: el VO2max manda, estos matizan ±unos años.
-        let secondaryWeight = vo2Max != nil ? 0.5 : 1.0
-        var secondaryDelta = 0.0
-
-        // ── FC en reposo (±4 años) ─────────────────────────────────
+        // ── Marcadores COMPLEMENTARIOS (informativos, NO entran en la edad) ────────
+        // Cada uno se asocia a longevidad por separado, pero NO existe una fórmula
+        // publicada que los combine con el VO2max en una sola "edad". Se muestran con
+        // su valor y su influencia direccional como contexto, sin sumarse al número.
+        func infoTone(_ delta: Double) -> String {
+            delta < -0.5 ? "te favorece" : delta > 0.5 ? "a mejorar" : "en la media"
+        }
         if let rhr = restingHR {
-            let d = rhrDelta(rhr) * secondaryWeight
-            secondaryDelta += d
-            factors.append(.init(
-                name: "FC en reposo",
-                icon: "heart.fill",
-                color: .red,
-                ageDelta: d,
-                valueLabel: "\(Int(rhr)) bpm",
-                explanation: "Una frecuencia cardíaca en reposo baja indica un corazón eficiente. Valores por debajo de 60 bpm son propios de atletas."
-            ))
+            factors.append(.init(name: "FC en reposo", icon: "heart.fill", color: .red,
+                ageDelta: 0, valueLabel: "\(Int(rhr)) bpm · \(infoTone(rhrDelta(rhr)))",
+                explanation: "Marcador complementario (no entra en la edad de fitness). Una FC en reposo baja indica un corazón eficiente; <60 bpm es propio de personas entrenadas."))
         }
-
-        // ── HRV (±4 años) ─────────────────────────────────────────
         if let h = hrv {
-            let d = hrvDelta(h, age: chronologicalAge) * secondaryWeight
-            secondaryDelta += d
-            factors.append(.init(
-                name: "HRV",
-                icon: "waveform.path.ecg",
-                color: .green,
-                ageDelta: d,
-                valueLabel: "\(Int(h)) ms",
-                explanation: "La variabilidad de la frecuencia cardíaca refleja la capacidad del sistema nervioso autónomo. Declina con la edad; valores altos indican mayor resiliencia."
-            ))
+            factors.append(.init(name: "HRV", icon: "waveform.path.ecg", color: .green,
+                ageDelta: 0, valueLabel: "\(Int(h)) ms · \(infoTone(hrvDelta(h, age: chronologicalAge)))",
+                explanation: "Marcador complementario (no entra en la edad de fitness). Refleja el sistema nervioso autónomo; declina con la edad y valores altos indican resiliencia."))
         }
-
-        // ── Sueño (±3 años) ────────────────────────────────────────
         if let score = sleepScore {
-            let d = sleepDelta(score) * secondaryWeight
-            secondaryDelta += d
-            factors.append(.init(
-                name: "Calidad del sueño",
-                icon: "moon.fill",
-                color: .indigo,
-                ageDelta: d,
-                valueLabel: "Score \(score)/100",
-                explanation: "El sueño profundo es cuando el cuerpo se repara. Un sueño deficiente crónico acelera el envejecimiento celular."
-            ))
+            factors.append(.init(name: "Calidad del sueño", icon: "moon.fill", color: .indigo,
+                ageDelta: 0, valueLabel: "Score \(score)/100 · \(infoTone(sleepDelta(score)))",
+                explanation: "Marcador complementario (no entra en la edad de fitness). El sueño profundo repara el cuerpo; su déficit crónico acelera el envejecimiento."))
         }
-
-        // ── IMC (±3 años) ──────────────────────────────────────────
         if let b = bmi {
-            let d = bmiDelta(b) * secondaryWeight
-            secondaryDelta += d
-            factors.append(.init(
-                name: "Composición corporal",
-                icon: "figure.stand",
-                color: .pink,
-                ageDelta: d,
-                valueLabel: String(format: "IMC %.1f", b),
-                explanation: "Un IMC en rango saludable (18.5-24.9) reduce la inflamación crónica y el estrés cardiovascular, factores clave del envejecimiento."
-            ))
+            factors.append(.init(name: "Composición corporal", icon: "figure.stand", color: .pink,
+                ageDelta: 0, valueLabel: String(format: "IMC %.1f · %@", b, infoTone(bmiDelta(b))),
+                explanation: "Marcador complementario (no entra en la edad de fitness). Un IMC saludable (18.5-24.9) reduce inflamación y estrés cardiovascular."))
         }
-
-        // ── Actividad física semanal (±3.5 años) ───────────────────
-        // Guías OMS 150-300 min/sem; asociación dosis-respuesta con mortalidad.
         if let mins = weeklyActiveMinutes {
-            let d = exerciseDelta(mins) * secondaryWeight
-            secondaryDelta += d
-            let label = mins < 60 ? "< 1h/semana"
-                : mins < 150 ? String(format: "%.0f min/semana", mins)
-                : String(format: "%.0fh/semana", mins / 60)
-            factors.append(.init(
-                name: "Actividad física",
-                icon: "figure.run",
-                color: .orange,
-                ageDelta: d,
-                valueLabel: label,
-                explanation: "El ejercicio regular es el mayor modificador de la edad biológica. Las guías OMS recomiendan 150-300 min/semana de actividad moderada."
-            ))
+            let label = mins < 60 ? "< 1h/sem" : mins < 150 ? String(format: "%.0f min/sem", mins) : String(format: "%.0fh/sem", mins / 60)
+            factors.append(.init(name: "Actividad física", icon: "figure.run", color: .orange,
+                ageDelta: 0, valueLabel: "\(label) · \(infoTone(exerciseDelta(mins)))",
+                explanation: "Marcador complementario (no entra en la edad de fitness). Las guías OMS recomiendan 150-300 min/semana; el ejercicio es el mayor modificador de la longevidad."))
         }
 
-        totalDelta += secondaryDelta
-        let bioAge = max(18.0, Double(chronologicalAge) + totalDelta)
-        // Redondear a 1 decimal
-        let rounded = (bioAge * 10).rounded() / 10
+        let rounded = ((max(18.0, age)) * 10).rounded() / 10
         return BiologicalAgeResult(
             chronologicalAge: chronologicalAge,
             biologicalAge: rounded,

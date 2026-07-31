@@ -25,7 +25,7 @@ struct BiologicalAgeDetailView: View {
                             Text(String(format: "%.1f", result.biologicalAge))
                                 .font(.system(size: 56, weight: .bold, design: .rounded))
                                 .foregroundColor(result.deltaColor)
-                            Text("Edad biológica").font(.caption).foregroundColor(.secondary)
+                            Text("Edad de fitness").font(.caption).foregroundColor(.secondary)
                         }
                     }
 
@@ -58,10 +58,10 @@ struct BiologicalAgeDetailView: View {
                 .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
                 .padding(.horizontal)
 
-                // Qué es la edad biológica
+                // Qué es la edad de fitness
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Qué es la edad biológica").font(.headline)
-                    Text("La edad biológica mide cómo funciona tu cuerpo comparado con la media de tu grupo de edad. Una edad biológica menor a la real indica que tu cuerpo está en mejor forma que la media de personas de tu edad.\n\nSe calcula combinando marcadores fisiológicos clave: capacidad aeróbica (VO2Max), salud cardiovascular (FC y HRV), calidad del sueño y composición corporal.")
+                    Text("Qué es la edad de fitness").font(.headline)
+                    Text("Es la edad a la que tu VO₂Max sería el promedio de la población. Se calcula SOLO con tu capacidad aeróbica frente a las normas del estudio HUNT (Nes et al. 2011, >4.600 adultos) — el mismo método validado que usa Garmin, y el mejor predictor de longevidad a partir de un wearable.\n\nLos demás marcadores (FC en reposo, HRV, sueño, IMC, actividad) se muestran como CONTEXTO complementario, pero NO se suman al número: no existe una fórmula publicada que los combine con el VO₂Max en una sola edad.\n\nNota: las normas HUNT son de una población noruega en forma, así que la referencia es exigente.")
                         .font(.subheadline).foregroundColor(.secondary)
                 }
                 .padding(16)
@@ -70,7 +70,7 @@ struct BiologicalAgeDetailView: View {
 
                 // Cómo mejorarla
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Cómo reducir tu edad biológica").font(.headline)
+                    Text("Cómo bajar tu edad de fitness").font(.headline)
                     VStack(alignment: .leading, spacing: 6) {
                         TipRow(icon: "figure.run", text: "Entrena en zona 2 (aeróbico suave) 3-4 días/semana — es el mayor impulsor del VO2Max")
                         TipRow(icon: "moon.fill", text: "Duerme 7-9h con horarios regulares para mejorar HRV y sueño profundo")
@@ -85,7 +85,7 @@ struct BiologicalAgeDetailView: View {
             .padding(.top).padding(.bottom, 32)
         }
         .background(Color(.systemGroupedBackground))
-        .navigationTitle("Edad biológica")
+        .navigationTitle("Edad de fitness")
         .navigationBarTitleDisplayMode(.inline)
     }
 }

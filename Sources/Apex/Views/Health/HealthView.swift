@@ -459,7 +459,7 @@ private struct BioAgeHeroCard: View {
         VStack(alignment: .leading, spacing: 14) {
             // Cabecera
             HStack {
-                Text("Edad biológica").font(.headline)
+                Text("Edad de fitness").font(.headline)
                 Spacer()
                 Image(systemName: "figure.run")
                     .font(.system(size: 13, weight: .semibold))
