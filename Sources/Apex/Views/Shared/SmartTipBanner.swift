@@ -6,6 +6,8 @@ struct SmartTipBanner: View {
     let tips: [SmartTip]
     var updatedAt: Date? = nil        // cuándo generó la IA estas alertas
     var isAI: Bool = false            // true si vienen de la IA (no reglas locales)
+    var isLoading: Bool = false       // la IA está regenerando las alertas
+    var onRefresh: (() -> Void)? = nil
     @State private var current = 0
     @State private var dismissed = false
     @State private var expanded = false
@@ -24,12 +26,21 @@ struct SmartTipBanner: View {
         if dismissed || tips.isEmpty { EmptyView() }
         else {
             VStack(spacing: 6) {
-                // Sello de actualización arriba (no descentra los puntos de abajo)
-                if let freshnessText {
-                    HStack(spacing: 4) {
+                // Fila superior: sello de actualización + estado/botón de recargar
+                if isAI {
+                    HStack(spacing: 6) {
                         Image(systemName: "sparkles").font(.system(size: 9))
-                        Text(freshnessText).font(.system(size: 10))
+                        Text(isLoading ? "Actualizando…" : (freshnessText ?? ""))
+                            .font(.system(size: 10))
                         Spacer()
+                        if isLoading {
+                            ProgressView().scaleEffect(0.7)
+                        } else if let onRefresh {
+                            Button(action: onRefresh) {
+                                Image(systemName: "arrow.clockwise").font(.system(size: 11, weight: .semibold))
+                            }
+                            .buttonStyle(.plain)
+                        }
                     }
                     .foregroundStyle(.tertiary)
                     .padding(.horizontal, 4)

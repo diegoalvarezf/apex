@@ -57,9 +57,14 @@ final class DashboardViewModel: ObservableObject {
 
     private struct AlertsWrapper: Decodable { let alerts: [AIAlert] }
 
-    func loadAlertsIfStale(health: HealthKitManager, strengthSummary: String? = nil) async {
-        // Solo una vez al día: el resto se sirve de caché
-        if let at = aiAlertsAt, Calendar.current.isDateInToday(at), !aiAlerts.isEmpty { return }
+    // Forzar regeneración (botón manual), aunque ya haya alertas de hoy
+    func reloadAlerts(health: HealthKitManager, strengthSummary: String? = nil) async {
+        await loadAlertsIfStale(health: health, strengthSummary: strengthSummary, force: true)
+    }
+
+    func loadAlertsIfStale(health: HealthKitManager, strengthSummary: String? = nil, force: Bool = false) async {
+        // Solo una vez al día (salvo forzado): el resto se sirve de caché
+        if !force, let at = aiAlertsAt, Calendar.current.isDateInToday(at), !aiAlerts.isEmpty { return }
         guard !activities.isEmpty || health.recoveryScore != nil else { return }
         guard !isLoadingAlerts else { return }
         isLoadingAlerts = true

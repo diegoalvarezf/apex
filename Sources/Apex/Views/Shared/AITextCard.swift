@@ -12,6 +12,15 @@ struct AITextCard: View {
     @State private var text: String?
     @State private var isLoading = false
     @State private var error: String?
+    @State private var updatedAt: Date?
+
+    private var dateKey: String { cacheKey + "_at" }
+    private var freshnessText: String? {
+        guard let at = updatedAt else { return nil }
+        return Calendar.current.isDateInToday(at)
+            ? "Actualizado hoy " + at.formatted(date: .omitted, time: .shortened)
+            : "Actualizado " + at.formatted(.relative(presentation: .named))
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -38,6 +47,13 @@ struct AITextCard: View {
                 .padding(.vertical, 4)
             } else if let text {
                 AIAnalysisBody(text: text)
+                if let freshnessText {
+                    HStack(spacing: 4) {
+                        Image(systemName: "sparkles").font(.system(size: 9))
+                        Text(freshnessText).font(.system(size: 10))
+                    }
+                    .foregroundStyle(.tertiary)
+                }
             } else if let error {
                 Text(error).font(.caption).foregroundStyle(.red)
             } else {
@@ -50,6 +66,7 @@ struct AITextCard: View {
         .clipShape(RoundedRectangle(cornerRadius: 14))
         .onAppear {
             text = UserDefaults.standard.string(forKey: cacheKey)
+            updatedAt = UserDefaults.standard.object(forKey: dateKey) as? Date
             // Automático: si no hay nada cacheado para esta clave, se genera solo
             if text == nil { run() }
         }
@@ -63,7 +80,9 @@ struct AITextCard: View {
                 let out = try await generate().trimmingCharacters(in: .whitespacesAndNewlines)
                 guard !out.isEmpty else { error = "La IA no devolvió análisis."; return }
                 text = out
+                updatedAt = Date()
                 UserDefaults.standard.set(out, forKey: cacheKey)
+                UserDefaults.standard.set(updatedAt, forKey: dateKey)
             } catch {
                 self.error = "No pude analizar: \(error.localizedDescription)"
             }

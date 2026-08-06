@@ -163,7 +163,13 @@ struct DashboardView: View {
             if dashVM.isLoadingAlerts && dashVM.aiAlerts.isEmpty {
                 AlertsLoadingBanner().padding(.horizontal)
             } else if !displayedTips.isEmpty {
-                SmartTipBanner(tips: displayedTips, updatedAt: dashVM.aiAlertsAt, isAI: !dashVM.aiAlerts.isEmpty).padding(.horizontal)
+                SmartTipBanner(
+                    tips: displayedTips,
+                    updatedAt: dashVM.aiAlertsAt,
+                    isAI: !dashVM.aiAlerts.isEmpty,
+                    isLoading: dashVM.isLoadingAlerts,
+                    onRefresh: { Task { await dashVM.reloadAlerts(health: healthKit) } }
+                ).padding(.horizontal)
             }
             metricsRow()
             sleepLink()
