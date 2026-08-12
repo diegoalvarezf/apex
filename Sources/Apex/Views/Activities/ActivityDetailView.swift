@@ -95,8 +95,8 @@ private struct RunningEconomyCard: View {
         return hrs.reduce(0, +) / Double(hrs.count)
     }
 
-    // Aerobic decoupling: (maxHR - avgHR) / avgHR * 100
-    // Only meaningful for sessions > 45 min
+    // Desacople aeróbico: (FCmáx − FCmedia) / FCmedia × 100
+    // Solo es significativo en sesiones de más de 45 min
     private var aerobicDecoupling: Double? {
         guard let maxHR = activity.maxHeartrate,
               let avgHR = activity.averageHeartrate,

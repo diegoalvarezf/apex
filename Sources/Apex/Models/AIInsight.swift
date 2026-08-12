@@ -23,7 +23,7 @@ struct AIInsight: Identifiable, Codable {
     }
 
     enum Category: String, Codable {
-        // rawValues match exactly what Claude returns (lowercase English)
+        // Los rawValue coinciden con lo que devuelve Claude (inglés en minúscula)
         case recovery, training, sleep, nutrition, performance
 
         var displayName: String {

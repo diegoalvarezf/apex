@@ -215,7 +215,7 @@ extension ActivityTracker: CLLocationManagerDelegate {
                 }
                 recentLocations.append(loc)
                 coordinates.append(loc.coordinate)
-                // Keep 5 min max for pace window
+                // La ventana de ritmo mira como mucho los últimos 5 min
                 let cutoff = Date().addingTimeInterval(-300)
                 recentLocations = recentLocations.filter { $0.timestamp > cutoff }
             }

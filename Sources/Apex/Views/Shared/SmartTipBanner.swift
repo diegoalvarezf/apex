@@ -117,7 +117,7 @@ struct SmartTipBanner: View {
     }
 }
 
-// Full expandable list — used in InsightsView
+// Lista completa desplegable — se usa en InsightsView
 struct SmartTipsList: View {
     let tips: [SmartTip]
     var showAll = false

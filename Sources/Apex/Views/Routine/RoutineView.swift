@@ -361,8 +361,8 @@ private struct DayDetailView: View {
             }
         }
 
-        let system = "Eres un entrenador de fuerza. Te paso los ejercicios de un DÍA de una rutina y la progresión registrada de cada uno. Da una CONCLUSIÓN global de cómo le va al usuario en este entrenamiento: qué progresa, qué se estanca y el foco para la próxima vez. LEE EL NOMBRE de cada ejercicio para entender su TIPO y cómo progresa: por peso (con carga), por reps a peso corporal, o por segundos (isometrías como plancha). Español, TEXTO PLANO (sin markdown ni listas), 3-4 frases. Usa solo las cifras dadas; nunca inventes valores. TERMINA con una línea aparte que empiece por 'Conclusión: ' resumiendo en una frase lo más importante y el siguiente paso."
-        return try await AIService.shared.rawCompletion(prompt: lines.joined(separator: "\n"), system: system, maxTokens: 500)
+        let system = "Eres un entrenador de fuerza. Te paso los ejercicios de un DÍA de una rutina y la progresión registrada de cada uno. Devuelve SOLO conclusiones breves, sin párrafos ni introducción. LEE EL NOMBRE de cada ejercicio para entender su TIPO y cómo progresa: por peso (con carga), por reps a peso corporal, o por segundos (isometrías como plancha). Formato EXACTO: de 2 a 4 líneas, cada una empezando por '• ' (viñeta) y de una sola frase corta (máx ~14 palabras), destacando lo que progresa y lo que se estanca. Español. Usa solo las cifras dadas; nunca inventes valores. TERMINA con una línea aparte que empiece por 'Conclusión: ' con la acción más importante para la próxima vez, en una frase."
+        return try await AIService.shared.rawCompletion(prompt: lines.joined(separator: "\n"), system: system, maxTokens: 350)
     }
 }
 

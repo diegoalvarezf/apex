@@ -58,7 +58,7 @@ final class AIService {
         let parsed = try JSONDecoder().decode(InsightsWrapper.self, from: data)
 
         return parsed.insights.compactMap { raw in
-            // Category rawValues are lowercase English — match directly
+            // Los rawValue de Category ya vienen en inglés minúscula: encajan directos
             guard let category = AIInsight.Category(rawValue: raw.category.lowercased()),
                   let priority = AIInsight.Priority(rawValue: raw.priority.lowercased())
             else { return nil }
@@ -87,7 +87,7 @@ final class AIService {
         let priority: String
     }
 
-    /// Returns raw text from Claude. Optionally pass a system prompt for JSON-only tasks.
+    /// Devuelve el texto en crudo de Claude. El system prompt es opcional, para tareas que exigen solo JSON.
     /// `model` y `maxTokens` permiten usar Opus con más presupuesto para tareas complejas.
     func rawCompletion(prompt: String, system: String? = nil,
                        model: String = ClaudeConfig.model, maxTokens: Int = 2048) async throws -> String {
@@ -142,7 +142,7 @@ final class AIService {
         return text
     }
 
-    /// Extracts the first valid JSON object `{...}` from any text (handles markdown fences, preamble, etc.)
+    /// Extrae el primer objeto JSON `{...}` válido de cualquier texto (tolera vallas markdown, preámbulo, etc.)
     static func extractJSON(from text: String) -> String? {
         var depth = 0
         var start: String.Index? = nil

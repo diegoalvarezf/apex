@@ -1,6 +1,9 @@
-# Forma
+# APEX
 
 App iOS nativa de seguimiento de rendimiento deportivo. Integra Strava, Apple HealthKit y un coach de IA basado en Claude para darte una visión completa de tu recuperación, carga de entrenamiento y salud diaria.
+
+> **Trabajo de Fin de Máster** — Máster en Desarrollo de Software e Inteligencia Artificial.
+> Autor: Diego Álvarez. Repositorio: https://github.com/diegoalvarezf/apex
 
 ---
 
@@ -64,8 +67,8 @@ App iOS nativa de seguimiento de rendimiento deportivo. Integra Strava, Apple He
 ### 1. Clona el repositorio
 
 ```bash
-git clone https://github.com/diegoalvarezfrancos/forma.git
-cd forma
+git clone https://github.com/diegoalvarezf/apex.git
+cd apex
 ```
 
 ### 2. Strava API

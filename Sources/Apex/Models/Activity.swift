@@ -2,7 +2,7 @@ import Foundation
 import SwiftUI
 import CoreLocation
 
-// Nested map object from Strava response
+// Objeto "map" anidado dentro de la respuesta de Strava
 private struct ActivityMap: Codable {
     let summaryPolyline: String?
     enum CodingKeys: String, CodingKey { case summaryPolyline = "summary_polyline" }

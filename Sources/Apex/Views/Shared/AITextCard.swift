@@ -64,12 +64,18 @@ struct AITextCard: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Color(.secondarySystemGroupedBackground))
         .clipShape(RoundedRectangle(cornerRadius: 14))
-        .onAppear {
-            text = UserDefaults.standard.string(forKey: cacheKey)
-            updatedAt = UserDefaults.standard.object(forKey: dateKey) as? Date
-            // Automático: si no hay nada cacheado para esta clave, se genera solo
-            if text == nil { run() }
-        }
+        .onAppear { loadCache() }
+        // Al cambiar de clave (p. ej. otro día de la rutina) recarga su propio
+        // análisis en vez de quedarse con el del día anterior.
+        .onChange(of: cacheKey) { _, _ in loadCache() }
+    }
+
+    private func loadCache() {
+        text = UserDefaults.standard.string(forKey: cacheKey)
+        updatedAt = UserDefaults.standard.object(forKey: dateKey) as? Date
+        error = nil
+        // Automático: si no hay nada cacheado para esta clave, se genera solo
+        if text == nil { run() }
     }
 
     private func run() {
@@ -104,9 +110,29 @@ struct AIAnalysisBody: View {
         return (body, concl.isEmpty ? nil : concl)
     }
 
+    // Líneas de viñeta ("• ...") del cuerpo, si las trae; si no, el párrafo tal cual.
+    private var bullets: [String] {
+        parts.body
+            .components(separatedBy: .newlines)
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { $0.hasPrefix("•") }
+            .map { String($0.dropFirst()).trimmingCharacters(in: .whitespaces) }
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            if !parts.body.isEmpty {
+            if !bullets.isEmpty {
+                VStack(alignment: .leading, spacing: 6) {
+                    ForEach(bullets, id: \.self) { line in
+                        HStack(alignment: .top, spacing: 6) {
+                            Text("•").foregroundStyle(.secondary)
+                            Text(line)
+                                .font(.subheadline).foregroundStyle(.primary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+                }
+            } else if !parts.body.isEmpty {
                 Text(parts.body)
                     .font(.subheadline).foregroundStyle(.primary)
                     .fixedSize(horizontal: false, vertical: true)

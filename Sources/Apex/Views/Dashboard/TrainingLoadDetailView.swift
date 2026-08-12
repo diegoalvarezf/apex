@@ -6,7 +6,7 @@ struct TrainingLoadDetailView: View {
     let activities: [StravaActivity]
     let loadHistory: [DashboardViewModel.LoadSample]
 
-    // Flatten history into series points for the chart
+    // Aplana el historial en puntos de serie para la gráfica
     private struct FitnessPoint: Identifiable {
         let id = UUID()
         let date: Date
