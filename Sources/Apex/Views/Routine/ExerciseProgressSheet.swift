@@ -439,7 +439,6 @@ struct ExerciseProgressSheet: View {
         }
         lines += sessionContext()
 
-        let system = "Eres un entrenador de fuerza. Analizas la progresión de un ejercicio frente a su prescripción. LEE EL NOMBRE del ejercicio para entender qué es y cómo progresa (no es lo mismo un femoral sentado que tumbado, ni una plancha que un press). Los ejercicios pueden medirse por PESO (con carga), por SEGUNDOS (isometrías como plancha: más tiempo = progreso), por METROS (farmer walk) o por REPS a peso corporal. IMPORTANTE: si te dan el CONTEXTO DE LA SESIÓN, úsalo — un ejercicio no progresa aislado: su ORDEN en el día y los ejercicios previos del mismo grupo muscular o patrón (empuje/tirón) explican muchos estancamientos. Si este ejercicio se estanca pero los anteriores subieron, dilo así en vez de sugerir sin más que suba peso. Español, TEXTO PLANO sin markdown ni listas, 2-3 frases. Con peso y reps variables, valora la FUERZA REAL por el 1RM estimado (Epley), no solo el peso (80×10 puede ser más fuerte que 85×5). Usa solo las cifras dadas; nunca inventes valores. TERMINA SIEMPRE con una línea aparte que empiece por 'Conclusión: ' y resuma en una frase el SIGUIENTE paso concreto (subir peso/reps/segundos, mantener o descargar) acorde al TIPO de ejercicio."
-        return try await AIService.shared.rawCompletion(prompt: lines.joined(separator: "\n"), system: system, maxTokens: 400)
+        return try await AIService.shared.rawCompletion(prompt: lines.joined(separator: "\n"), system: AIPrompts.exerciseProgress, maxTokens: 400)
     }
 }

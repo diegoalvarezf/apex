@@ -284,7 +284,7 @@ private struct DayStressPage: View {
         if let peak = hourlyHR.map(\.value).max() {
             lines.append("FC máxima del día: \(Int(peak)) bpm (FCmáx de referencia \(Int(maxHR))).")
         }
-        let system = "Eres un entrenador experto en recuperación y sistema nervioso autónomo. Con los datos de estrés fisiológico del usuario, dale acciones CONCRETAS para bajar el estrés HOY (respiración, paseo suave en Z1, sueño, mover o suavizar el entreno). Español, TEXTO PLANO sin markdown ni listas, 2-3 frases. Usa solo las cifras dadas; nunca inventes valores. TERMINA con una línea aparte que empiece por 'Conclusión: ' con la acción más importante de hoy."
+        let system = AIPrompts.stress
         return try await AIService.shared.rawCompletion(prompt: lines.joined(separator: "\n"), system: system, maxTokens: 400)
     }
 
@@ -362,7 +362,7 @@ struct RecoveryDetailView: View {
             let recent = history.suffix(7).map { String(Int($0.value)) }
             lines.append("Recuperación últimos días: \(recent.joined(separator: "→")).")
         }
-        let system = "Eres un entrenador de élite experto en recuperación. Con los datos del usuario (HRV y FC en reposo frente a su media, sueño y carga), dile qué hacer para mejorar su recuperación. Interpreta la TENDENCIA, no solo el valor de hoy. Español, TEXTO PLANO sin markdown ni listas, 2-3 frases. Usa solo las cifras dadas; nunca inventes valores. TERMINA con una línea aparte que empiece por 'Conclusión: ' con el siguiente paso concreto."
+        let system = AIPrompts.recovery
         return try await AIService.shared.rawCompletion(prompt: lines.joined(separator: "\n"), system: system, maxTokens: 400)
     }
 
@@ -499,7 +499,7 @@ struct EffortDetailView: View {
             let h = week.reduce(0.0) { $0 + Double($1.movingTime) } / 3600.0
             lines.append(String(format: "Últimos 7 días: %d sesiones, %.1f h.", week.count, h))
         }
-        let system = "Eres un entrenador de élite. Con el esfuerzo diario del usuario (TRIMP) y sus sesiones, dile si hoy toca empujar, mantener o descansar, y cómo enfocar los próximos días. Ten en cuenta que la supercompensación ocurre en el descanso y que conviene alternar días de carga alta y baja. Español, TEXTO PLANO sin markdown ni listas, 2-3 frases. Usa solo las cifras dadas; nunca inventes valores. TERMINA con una línea aparte que empiece por 'Conclusión: ' con la recomendación principal."
+        let system = AIPrompts.effort
         return try await AIService.shared.rawCompletion(prompt: lines.joined(separator: "\n"), system: system, maxTokens: 400)
     }
 

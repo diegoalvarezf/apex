@@ -72,7 +72,7 @@ struct ActivityAIAnalysisCard: View {
         do {
             let streams = try await StravaAPI.shared.fetchStreams(id: activity.id, token: token)
             let prompt = buildPrompt(streams: streams)
-            let text = try await AIService.shared.rawCompletion(prompt: prompt, system: Self.system, maxTokens: 500)
+            let text = try await AIService.shared.rawCompletion(prompt: prompt, system: AIPrompts.enduranceSession, maxTokens: 500)
             let clean = text.trimmingCharacters(in: .whitespacesAndNewlines)
             guard !clean.isEmpty else { error = "La IA no devolvió análisis."; return }
             analysis = clean
@@ -81,8 +81,6 @@ struct ActivityAIAnalysisCard: View {
             self.error = "No pude analizar la sesión: \(error.localizedDescription)"
         }
     }
-
-    private static let system = "Eres un entrenador de resistencia (carrera y ciclismo). Analizas una sesión a partir de su curva de FC, ritmo o potencia por tramos. SÉ BREVE: 2-3 frases de análisis, directo, sin preámbulos ni relleno. Español, TEXTO PLANO (sin markdown ni listas). Di la ESTRUCTURA real (continuo/progresivo/tempo/series con nº y duración aprox./cuestas), lo más relevante del control del esfuerzo o de la deriva/fade. Usa solo cifras presentes en los datos; nunca inventes valores. TERMINA SIEMPRE con una línea aparte que empiece por 'Conclusión: ' y resuma en una frase la idea clave y la acción a tomar."
 
     private func buildPrompt(streams: ActivityStreams) -> String {
         var lines: [String] = [

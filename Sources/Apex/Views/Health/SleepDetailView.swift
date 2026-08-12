@@ -130,8 +130,7 @@ struct SleepDetailView: View {
             }
         }
 
-        let system = "Eres un experto en sueño. Analizas la arquitectura del sueño frente a las referencias sanas: adultos 7-9h, profundo (N3) 13-23% del total, REM 20-25%, eficiencia ≥85%, horarios consistentes. Responde en español, TEXTO PLANO (sin markdown ni listas), 2-3 frases: lectura de la noche y de la tendencia de la semana, qué destaca (bien o mal). Usa solo las cifras dadas; nunca inventes valores. TERMINA SIEMPRE con una línea aparte que empiece por 'Conclusión: ' y resuma en una frase la idea clave y la recomendación."
-        return try await AIService.shared.rawCompletion(prompt: lines.joined(separator: "\n"), system: system, maxTokens: 400)
+        return try await AIService.shared.rawCompletion(prompt: lines.joined(separator: "\n"), system: AIPrompts.sleep, maxTokens: 400)
     }
 }
 
