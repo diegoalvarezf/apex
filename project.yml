@@ -10,6 +10,8 @@ schemes:
       config: Debug
     test:
       config: Debug
+      targets:
+        - ApexTests
     profile:
       config: Release
     analyze:
@@ -89,6 +91,20 @@ targets:
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
         INFOPLIST_KEY_UIStatusBarStyle: UIStatusBarStyleDarkContent
+
+  ApexTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: Tests/ApexTests
+    dependencies:
+      - target: Apex
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.diegoalvarezfrancos.apex.tests
+        SWIFT_VERSION: "5.10"
+        IPHONEOS_DEPLOYMENT_TARGET: "17.0"
+        GENERATE_INFOPLIST_FILE: true
 
   ApexWidget:
     type: app-extension

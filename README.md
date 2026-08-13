@@ -117,6 +117,18 @@ open Apex.xcodeproj
 
 Selecciona tu dispositivo (se recomienda dispositivo físico para HealthKit y sensores reales) y pulsa **Run**.
 
+### 7. Tests
+
+Los algoritmos de carga de entrenamiento están cubiertos por tests unitarios
+(Swift Testing). Los valores esperados salen de aplicar a mano las ecuaciones
+publicadas, no de la propia implementación:
+
+```bash
+xcodebuild test -project Apex.xcodeproj -scheme Apex -destination 'platform=iOS Simulator,name=iPhone 17'
+```
+
+> Si añades ficheros nuevos, regenera el proyecto con `xcodegen generate` antes de compilar.
+
 ---
 
 ## Arquitectura
