@@ -59,6 +59,9 @@ private struct MetricBar: View {
     let label: String
     let value: Int
     let color: Color
+    // Mientras la app no haya escrito nada, un 0 no significa "cero": significa
+    // que no se sabe. Se muestra "--", como en el dashboard.
+    var hasData: Bool = true
 
     var body: some View {
         VStack(alignment: .leading, spacing: 3) {
@@ -71,9 +74,9 @@ private struct MetricBar: View {
                     .foregroundStyle(.secondary)
                     .tracking(0.4)
                 Spacer()
-                Text("\(value)")
+                Text(hasData ? "\(value)" : "--")
                     .font(.system(size: 15, weight: .bold, design: .rounded))
-                    .foregroundStyle(color)
+                    .foregroundStyle(hasData ? color : .secondary)
             }
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
@@ -127,10 +130,10 @@ struct QuadMediumView: View {
 
             // 4 barras
             VStack(spacing: 8) {
-                MetricBar(icon: "bolt.heart.fill",       label: "Body Battery",  value: entry.battery,  color: batteryColor)
-                MetricBar(icon: "arrow.up.heart.fill",   label: "Recuperación",  value: entry.recovery, color: recoveryColor)
-                MetricBar(icon: "bolt.fill",             label: "Esfuerzo",      value: entry.effort,   color: effortColor)
-                MetricBar(icon: "moon.stars.fill",       label: "Sueño",         value: entry.sleep,    color: sleepColor)
+                MetricBar(icon: "bolt.heart.fill",       label: "Body Battery",  value: entry.battery, color: batteryColor, hasData: entry.hasData)
+                MetricBar(icon: "arrow.up.heart.fill",   label: "Recuperación",  value: entry.recovery, color: recoveryColor, hasData: entry.hasData)
+                MetricBar(icon: "bolt.fill",             label: "Esfuerzo",      value: entry.effort, color: effortColor, hasData: entry.hasData)
+                MetricBar(icon: "moon.stars.fill",       label: "Sueño",         value: entry.sleep, color: sleepColor, hasData: entry.hasData)
             }
         }
         .padding(14)
@@ -205,9 +208,9 @@ struct QuadLargeView: View {
                         .foregroundStyle(color.opacity(0.7))
                 }
                 Spacer()
-                Text("\(value)")
+                Text(entry.hasData ? "\(value)" : "--")
                     .font(.system(size: 22, weight: .bold, design: .rounded))
-                    .foregroundStyle(color)
+                    .foregroundStyle(entry.hasData ? color : .secondary)
                 Text("/ 100")
                     .font(.system(size: 10))
                     .foregroundStyle(.tertiary)
@@ -237,7 +240,7 @@ struct ApexQuadMediumWidget: Widget {
         StaticConfiguration(kind: kind, provider: ApexProvider()) { entry in
             QuadMediumView(entry: entry)
         }
-        .configurationDisplayName("Forma · Resumen")
+        .configurationDisplayName("Apex · Resumen")
         .description("Body Battery, Recuperación, Esfuerzo y Sueño.")
         .supportedFamilies([.systemMedium])
     }
@@ -249,7 +252,7 @@ struct ApexQuadLargeWidget: Widget {
         StaticConfiguration(kind: kind, provider: ApexProvider()) { entry in
             QuadLargeView(entry: entry)
         }
-        .configurationDisplayName("Forma · Detalle")
+        .configurationDisplayName("Apex · Detalle")
         .description("Body Battery, Recuperación, Esfuerzo y Sueño con barras completas.")
         .supportedFamilies([.systemLarge])
     }
@@ -287,9 +290,9 @@ private struct SmallBatteryView: View {
                     .stroke(color, style: StrokeStyle(lineWidth: 10, lineCap: .round))
                     .rotationEffect(.degrees(-90))
                 VStack(spacing: 1) {
-                    Text("\(entry.battery)")
+                    Text(entry.hasData ? "\(entry.battery)" : "--")
                         .font(.system(size: 26, weight: .bold, design: .rounded))
-                        .foregroundStyle(color)
+                        .foregroundStyle(entry.hasData ? color : .secondary)
                     Text("BATTERY")
                         .font(.system(size: 7, weight: .semibold))
                         .foregroundStyle(.secondary)

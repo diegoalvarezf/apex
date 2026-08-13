@@ -14,6 +14,10 @@ struct WatchDashboardData: Codable {
     var tsb: Double = 0
     var recentActivities: [WatchActivity] = []
     var updatedAt: Date = Date()
+
+    // El reloj recibe ceros mientras el iPhone no le ha mandado nada todavía. Un 0
+    // no es una medición de cero: es que aún no se sabe.
+    var hasData: Bool { battery > 0 || recovery > 0 }
 }
 
 struct WatchActivity: Codable, Identifiable {

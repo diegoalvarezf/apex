@@ -32,7 +32,7 @@ struct WatchBatteryView: View {
                         .stroke(batteryColor, style: StrokeStyle(lineWidth: 10, lineCap: .round))
                         .rotationEffect(.degrees(-90))
                     VStack(spacing: 1) {
-                        Text("\(data.battery)")
+                        Text(data.hasData ? "\(data.battery)" : "--")
                             .font(.system(size: 34, weight: .bold, design: .rounded))
                             .foregroundStyle(batteryColor)
                         Text("BATTERY")
@@ -51,7 +51,7 @@ struct WatchBatteryView: View {
                             .font(.caption2)
                             .foregroundStyle(.secondary)
                         HStack(alignment: .firstTextBaseline, spacing: 2) {
-                            Text("\(data.recovery)")
+                            Text(data.hasData ? "\(data.recovery)" : "--")
                                 .font(.system(.title3, design: .rounded, weight: .bold))
                                 .foregroundStyle(recoveryColor)
                             Text("/ 100")
