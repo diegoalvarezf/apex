@@ -121,7 +121,7 @@ struct DashboardView: View {
                 let cutoff = Calendar.current.date(byAdding: .day, value: -28, to: Date()) ?? Date()
                 let recent = dashVM.activities.filter { $0.startDate >= cutoff }
                 let weeklyMins = recent.reduce(0.0) { $0 + Double($1.movingTime) } / 60.0 / 4.0
-                healthKit.updateBiologicalAgeActivity(weeklyMinutes: weeklyMins)
+                healthKit.updateBiologicalAgeActivity(weeklyMinutes: weeklyMins, activities: dashVM.activities)
                 refreshWidget()
             }
             .onChange(of: healthKit.recoveryScore?.value) { _, _ in

@@ -215,7 +215,8 @@ final class HealthKitManager: ObservableObject {
         hrv: Double?,
         sleepScore: Int?,
         bmi: Double?,
-        weeklyActiveMinutes: Double? = nil
+        weeklyActiveMinutes: Double? = nil,
+        runBasedVO2Max: Double? = nil
     ) -> BiologicalAgeResult? {
         guard let dobComps = try? store.dateOfBirthComponents(),
               let dob = Calendar.current.date(from: dobComps) else { return nil }
@@ -234,7 +235,8 @@ final class HealthKitManager: ObservableObject {
             sleepScore: sleepScore,
             bmi: bmi,
             weeklyActiveMinutes: weeklyActiveMinutes,
-            maxHR: UserProfile.effectiveMaxHR
+            maxHR: UserProfile.effectiveMaxHR,
+            runBasedVO2Max: runBasedVO2Max
         )
     }
 
@@ -654,14 +656,23 @@ final class HealthKitManager: ObservableObject {
     }
 
     // Llamado por DashboardViewModel tras cargar actividades Strava
-    func updateBiologicalAgeActivity(weeklyMinutes: Double) {
+    func updateBiologicalAgeActivity(weeklyMinutes: Double, activities: [StravaActivity] = []) {
+        let rhr = todaySummary?.restingHR
+        // Si el reloj no escribe el VO2max en Salud (o lo que hay ya caducó), se
+        // estima con las carreras: ritmo y FC dan una lectura de hoy, no de hace meses.
+        let porCarreras = VO2MaxEstimator.estimate(
+            from: activities,
+            restingHR: rhr ?? UserProfile.restingHR,
+            maxHR: UserProfile.effectiveMaxHR
+        )
         biologicalAge = computeBiologicalAge(
-            vo2Max: vo2MaxData?.current ?? todaySummary?.vo2Max,
-            restingHR: todaySummary?.restingHR,
+            vo2Max: vo2MaxData?.currentIfFresh ?? todaySummary?.vo2Max,
+            restingHR: rhr,
             hrv: hrvHistory.first?.sdnn,
             sleepScore: sleepHistory.first?.score,
             bmi: bodyComposition?.bmi,
-            weeklyActiveMinutes: weeklyMinutes
+            weeklyActiveMinutes: weeklyMinutes,
+            runBasedVO2Max: porCarreras
         )
     }
 

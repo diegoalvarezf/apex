@@ -22,6 +22,7 @@
 		2D5F4AEBEB4D0D949780EF4C /* PersonalRecordsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E6365D4F6FE91F2ABAA5891 /* PersonalRecordsView.swift */; };
 		2FD5C1A5F77B0E9F234D532F /* PhoneConnectivityManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D65A3BD8BE6F51776E6070A /* PhoneConnectivityManager.swift */; };
 		322390A0882DBEDF36E6309F /* WorkoutHistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E755A8A669E92EB89A93F2A /* WorkoutHistoryView.swift */; };
+		335FBF45FA0D90D7DDBA5142 /* VO2MaxEstimator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48E4E0D4C2D8D482779E6B19 /* VO2MaxEstimator.swift */; };
 		34BEA5DEC1EEDA5673829CFF /* VO2MaxStalenessTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E04B08A284D4E03379DA933E /* VO2MaxStalenessTests.swift */; };
 		35E8AE780B879EE68C1D32FE /* SleepDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3711C7634C698D2C39E28A17 /* SleepDetailView.swift */; };
 		37B98D0A71E0A409E9ACD2F8 /* AIInsight.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D98E51CB174C34F4540BEF9 /* AIInsight.swift */; };
@@ -85,6 +86,7 @@
 		E4600BAE7DC219CEF9DE1354 /* RoutineAISheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A38CD8F940C1CBCF0C97148 /* RoutineAISheet.swift */; };
 		E84BF498D110F931D4F79242 /* RunAIAnalysisCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E99751B63AB5AAE7641F8FD /* RunAIAnalysisCard.swift */; };
 		F1460305CC88C6AB5326DBEB /* ActivityTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2325B077EAC479002B9505EA /* ActivityTracker.swift */; };
+		F1CB9CB37D89103771258830 /* VO2MaxEstimatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C8CD34D2CFDC45EB32C055B /* VO2MaxEstimatorTests.swift */; };
 		F34E969E41CB652EDA9B3B9B /* WatchBatteryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A00622900A0532E9DDD6448 /* WatchBatteryView.swift */; };
 		F35512393C579D7E2C57F09F /* WeightEntrySheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = D41194928CA6F01ADE830D6F /* WeightEntrySheet.swift */; };
 		F489847B015CA5AF4449CEE2 /* MetricDetailComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = C93845D961CD8A44F52CED10 /* MetricDetailComponents.swift */; };
@@ -165,6 +167,7 @@
 		262EBE101B99D02A59837B70 /* WorkoutLog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutLog.swift; sourceTree = "<group>"; };
 		27BE0E5F42E910E1195161B5 /* StravaSecrets.example.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = StravaSecrets.example.plist; sourceTree = "<group>"; };
 		29A428C3DFC4F73E20ED3421 /* ApexWatchApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApexWatchApp.swift; sourceTree = "<group>"; };
+		2C8CD34D2CFDC45EB32C055B /* VO2MaxEstimatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VO2MaxEstimatorTests.swift; sourceTree = "<group>"; };
 		2E6365D4F6FE91F2ABAA5891 /* PersonalRecordsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersonalRecordsView.swift; sourceTree = "<group>"; };
 		35FF2E339B10BE1D133BFB61 /* ActivityStatsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityStatsView.swift; sourceTree = "<group>"; };
 		36D74569B2AAD248B9B50035 /* ApexLogo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApexLogo.swift; sourceTree = "<group>"; };
@@ -178,6 +181,7 @@
 		420D0988C7E57354663C75AD /* WatchDashboardData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchDashboardData.swift; sourceTree = "<group>"; };
 		4429550F6F3F5229FD2BBA7D /* StravaSecrets.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = StravaSecrets.plist; sourceTree = "<group>"; };
 		44C5D570EA6243B6B67E2AEA /* TrainingLoadCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrainingLoadCard.swift; sourceTree = "<group>"; };
+		48E4E0D4C2D8D482779E6B19 /* VO2MaxEstimator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VO2MaxEstimator.swift; sourceTree = "<group>"; };
 		4D98E51CB174C34F4540BEF9 /* AIInsight.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIInsight.swift; sourceTree = "<group>"; };
 		55DAD81B00BA688F089A40F3 /* Apex.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Apex.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		588F608DCC40E95DD8647E18 /* RoutineView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoutineView.swift; sourceTree = "<group>"; };
@@ -301,6 +305,7 @@
 				E34E9B77B5A6EED2A7D75D18 /* SessionLoadTests.swift */,
 				937343D1AD328D38F1AEA9C7 /* StravaActivityFixture.swift */,
 				F96D25617D324C362F8E34FC /* TrainingMetricsTests.swift */,
+				2C8CD34D2CFDC45EB32C055B /* VO2MaxEstimatorTests.swift */,
 				E04B08A284D4E03379DA933E /* VO2MaxStalenessTests.swift */,
 			);
 			path = ApexTests;
@@ -364,6 +369,7 @@
 				41370B6763ED9B455FB1DFBE /* StravaAuth.swift */,
 				9CA05CE06DA7D0D8487B6525 /* TrainingMetrics.swift */,
 				BF755D279BC97FD0AD59B978 /* UserProfileManager.swift */,
+				48E4E0D4C2D8D482779E6B19 /* VO2MaxEstimator.swift */,
 				B8EC660AD3076205E1BF524F /* WorkoutLogStore.swift */,
 			);
 			path = Services;
@@ -660,6 +666,7 @@
 				1756E84C3A0A0157979643F6 /* SessionLoadTests.swift in Sources */,
 				42D6822A661F262B432F3DD6 /* StravaActivityFixture.swift in Sources */,
 				5F66B03ED35EF2F60F49A293 /* TrainingMetricsTests.swift in Sources */,
+				F1CB9CB37D89103771258830 /* VO2MaxEstimatorTests.swift in Sources */,
 				34BEA5DEC1EEDA5673829CFF /* VO2MaxStalenessTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -729,6 +736,7 @@
 				5959F0CE51CF3DF938600C5A /* TrainingMetrics.swift in Sources */,
 				9D0CD2E6DECB3786C153589D /* TrendSparkline.swift in Sources */,
 				B299C31E8FEC72618458A065 /* UserProfileManager.swift in Sources */,
+				335FBF45FA0D90D7DDBA5142 /* VO2MaxEstimator.swift in Sources */,
 				CCD82D8EA700D77734BA74B1 /* WatchDashboardData.swift in Sources */,
 				F35512393C579D7E2C57F09F /* WeightEntrySheet.swift in Sources */,
 				0F46B3672742F539EF50555D /* WeightTrainingView.swift in Sources */,
