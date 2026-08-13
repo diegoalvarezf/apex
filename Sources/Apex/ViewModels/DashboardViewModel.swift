@@ -117,13 +117,18 @@ final class DashboardViewModel: ObservableObject {
         )
     }
 
-    // Genera el resumen solo si no hay uno de la SEMANA actual
-    func loadWeeklySummaryIfStale(health: HealthKitManager, strengthSummary: String? = nil) async {
+    // Forzar regeneración (botón manual), aunque ya haya uno de esta semana
+    func reloadWeeklySummary(health: HealthKitManager, strengthSummary: String? = nil) async {
+        await loadWeeklySummaryIfStale(health: health, strengthSummary: strengthSummary, force: true)
+    }
+
+    // Genera el resumen solo si no hay uno de la SEMANA actual (salvo forzado)
+    func loadWeeklySummaryIfStale(health: HealthKitManager, strengthSummary: String? = nil, force: Bool = false) async {
         let cal = Calendar.current
         let sameWeek = weeklySummaryAt.map {
             cal.isDate($0, equalTo: Date(), toGranularity: .weekOfYear)
         } ?? false
-        if sameWeek, weeklySummary != nil { return }
+        if !force, sameWeek, weeklySummary != nil { return }
         guard !activities.isEmpty || health.recoveryScore != nil else { return }
         guard !isLoadingWeekly else { return }
         isLoadingWeekly = true

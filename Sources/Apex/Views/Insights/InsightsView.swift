@@ -89,8 +89,18 @@ struct InsightsView: View {
 
                     // ── Resumen semanal IA ────────────────────────────────
                     if let summary = dashVM.weeklySummary {
-                        WeeklySummaryCard(text: summary, date: dashVM.weeklySummaryAt)
-                            .padding(.horizontal)
+                        WeeklySummaryCard(
+                            text: summary,
+                            date: dashVM.weeklySummaryAt,
+                            isLoading: dashVM.isLoadingWeekly,
+                            onRefresh: {
+                                Task {
+                                    await dashVM.reloadWeeklySummary(
+                                        health: healthKit, strengthSummary: strengthSummary())
+                                }
+                            }
+                        )
+                        .padding(.horizontal)
                     }
 
                     // ── Alertas del día ───────────────────────────────────
@@ -211,6 +221,8 @@ private struct AskCoachCard: View {
 private struct WeeklySummaryCard: View {
     let text: String
     let date: Date?
+    var isLoading: Bool = false
+    var onRefresh: (() -> Void)? = nil
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -221,10 +233,27 @@ private struct WeeklySummaryCard: View {
                                                     startPoint: .topLeading, endPoint: .bottomTrailing))
                 Text("Resumen de la semana").font(.headline)
                 Spacer()
-                if let date {
+                if let date, !isLoading {
                     Text(date.formatted(.dateTime.day().month(.abbreviated)))
                         .font(.caption2).foregroundStyle(.secondary)
                 }
+                if isLoading {
+                    ProgressView().scaleEffect(0.8)
+                } else if let onRefresh {
+                    Button(action: onRefresh) {
+                        Image(systemName: "arrow.clockwise")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundStyle(.secondary)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+
+            if isLoading {
+                HStack(spacing: 10) {
+                    Text("Actualizando…").font(.subheadline).foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
             // Mismo cuerpo que el resto de análisis: viñetas y conclusión destacada.
             // Los resúmenes ya cacheados, que son prosa, siguen saliendo como párrafo.
