@@ -8,6 +8,7 @@ struct ProfileSheet: View {
 
     @State private var customMaxHRText: String = ""
     @State private var showMaxHRReset = false
+    @State private var showAPIKey = false
 
     var body: some View {
         NavigationStack {
@@ -101,6 +102,17 @@ struct ProfileSheet: View {
                         status: "Conectado",
                         connected: true
                     )
+
+                    Button { showAPIKey = true } label: {
+                        ConnectedAppRow(
+                            icon: "sparkles",
+                            iconColor: .purple,
+                            name: "Coach de IA",
+                            status: APIKeyStore.hasKey ? "Clave configurada" : "Falta tu clave",
+                            connected: APIKeyStore.hasKey
+                        )
+                    }
+                    .buttonStyle(.plain)
                 }
 
                 // ── Strava ───────────────────────────────────────────────────
@@ -135,6 +147,7 @@ struct ProfileSheet: View {
                 }
 
             }
+            .sheet(isPresented: $showAPIKey) { APIKeySheet() }
             .navigationTitle("Perfil")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
