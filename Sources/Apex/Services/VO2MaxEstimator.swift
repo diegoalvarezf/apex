@@ -51,13 +51,26 @@ enum VO2MaxEstimator {
         return hrr >= 0.50 && hrr <= 0.95
     }
 
+    // Pendiente media que se le pasa a la ecuación del ACSM.
+    //
+    // Strava da el desnivel POSITIVO acumulado, no el neto, así que esto no es la
+    // pendiente real de ningún tramo: reparte el coste de subir a lo largo de toda la
+    // distancia. Y no se descuenta nada por las bajadas a propósito — bajar cuesta
+    // menos que el llano, pero no devuelve lo que costó subir, y la ecuación del ACSM
+    // solo está validada para pendientes positivas. Aplicar la pendiente con signo
+    // haría que subir y bajar se anulasen, que es justo lo que no ocurre corriendo.
+    static func averageGrade(_ act: StravaActivity) -> Double {
+        guard act.distance > 0 else { return 0 }
+        return act.totalElevationGain / act.distance
+    }
+
     // VO2max que implica una carrera concreta. nil si la actividad no sirve.
     static func estimate(from act: StravaActivity, restingHR: Double, maxHR: Double) -> Double? {
         guard isUsable(act, restingHR: restingHR, maxHR: maxHR),
               let hr = act.averageHeartrate else { return nil }
 
         let metersPerMinute = act.distance / (Double(act.movingTime) / 60.0)
-        let vo2 = vo2AtPace(metersPerMinute: metersPerMinute)
+        let vo2 = vo2AtPace(metersPerMinute: metersPerMinute, grade: averageGrade(act))
         let hrr = (hr - restingHR) / (maxHR - restingHR)
         let vo2max = restingVO2 + (vo2 - restingVO2) / hrr
 

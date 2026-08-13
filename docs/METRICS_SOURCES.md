@@ -24,7 +24,7 @@ publicada y verificable. Donde una constante es una **calibración de producto**
 | Sueño | `Models/HealthData.swift` | Normas AASM / NSF |
 | Zonas de FC | `Views/Health/HeartRateZonesView.swift` | Modelo %FCmáx de 5 zonas |
 | Edad de fitness | `Models/HealthData.swift` | VO2max normativo HUNT (Loe 2013) |
-| VO2max no-ejercicio (fallback) | `Models/HealthData.swift` | Uth et al. 2004 (FCmáx/FCreposo) |
+| VO2max estimado | `Services/VO2MaxEstimator.swift` | ACSM + Swain & Leutholtz 1997 |
 | FCmáx | `Services/UserProfileManager.swift` | Máx. observada 30d / 220−edad |
 
 ---
@@ -260,9 +260,42 @@ HUNT son de una cohorte noruega en forma (una persona "media" saldrá mayor de s
   Women 20–90 Years.* PLoS One. 2013;8(5):e64319. (tabla normativa de VO2max)
 - CERG/NTNU Fitness Calculator (concepto de fitness age).
 
-## 12. VO2max no-ejercicio (fallback cuando el reloj no lo mide)
+## 12. VO2max estimado (cuando el reloj no lo escribe en Salud)
 
-**Implementado: cociente FCmáx/FCreposo (Uth et al. 2004)**
+Prioridad: **medido y vigente** (HealthKit, ≤14 días) → **estimado con carreras** →
+**cociente FCmáx/FCreposo**. La app etiqueta siempre el valor como estimado cuando
+no procede de una medición.
+
+**12.1 Estimación con carreras (la principal)**
+
+Misma idea que Garmin/Suunto —qué ritmo sostienes a qué FC— pero con ecuaciones
+publicadas, ya que el algoritmo de Firstbeat es propietario:
+
+```
+VO2_ritmo = 0.2·v(m/min) + 0.9·v·pendiente + 3.5        (ACSM, carrera)
+HRr       = (FCmedia − FCreposo) / (FCmáx − FCreposo)
+VO2max    = 3.5 + (VO2_ritmo − 3.5) / HRr               (Swain & Leutholtz 1997)
+```
+
+La pendiente sale del desnivel POSITIVO acumulado dividido entre la distancia. No se
+descuenta nada por las bajadas: bajar cuesta menos que el llano pero no devuelve lo
+que costó subir, y la ecuación del ACSM solo está validada para pendiente positiva.
+
+Filtros de validez: solo carreras continuas (fuera series y workouts estructurados),
+≥15 min, ≥2 km, pendiente media ≤2% y FC entre el 50% y el 95% de la reserva. Se toma
+la **mediana** de los últimos 90 días con un mínimo de 3 carreras: absorbe un GPS que
+se va o un pulsómetro que salta, cosa que la media o el máximo no harían.
+
+Precisión esperada: unos ±4 ml/kg/min frente a un valor de laboratorio o al de un
+reloj con modelo propietario. No se ajusta ninguna constante para que cuadre con
+Suunto; se dejan las de la literatura.
+
+- American College of Sports Medicine. *ACSM's Guidelines for Exercise Testing and
+  Prescription* (ecuaciones metabólicas de carrera).
+- Swain DP, Leutholtz BC. *Heart rate reserve is equivalent to %VO2 reserve, not to
+  %VO2max.* Med Sci Sports Exerc. 1997;29(3):410-4.
+
+**12.2 Cociente FCmáx/FCreposo (Uth et al. 2004), último recurso**
 
 ```
 VO2max ≈ 15.3 · (FCmáx / FCreposo)

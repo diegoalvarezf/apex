@@ -48,6 +48,43 @@ struct VO2MaxEstimatorTests {
         #expect(a > b)
     }
 
+    // MARK: - Corrección por desnivel
+
+    // Strava da desnivel positivo acumulado: 100 m en 10 km son un 1% de media.
+    @Test func laPendienteMediaSaleDelDesnivelPositivo() {
+        let act = StravaActivityFixture.make(sportType: "run", distance: 10_000, totalElevationGain: 100)
+        #expect(abs(VO2MaxEstimator.averageGrade(act) - 0.01) < 0.0001)
+
+        let llana = StravaActivityFixture.make(sportType: "run", distance: 10_000, totalElevationGain: 0)
+        #expect(VO2MaxEstimator.averageGrade(llana) == 0)
+    }
+
+    // La misma carrera con desnivel implica más VO2max: subir cuesta oxígeno, así que
+    // sostener ese ritmo a esa FC demuestra más capacidad que hacerlo en llano.
+    @Test func elDesnivelSubeLaEstimacion() {
+        let llana = StravaActivityFixture.make(
+            sportType: "run", movingTime: 3000, distance: 10_000,
+            totalElevationGain: 0, averageHeartrate: 150)
+        let conCuestas = StravaActivityFixture.make(
+            sportType: "run", movingTime: 3000, distance: 10_000,
+            totalElevationGain: 150, averageHeartrate: 150)
+
+        let a = VO2MaxEstimator.estimate(from: llana, restingHR: Self.rest, maxHR: Self.max)!
+        let b = VO2MaxEstimator.estimate(from: conCuestas, restingHR: Self.rest, maxHR: Self.max)!
+        #expect(b > a)
+
+        // 10 km en 50 min = 200 m/min, 150 m de desnivel = 1,5%
+        //   VO2 = 0,2·200 + 0,9·200·0,015 + 3,5 = 40 + 2,7 + 3,5 = 46,2
+        //   HRr = 0,714286 → VO2max = 3,5 + 42,7/0,714286 = 63,28
+        #expect(abs(b - 63.28) < 0.01)
+    }
+
+    // Sin distancia no se divide por cero.
+    @Test func sinDistanciaLaPendienteEsCero() {
+        let act = StravaActivityFixture.make(sportType: "run", distance: 0, totalElevationGain: 100)
+        #expect(VO2MaxEstimator.averageGrade(act) == 0)
+    }
+
     // MARK: - Qué actividades se descartan
 
     @Test func descartaLoQueNoSeaCorrer() {
