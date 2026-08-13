@@ -12,6 +12,18 @@ final class HealthKitManager: ObservableObject {
     @Published var hrvHistory: [HRVData] = []
     @Published var recoveryScore: RecoveryScore?
     @Published var vo2MaxData: VO2MaxData?
+    // VO2max deducido de las carreras de Strava. Solo se calcula cuando no hay una
+    // medida vigente en Salud; es lo que se muestra en su lugar.
+    @Published var estimatedVO2Max: Double?
+
+    // El VO2max que debe enseñar la app, con su procedencia, siguiendo la misma
+    // prioridad que la edad de fitness: medido y vigente > carreras > sin dato.
+    var displayVO2Max: (value: Double, isEstimated: Bool)? {
+        if let fresh = vo2MaxData?.currentIfFresh { return (fresh, false) }
+        if let est = estimatedVO2Max { return (est, true) }
+        if let stale = vo2MaxData?.current { return (stale, false) }
+        return nil
+    }
     @Published var respiratoryData: RespiratoryData?
     @Published var wristTempData: WristTempData?
     @Published var daylightData: DaylightData?
@@ -660,11 +672,13 @@ final class HealthKitManager: ObservableObject {
         let rhr = todaySummary?.restingHR
         // Si el reloj no escribe el VO2max en Salud (o lo que hay ya caducó), se
         // estima con las carreras: ritmo y FC dan una lectura de hoy, no de hace meses.
-        let porCarreras = VO2MaxEstimator.estimate(
-            from: activities,
-            restingHR: rhr ?? UserProfile.restingHR,
-            maxHR: UserProfile.effectiveMaxHR
-        )
+        let porCarreras = vo2MaxData?.currentIfFresh == nil
+            ? VO2MaxEstimator.estimate(
+                from: activities,
+                restingHR: rhr ?? UserProfile.restingHR,
+                maxHR: UserProfile.effectiveMaxHR)
+            : nil
+        estimatedVO2Max = porCarreras
         biologicalAge = computeBiologicalAge(
             vo2Max: vo2MaxData?.currentIfFresh ?? todaySummary?.vo2Max,
             restingHR: rhr,

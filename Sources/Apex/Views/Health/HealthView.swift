@@ -98,20 +98,19 @@ struct HealthView: View {
                     }.buttonStyle(.plain)
                 }
 
-                if layout.isVisible(.vo2max), let vo2 = healthKit.vo2MaxData {
+                if layout.isVisible(.vo2max), let vo2 = healthKit.displayVO2Max {
                     NavigationLink(destination: MetricDetailView(config: MetricConfig(
-                        title: "VO₂Max", icon: "lungs.fill", color: .blue,
-                        unit: "ml/kg/min", value: String(format: "%.1f", vo2.current),
-                        samples: vo2.samples, higherIsBetter: true, normalRange: 35...60,
-                        explanation: vo2.isStale
-                            ? "El VO₂Max es el predictor más potente de rendimiento aeróbico y longevidad.\n\nEsta lectura es de hace \(vo2.daysSinceMeasured ?? 0) días, así que probablemente ya no refleja tu estado actual: tu reloj no está escribiendo el VO₂Max en Apple Salud. La edad de fitness usa mientras tanto un valor estimado."
-                            : "El VO₂Max es el predictor más potente de rendimiento aeróbico y longevidad."
+                        title: vo2.isEstimated ? "VO₂Max (estimado)" : "VO₂Max",
+                        icon: "lungs.fill", color: .blue,
+                        unit: "ml/kg/min", value: String(format: "%.1f", vo2.value),
+                        samples: healthKit.vo2MaxData?.samples ?? [], higherIsBetter: true, normalRange: 35...60,
+                        explanation: vo2Explanation(vo2)
                     ))) {
                         PWMetricCard(icon: "lungs.fill", color: .blue,
-                                     title: vo2.isStale ? "VO₂Max (desactualizado)" : "VO₂Max",
-                                     value: String(format: "%.1f", vo2.current), unit: "ml/kg/min",
-                                     status: vo2.isStale ? .info : vo2Status(vo2.current),
-                                     samples: vo2.samples)
+                                     title: vo2.isEstimated ? "VO₂Max (estimado)" : "VO₂Max",
+                                     value: String(format: "%.1f", vo2.value), unit: "ml/kg/min",
+                                     status: vo2.isEstimated ? .info : vo2Status(vo2.value),
+                                     samples: healthKit.vo2MaxData?.samples ?? [])
                     }.buttonStyle(.plain)
                 }
 
@@ -356,6 +355,19 @@ struct HealthView: View {
         case 25..<45: return .normal
         default: return .low
         }
+    }
+
+    // Explica de dónde sale la cifra: medida del reloj, estimada con tus carreras,
+    // o una lectura antigua que ya no se puede dar por vigente.
+    private func vo2Explanation(_ vo2: (value: Double, isEstimated: Bool)) -> String {
+        let base = "El VO₂Max es el predictor más potente de rendimiento aeróbico y longevidad."
+        if vo2.isEstimated {
+            return base + "\n\nTu reloj no escribe el VO₂Max en Apple Salud, así que este valor se estima con tus carreras de Strava: del ritmo y la FC media de cada rodaje se calcula el consumo de oxígeno (ecuación de carrera del ACSM) y se extrapola al máximo por reserva de FC (Swain & Leutholtz 1997). Es la mediana de los últimos 90 días, descartando series, cuestas y rodajes cortos."
+        }
+        if let d = healthKit.vo2MaxData, d.isStale {
+            return base + "\n\nEsta lectura es de hace \(d.daysSinceMeasured ?? 0) días y no hay carreras suficientes para estimar un valor actual, así que puede no reflejar tu estado de hoy."
+        }
+        return base
     }
 
     private func vo2Status(_ v: Double) -> HealthMetricStatus {

@@ -208,6 +208,7 @@ struct DashboardView: View {
             summary: healthKit.todaySummary,
             hrvHistory: healthKit.hrvHistory,
             vo2MaxData: healthKit.vo2MaxData,
+            vo2Display: healthKit.displayVO2Max,
             respiratoryData: healthKit.respiratoryData,
             wristTempData: healthKit.wristTempData,
             daylightData: healthKit.daylightData,

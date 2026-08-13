@@ -6,6 +6,8 @@ struct QuickMetricsGrid: View {
     let summary: DailyHealthSummary?
     let hrvHistory: [HRVData]
     let vo2MaxData: VO2MaxData?
+    // Valor a mostrar y si es estimado — misma cascada que la pestaña Salud
+    var vo2Display: (value: Double, isEstimated: Bool)? = nil
     let respiratoryData: RespiratoryData?
     let wristTempData: WristTempData?
     let daylightData: DaylightData?
@@ -54,13 +56,16 @@ struct QuickMetricsGrid: View {
 
                 if layout.isVisible(.vo2max) {
                     NavigationLink(destination: metricDetail(
-                        title: "VO₂Max", icon: "lungs.fill", color: .blue,
-                        value: vo2MaxData.map { String(format: "%.1f", $0.current) } ?? "--", unit: "ml/kg/min",
+                        title: vo2Display?.isEstimated == true ? "VO₂Max (estimado)" : "VO₂Max",
+                        icon: "lungs.fill", color: .blue,
+                        value: vo2Display.map { String(format: "%.1f", $0.value) } ?? "--", unit: "ml/kg/min",
                         samples: vo2MaxData?.samples ?? [], higherIsBetter: true, normalRange: 35...60,
-                        explanation: "El VO₂Max es el predictor más potente de rendimiento aeróbico y longevidad."
+                        explanation: vo2Display?.isEstimated == true
+                            ? "El VO₂Max es el predictor más potente de rendimiento aeróbico y longevidad.\n\nTu reloj no lo escribe en Apple Salud, así que se estima con tus carreras (ACSM + Swain & Leutholtz). Detalle en la pestaña Salud."
+                            : "El VO₂Max es el predictor más potente de rendimiento aeróbico y longevidad."
                     )) {
                         MetricColumn(icon: "figure.run", color: .mint,
-                                     value: vo2MaxData?.current, unit: "VO₂", decimals: 1,
+                                     value: vo2Display?.value, unit: "VO₂", decimals: 1,
                                      display: 25...65, normal: 35...60)
                     }.buttonStyle(.plain)
                 }
