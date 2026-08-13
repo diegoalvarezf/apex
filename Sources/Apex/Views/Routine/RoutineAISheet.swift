@@ -149,6 +149,8 @@ private struct CrearSection: View {
     @State private var focusGroups: Set<String> = []
     @State private var injuries = ""
     @State private var notes = ""
+
+    private let freeTextPlaceholder = "Ej: quiero un cuerpo más atlético, con hombros anchos y cintura marcada. Odio la sentadilla con barra pero me va bien la prensa. Los viernes voy justo de tiempo."
     @State private var useContext = true
 
     private let muscleOptions = ["Pecho", "Espalda", "Hombros", "Brazos", "Piernas", "Glúteos", "Core"]
@@ -187,9 +189,20 @@ private struct CrearSection: View {
                 }
             }
 
-            Section("Limitaciones y preferencias (opcional)") {
-                TextField("Lesiones o limitaciones (ej. hombro, rodilla)", text: $injuries, axis: .vertical).lineLimit(1...3)
-                TextField("Otras preferencias (ejercicios favoritos, a evitar…)", text: $notes, axis: .vertical).lineLimit(1...3)
+            Section("Lesiones o limitaciones (opcional)") {
+                TextField("Ej. molestia en el hombro derecho, rodilla operada", text: $injuries, axis: .vertical)
+                    .lineLimit(2...4)
+            }
+
+            // Texto libre con su propia sección: el formulario cubre lo estructurado
+            // (días, material, objetivo) pero no lo que uno describe con sus palabras.
+            Section {
+                TextField(freeTextPlaceholder, text: $notes, axis: .vertical)
+                    .lineLimit(4...10)
+            } header: {
+                Text("Cuéntaselo con tus palabras (opcional)")
+            } footer: {
+                Text("Lo que no cabe en el formulario: cómo quieres verte, qué ejercicios te gustan o cuáles evitar, cómo prefieres organizar la semana, o cualquier cosa que un entrenador debería saber.")
             }
 
             Section {
@@ -241,7 +254,11 @@ private struct CrearSection: View {
         ]
         if !focusGroups.isEmpty { parts.append("Grupos a priorizar: \(focusGroups.sorted().joined(separator: ", "))") }
         if !injuries.trimmingCharacters(in: .whitespaces).isEmpty { parts.append("Lesiones/limitaciones: \(injuries)") }
-        if !notes.trimmingCharacters(in: .whitespaces).isEmpty { parts.append("Preferencias: \(notes)") }
+        // El texto libre va al final y anunciado: es lo que el usuario ha escrito con
+        // sus palabras, y debe pesar más que los valores por defecto del formulario.
+        if !notes.trimmingCharacters(in: .whitespaces).isEmpty {
+            parts.append("Lo que pide el usuario con sus propias palabras (tenlo muy en cuenta, incluso si matiza alguna de las respuestas anteriores): \(notes)")
+        }
         return parts.joined(separator: "\n")
     }
 
