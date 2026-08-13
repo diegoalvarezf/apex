@@ -157,6 +157,25 @@ struct VO2MaxData {
     let current: Double
     let samples: [MetricSample]
     var trend: MetricTrend { computeTrend(samples: samples) }
+
+    // Fecha de la última medición. HealthKit conserva lecturas de relojes que ya no
+    // usas, así que `current` puede ser de hace meses.
+    var lastMeasured: Date? { samples.last?.date }
+
+    var daysSinceMeasured: Int? {
+        guard let d = lastMeasured else { return nil }
+        return Calendar.current.dateComponents([.day], from: d, to: Date()).day
+    }
+
+    // El VO2max evoluciona despacio, pero un valor de hace más de 60 días ya no
+    // describe tu estado actual: se deja de tratar como medida vigente para no
+    // presentar como "de hoy" lo que es de otro reloj o de otra temporada.
+    static let stalenessDays = 60
+    var isStale: Bool { (daysSinceMeasured ?? .max) > Self.stalenessDays }
+
+    // Solo el valor que sigue siendo representativo. La edad de fitness usa este:
+    // si está caducado, se prefiere el estimado (etiquetado) a un dato obsoleto.
+    var currentIfFresh: Double? { isStale ? nil : current }
 }
 
 struct RespiratoryData {

@@ -182,9 +182,9 @@ final class HealthKitManager: ObservableObject {
             sleepAge = SleepAgeResult.compute(chronologicalAge: age, sleep: sleepData.first)
         }
 
-        // Biological age
+        // Biological age — con el VO2max solo si sigue vigente (si no, se estima)
         biologicalAge = computeBiologicalAge(
-            vo2Max: vo2Data?.current,
+            vo2Max: vo2Data?.currentIfFresh,
             restingHR: rhrVal,
             hrv: hrvData.first?.sdnn,
             sleepScore: sleepData.first?.score,

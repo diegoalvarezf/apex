@@ -103,11 +103,15 @@ struct HealthView: View {
                         title: "VO₂Max", icon: "lungs.fill", color: .blue,
                         unit: "ml/kg/min", value: String(format: "%.1f", vo2.current),
                         samples: vo2.samples, higherIsBetter: true, normalRange: 35...60,
-                        explanation: "El VO₂Max es el predictor más potente de rendimiento aeróbico y longevidad."
+                        explanation: vo2.isStale
+                            ? "El VO₂Max es el predictor más potente de rendimiento aeróbico y longevidad.\n\nEsta lectura es de hace \(vo2.daysSinceMeasured ?? 0) días, así que probablemente ya no refleja tu estado actual: tu reloj no está escribiendo el VO₂Max en Apple Salud. La edad de fitness usa mientras tanto un valor estimado."
+                            : "El VO₂Max es el predictor más potente de rendimiento aeróbico y longevidad."
                     ))) {
                         PWMetricCard(icon: "lungs.fill", color: .blue,
-                                     title: "VO₂Max", value: String(format: "%.1f", vo2.current), unit: "ml/kg/min",
-                                     status: vo2Status(vo2.current), samples: vo2.samples)
+                                     title: vo2.isStale ? "VO₂Max (desactualizado)" : "VO₂Max",
+                                     value: String(format: "%.1f", vo2.current), unit: "ml/kg/min",
+                                     status: vo2.isStale ? .info : vo2Status(vo2.current),
+                                     samples: vo2.samples)
                     }.buttonStyle(.plain)
                 }
 

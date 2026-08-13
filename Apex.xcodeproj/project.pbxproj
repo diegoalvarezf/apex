@@ -22,6 +22,7 @@
 		2D5F4AEBEB4D0D949780EF4C /* PersonalRecordsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E6365D4F6FE91F2ABAA5891 /* PersonalRecordsView.swift */; };
 		2FD5C1A5F77B0E9F234D532F /* PhoneConnectivityManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D65A3BD8BE6F51776E6070A /* PhoneConnectivityManager.swift */; };
 		322390A0882DBEDF36E6309F /* WorkoutHistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E755A8A669E92EB89A93F2A /* WorkoutHistoryView.swift */; };
+		34BEA5DEC1EEDA5673829CFF /* VO2MaxStalenessTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E04B08A284D4E03379DA933E /* VO2MaxStalenessTests.swift */; };
 		35E8AE780B879EE68C1D32FE /* SleepDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3711C7634C698D2C39E28A17 /* SleepDetailView.swift */; };
 		37B98D0A71E0A409E9ACD2F8 /* AIInsight.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D98E51CB174C34F4540BEF9 /* AIInsight.swift */; };
 		37FBA2E6D5E00ACF0448054C /* TrainingLoadDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E501BD5E0A0BECBF744DA80 /* TrainingLoadDetailView.swift */; };
@@ -230,6 +231,7 @@
 		D41194928CA6F01ADE830D6F /* WeightEntrySheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeightEntrySheet.swift; sourceTree = "<group>"; };
 		DFDA0F7DAA57EB3FA5AA07D6 /* Routine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Routine.swift; sourceTree = "<group>"; };
 		E047B9005F665F6A81A99766 /* ActivityDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityDetailView.swift; sourceTree = "<group>"; };
+		E04B08A284D4E03379DA933E /* VO2MaxStalenessTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VO2MaxStalenessTests.swift; sourceTree = "<group>"; };
 		E12622C664CC2B3EF7150C91 /* WatchDashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchDashboardView.swift; sourceTree = "<group>"; };
 		E34E9B77B5A6EED2A7D75D18 /* SessionLoadTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionLoadTests.swift; sourceTree = "<group>"; };
 		EB567180C187EF78A5DBE686 /* ProfileSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileSheet.swift; sourceTree = "<group>"; };
@@ -299,6 +301,7 @@
 				E34E9B77B5A6EED2A7D75D18 /* SessionLoadTests.swift */,
 				937343D1AD328D38F1AEA9C7 /* StravaActivityFixture.swift */,
 				F96D25617D324C362F8E34FC /* TrainingMetricsTests.swift */,
+				E04B08A284D4E03379DA933E /* VO2MaxStalenessTests.swift */,
 			);
 			path = ApexTests;
 			sourceTree = "<group>";
@@ -657,6 +660,7 @@
 				1756E84C3A0A0157979643F6 /* SessionLoadTests.swift in Sources */,
 				42D6822A661F262B432F3DD6 /* StravaActivityFixture.swift in Sources */,
 				5F66B03ED35EF2F60F49A293 /* TrainingMetricsTests.swift in Sources */,
+				34BEA5DEC1EEDA5673829CFF /* VO2MaxStalenessTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
