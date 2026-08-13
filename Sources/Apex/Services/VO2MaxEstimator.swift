@@ -80,6 +80,25 @@ enum VO2MaxEstimator {
         return vo2max
     }
 
+    // Un punto por carrera válida: la estimación que implica cada rodaje, en su fecha.
+    // Es la serie que hay detrás del valor mostrado (que es su mediana), y permite
+    // ver la evolución sin inventar una interpolación entre sesiones.
+    static func series(
+        from activities: [StravaActivity],
+        restingHR: Double,
+        maxHR: Double,
+        days: Int = 90
+    ) -> [MetricSample] {
+        let cutoff = Calendar.current.date(byAdding: .day, value: -days, to: Date()) ?? .distantPast
+        return activities
+            .filter { $0.startDate >= cutoff }
+            .compactMap { act in
+                estimate(from: act, restingHR: restingHR, maxHR: maxHR)
+                    .map { MetricSample(date: act.startDate, value: $0) }
+            }
+            .sorted { $0.date < $1.date }
+    }
+
     // Estimación global: mediana de las carreras válidas de los últimos `days` días.
     //
     // Mediana y no media ni máximo: un GPS que se va o una carrera con el pulsómetro

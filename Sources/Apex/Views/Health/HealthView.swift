@@ -99,10 +99,12 @@ struct HealthView: View {
                 }
 
                 if layout.isVisible(.vo2max), let vo2 = healthKit.displayVO2Max {
-                    // Con un valor estimado no se dibuja la serie de mediciones: son
-                    // cantidades distintas y la gráfica sugeriría una evolución del
-                    // número que se está enseñando, que es de otra procedencia.
-                    let serie = vo2.isEstimated ? [] : (healthKit.vo2MaxData?.samples ?? [])
+                    // Cada fuente dibuja su propia serie: las mediciones de Salud, o
+                    // la estimación de cada carrera. Mezclarlas daría una evolución
+                    // falsa entre dos cantidades de distinta procedencia.
+                    let serie = vo2.isEstimated
+                        ? healthKit.estimatedVO2Series
+                        : (healthKit.vo2MaxData?.samples ?? [])
                     NavigationLink(destination: MetricDetailView(config: MetricConfig(
                         title: vo2.isEstimated ? "VO₂Max (estimado)" : "VO₂Max",
                         icon: "lungs.fill", color: .blue,

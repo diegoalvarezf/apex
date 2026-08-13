@@ -28,9 +28,15 @@ struct ProfileSheet: View {
                         VStack(alignment: .leading, spacing: 4) {
                             Text(stravaAuth.athlete?.fullName ?? "Atleta")
                                 .font(.headline)
-                            if let city = stravaAuth.athlete?.city,
-                               let country = stravaAuth.athlete?.country {
-                                Text("\(city), \(country)")
+                            // Strava devuelve cadenas vacías, no nil, cuando el atleta
+                            // no rellena la ciudad: comprobar solo `!= nil` dejaba una
+                            // coma suelta delante del país.
+                            let ubicacion = [stravaAuth.athlete?.city, stravaAuth.athlete?.country]
+                                .compactMap { $0?.trimmingCharacters(in: .whitespaces) }
+                                .filter { !$0.isEmpty }
+                                .joined(separator: ", ")
+                            if !ubicacion.isEmpty {
+                                Text(ubicacion)
                                     .font(.subheadline).foregroundStyle(.secondary)
                             }
                         }

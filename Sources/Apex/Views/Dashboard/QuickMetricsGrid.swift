@@ -8,6 +8,8 @@ struct QuickMetricsGrid: View {
     let vo2MaxData: VO2MaxData?
     // Valor a mostrar y si es estimado — misma cascada que la pestaña Salud
     var vo2Display: (value: Double, isEstimated: Bool)? = nil
+    // Serie del estimado (un punto por carrera). Vacía si el valor es medido.
+    var vo2EstimatedSeries: [MetricSample] = []
     let respiratoryData: RespiratoryData?
     let wristTempData: WristTempData?
     let daylightData: DaylightData?
@@ -59,7 +61,8 @@ struct QuickMetricsGrid: View {
                         title: vo2Display?.isEstimated == true ? "VO₂Max (estimado)" : "VO₂Max",
                         icon: "lungs.fill", color: .blue,
                         value: vo2Display.map { String(format: "%.1f", $0.value) } ?? "--", unit: "ml/kg/min",
-                        samples: vo2MaxData?.samples ?? [], higherIsBetter: true, normalRange: 35...60,
+                        samples: vo2Display?.isEstimated == true ? vo2EstimatedSeries : (vo2MaxData?.samples ?? []),
+                        higherIsBetter: true, normalRange: 35...60,
                         explanation: vo2Display?.isEstimated == true
                             ? "El VO₂Max es el predictor más potente de rendimiento aeróbico y longevidad.\n\nNo hay una medición reciente en Apple Salud, así que se estima a partir de tus carreras (ACSM + Swain & Leutholtz). Detalle en la pestaña Salud."
                             : "El VO₂Max es el predictor más potente de rendimiento aeróbico y longevidad."

@@ -209,6 +209,7 @@ struct DashboardView: View {
             hrvHistory: healthKit.hrvHistory,
             vo2MaxData: healthKit.vo2MaxData,
             vo2Display: healthKit.displayVO2Max,
+            vo2EstimatedSeries: healthKit.estimatedVO2Series,
             respiratoryData: healthKit.respiratoryData,
             wristTempData: healthKit.wristTempData,
             daylightData: healthKit.daylightData,

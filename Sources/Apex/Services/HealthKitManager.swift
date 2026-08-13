@@ -15,6 +15,8 @@ final class HealthKitManager: ObservableObject {
     // VO2max deducido de las carreras de Strava. Solo se calcula cuando no hay una
     // medida vigente en Salud; es lo que se muestra en su lugar.
     @Published var estimatedVO2Max: Double?
+    // Un punto por carrera: la serie que hay detrás del valor estimado.
+    @Published var estimatedVO2Series: [MetricSample] = []
     // Últimas actividades de Strava conocidas. Se guardan porque HealthKit y Strava
     // cargan por separado: quien termine el último debe poder rehacer la estimación
     // con los dos juegos de datos, no con el que hubiera a medias.
@@ -693,10 +695,17 @@ final class HealthKitManager: ObservableObject {
             maxHR: UserProfile.effectiveMaxHR)
         // Solo se ofrece como alternativa cuando no hay medida vigente.
         estimatedVO2Max = vo2MaxData?.currentIfFresh == nil ? porCarreras : nil
+        estimatedVO2Series = estimatedVO2Max == nil ? [] : VO2MaxEstimator.series(
+            from: activities,
+            restingHR: rhr ?? UserProfile.restingHR,
+            maxHR: UserProfile.effectiveMaxHR)
 
 
         biologicalAge = computeBiologicalAge(
-            vo2Max: vo2MaxData?.currentIfFresh ?? todaySummary?.vo2Max,
+            // Sin respaldo a todaySummary.vo2Max: ese guarda el valor crudo, así que
+            // recuperaba la medición caducada y dejaba sin efecto tanto la caducidad
+            // como la estimación por carreras.
+            vo2Max: vo2MaxData?.currentIfFresh,
             restingHR: rhr,
             hrv: hrvHistory.first?.sdnn,
             sleepScore: sleepHistory.first?.score,

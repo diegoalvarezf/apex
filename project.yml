@@ -33,7 +33,9 @@ options:
     watchOS: "10.0"
   createIntermediateGroups: true
   groupSortPosition: top
-  developmentLanguage: en
+  # La interfaz está escrita en español: declararlo hace que las fechas, los números
+  # y los formatos del sistema salgan en español y no en inglés.
+  developmentLanguage: es
 settings:
   base:
     SWIFT_VERSION: "5.10"
@@ -55,6 +57,9 @@ targets:
       properties:
         CFBundleName: Apex
         CFBundleDisplayName: Apex
+        CFBundleDevelopmentRegion: es
+        CFBundleLocalizations:
+          - es
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         UILaunchScreen:
