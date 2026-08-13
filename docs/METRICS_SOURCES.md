@@ -287,8 +287,9 @@ la **mediana** de los últimos 90 días con un mínimo de 3 carreras: absorbe un
 se va o un pulsómetro que salta, cosa que la media o el máximo no harían.
 
 Precisión esperada: unos ±4 ml/kg/min frente a un valor de laboratorio o al de un
-reloj con modelo propietario. No se ajusta ninguna constante para que cuadre con
-Suunto; se dejan las de la literatura.
+reloj con modelo propietario. No se ajusta ninguna constante para acercarse a la
+cifra de ningún reloj concreto: se dejan las de la literatura y la diferencia se
+asume y se documenta.
 
 - American College of Sports Medicine. *ACSM's Guidelines for Exercise Testing and
   Prescription* (ecuaciones metabólicas de carrera).
