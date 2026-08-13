@@ -15,6 +15,10 @@ final class HealthKitManager: ObservableObject {
     // VO2max deducido de las carreras de Strava. Solo se calcula cuando no hay una
     // medida vigente en Salud; es lo que se muestra en su lugar.
     @Published var estimatedVO2Max: Double?
+    // Últimas actividades de Strava conocidas. Se guardan porque HealthKit y Strava
+    // cargan por separado: quien termine el último debe poder rehacer la estimación
+    // con los dos juegos de datos, no con el que hubiera a medias.
+    private var lastKnownActivities: [StravaActivity] = []
 
     // El VO2max que debe enseñar la app, con su procedencia, siguiendo la misma
     // prioridad que la edad de fitness: medido y vigente > carreras > sin dato.
@@ -194,14 +198,9 @@ final class HealthKitManager: ObservableObject {
             sleepAge = SleepAgeResult.compute(chronologicalAge: age, sleep: sleepData.first)
         }
 
-        // Biological age — con el VO2max solo si sigue vigente (si no, se estima)
-        biologicalAge = computeBiologicalAge(
-            vo2Max: vo2Data?.currentIfFresh,
-            restingHR: rhrVal,
-            hrv: hrvData.first?.sdnn,
-            sleepScore: sleepData.first?.score,
-            bmi: bodyData?.bmi
-        )
+        // Edad de fitness y VO2max. Ya tenemos lo de HealthKit; si Strava cargó antes,
+        // sus actividades están guardadas y la estimación se rehace ahora con ambas.
+        recomputeVO2Max(weeklyMinutes: nil, activities: lastKnownActivities)
 
         // Sincronizar perfil con datos de HealthKit (mismo actor, sin await)
         UserProfileManager.shared.syncFromHealthKit(
@@ -677,16 +676,25 @@ final class HealthKitManager: ObservableObject {
 
     // Llamado por DashboardViewModel tras cargar actividades Strava
     func updateBiologicalAgeActivity(weeklyMinutes: Double, activities: [StravaActivity] = []) {
+        if !activities.isEmpty { lastKnownActivities = activities }
+        recomputeVO2Max(weeklyMinutes: weeklyMinutes, activities: lastKnownActivities)
+    }
+
+    // Rehace la estimación de VO2max y la edad de fitness con lo último de ambas
+    // fuentes. Se llama tanto al cargar Strava como al terminar HealthKit.
+    private func recomputeVO2Max(weeklyMinutes: Double?, activities: [StravaActivity]) {
         let rhr = todaySummary?.restingHR
-        // Si el reloj no escribe el VO2max en Salud (o lo que hay ya caducó), se
-        // estima con las carreras: ritmo y FC dan una lectura de hoy, no de hace meses.
-        let porCarreras = vo2MaxData?.currentIfFresh == nil
-            ? VO2MaxEstimator.estimate(
-                from: activities,
-                restingHR: rhr ?? UserProfile.restingHR,
-                maxHR: UserProfile.effectiveMaxHR)
-            : nil
-        estimatedVO2Max = porCarreras
+        // La estimación se calcula siempre, aunque haya una medida vigente que la
+        // deje sin usar: es barata y así el diagnóstico dice de verdad si se puede
+        // estimar, en vez de callar porque ni se intentó.
+        let porCarreras = VO2MaxEstimator.estimate(
+            from: activities,
+            restingHR: rhr ?? UserProfile.restingHR,
+            maxHR: UserProfile.effectiveMaxHR)
+        // Solo se ofrece como alternativa cuando no hay medida vigente.
+        estimatedVO2Max = vo2MaxData?.currentIfFresh == nil ? porCarreras : nil
+
+
         biologicalAge = computeBiologicalAge(
             vo2Max: vo2MaxData?.currentIfFresh ?? todaySummary?.vo2Max,
             restingHR: rhr,

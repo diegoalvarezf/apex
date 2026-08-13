@@ -13,7 +13,7 @@ struct VO2MaxStalenessTests {
     }
 
     @Test func unaLecturaRecienteSigueVigente() {
-        let vo2 = data(daysAgo: 3)
+        let vo2 = data(daysAgo: 2)
         #expect(!vo2.isStale)
         #expect(vo2.currentIfFresh == 45)
     }
@@ -26,21 +26,21 @@ struct VO2MaxStalenessTests {
         #expect(vo2.current == 45)
     }
 
-    // El umbral son 30 días: justo antes vigente, justo después caducado.
-    @Test func elUmbralSonTreintaDias() {
-        #expect(!data(daysAgo: 29).isStale)
-        #expect(data(daysAgo: 31).isStale)
+    // El umbral son 14 días: justo antes vigente, justo después caducado.
+    @Test func elUmbralSonCatorceDias() {
+        #expect(!data(daysAgo: 13).isStale)
+        #expect(data(daysAgo: 15).isStale)
     }
 
-    // Caso real: una lectura de mes y medio, de un reloj que ya no se usa, no debe
-    // ganarle a una estimación hecha con las carreras recientes.
-    @Test func unaLecturaDeMesYMedioNoEsVigente() {
-        #expect(data(daysAgo: 45).isStale)
-        #expect(data(daysAgo: 45).currentIfFresh == nil)
+    // Caso real que motivó el umbral: una lectura de hace justo 30 días, de un reloj
+    // que dejó de sincronizar, se daba por vigente y tapaba la estimación.
+    @Test func unaLecturaDeTreintaDiasNoEsVigente() {
+        #expect(data(daysAgo: 30).isStale)
+        #expect(data(daysAgo: 30).currentIfFresh == nil)
     }
 
     @Test func cuentaLosDiasDesdeLaMedicion() {
-        #expect(data(daysAgo: 20).daysSinceMeasured == 20)
+        #expect(data(daysAgo: 10).daysSinceMeasured == 10)
     }
 
     @Test func sinMuestrasNoHayFecha() {
