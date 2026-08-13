@@ -90,6 +90,11 @@ final class DashboardViewModel: ObservableObject {
         }
     }
 
+    // ¿Hay materia prima para un análisis? Se comparte entre insights y alertas.
+    func hasDataToAnalyze(health: HealthKitManager) -> Bool {
+        !activities.isEmpty || health.recoveryScore != nil
+    }
+
     private func saveCachedInsights() {
         if let data = try? JSONEncoder().encode(insights) {
             UserDefaults.standard.set(data, forKey: insightsKey)
@@ -171,6 +176,10 @@ final class DashboardViewModel: ObservableObject {
     }
 
     func loadInsights(health: HealthKitManager, strengthSummary: String? = nil, localAlerts: String? = nil) async {
+        // Sin actividades ni recuperación no hay nada que analizar, y pedírselo al
+        // modelo igualmente le hace redactar conclusiones a partir del vacío
+        // ("semana en blanco", "fitness en caída libre"). Mismo guard que las alertas.
+        guard hasDataToAnalyze(health: health) else { return }
         guard !isLoadingInsights else { return }
         isLoadingInsights = true
         defer { isLoadingInsights = false }

@@ -149,10 +149,16 @@ struct InsightsView: View {
                         AILoadingCard()
                             .padding(.horizontal)
                     } else if dashVM.insights.isEmpty {
-                        GenerateInsightsCard {
-                            analyze()
+                        // Sin datos no se ofrece analizar: el modelo redactaría
+                        // conclusiones a partir del vacío y además costaría una
+                        // llamada para nada.
+                        if dashVM.hasDataToAnalyze(health: healthKit) {
+                            GenerateInsightsCard { analyze() }
+                                .padding(.horizontal)
+                        } else {
+                            NoDataForAnalysisCard()
+                                .padding(.horizontal)
                         }
-                        .padding(.horizontal)
                     } else {
                         VStack(spacing: 10) {
                             ForEach(dashVM.insights) { insight in
@@ -190,6 +196,26 @@ struct InsightsView: View {
             }
             .onAppear { analyzeIfStale() }
         }
+    }
+}
+
+// Estado inicial: aún no hay de dónde sacar un análisis.
+private struct NoDataForAnalysisCard: View {
+    var body: some View {
+        VStack(spacing: 12) {
+            Image(systemName: "sparkles")
+                .font(.system(size: 34))
+                .foregroundStyle(.secondary)
+            Text("Todavía no hay datos que analizar")
+                .font(.headline).multilineTextAlignment(.center)
+            Text("Conecta Apple Health o Strava y el análisis se generará solo con tus primeras métricas.")
+                .font(.subheadline).foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+        }
+        .padding(24)
+        .frame(maxWidth: .infinity)
+        .background(Color(.secondarySystemGroupedBackground),
+                    in: RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 }
 
