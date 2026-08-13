@@ -39,7 +39,7 @@ struct WatchBatteryView: View {
                         Text(data.hasData ? "\(data.battery)" : "--")
                             .font(.system(size: 34, weight: .bold, design: .rounded))
                             .foregroundStyle(batteryColor)
-                        Text("BATERÍA")
+                        Text("BODY BATTERY")
                             .font(.system(size: 9, weight: .semibold))
                             .foregroundStyle(.secondary)
                             .tracking(1)
