@@ -9,6 +9,8 @@ struct ApexApp: App {
     @StateObject private var workoutStore = WorkoutLogStore.shared
     private let phoneConnectivity = PhoneConnectivityManager.shared
 
+    init() { BackgroundRefresh.register() }
+
     var body: some Scene {
         WindowGroup {
             RootView()
@@ -20,6 +22,7 @@ struct ApexApp: App {
                 .onOpenURL { url in
                     stravaAuth.handleCallback(url: url)
                 }
+                .task { BackgroundRefresh.schedule() }
         }
     }
 }

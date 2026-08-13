@@ -76,6 +76,12 @@ targets:
             CFBundleURLName: com.diegoalvarezfrancos.apex.strava
         LSApplicationQueriesSchemes:
           - strava
+        # Registrar las métricas del día aunque no se abra la app: los datos están
+        # en HealthKit y solo la app puede leerlos.
+        UIBackgroundModes:
+          - fetch
+        BGTaskSchedulerPermittedIdentifiers:
+          - com.diegoalvarezfrancos.apex.dailyrefresh
     dependencies:
       - target: ApexWidget
         embed: true

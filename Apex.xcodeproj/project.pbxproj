@@ -21,6 +21,7 @@
 		1F380792F6095C4802712F0B /* TrainingLoadCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44C5D570EA6243B6B67E2AEA /* TrainingLoadCard.swift */; };
 		1FA704E8DE4CBF215A5A2199 /* MetricCalendarTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF2A5B1EE522BBB3AD980C17 /* MetricCalendarTests.swift */; };
 		1FD786A0267CFF8FB9A1C448 /* RoutineViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14E0C93B42F7A793365F6D7D /* RoutineViewModel.swift */; };
+		24D70BCA0D5B304199E81A88 /* BackgroundRefresh.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3487467E1969D8FC02F39D3F /* BackgroundRefresh.swift */; };
 		29761C6B9AC1EB8BD2D69FCB /* DailySnapshotStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F76B9B06D62C837E5C1647D /* DailySnapshotStore.swift */; };
 		2D5F4AEBEB4D0D949780EF4C /* PersonalRecordsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E6365D4F6FE91F2ABAA5891 /* PersonalRecordsView.swift */; };
 		2FD5C1A5F77B0E9F234D532F /* PhoneConnectivityManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D65A3BD8BE6F51776E6070A /* PhoneConnectivityManager.swift */; };
@@ -96,6 +97,7 @@
 		E4600BAE7DC219CEF9DE1354 /* RoutineAISheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A38CD8F940C1CBCF0C97148 /* RoutineAISheet.swift */; };
 		E597A64714DDFA6DAB75B7C8 /* DailySnapshotStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2DDF406A5C0537227EF9EC5 /* DailySnapshotStoreTests.swift */; };
 		E84BF498D110F931D4F79242 /* RunAIAnalysisCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E99751B63AB5AAE7641F8FD /* RunAIAnalysisCard.swift */; };
+		EBA9C57B2E029BAB9B79E2FF /* DailyMetricsRecorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0770FF0039B1EC493AC273B /* DailyMetricsRecorder.swift */; };
 		EBC85D912F711961F75E32CA /* HealthDayDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70D1E5096476CDF79CF1D14F /* HealthDayDetailView.swift */; };
 		F1460305CC88C6AB5326DBEB /* ActivityTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2325B077EAC479002B9505EA /* ActivityTracker.swift */; };
 		F1CB9CB37D89103771258830 /* VO2MaxEstimatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C8CD34D2CFDC45EB32C055B /* VO2MaxEstimatorTests.swift */; };
@@ -183,6 +185,7 @@
 		29A428C3DFC4F73E20ED3421 /* ApexWatchApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApexWatchApp.swift; sourceTree = "<group>"; };
 		2C8CD34D2CFDC45EB32C055B /* VO2MaxEstimatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VO2MaxEstimatorTests.swift; sourceTree = "<group>"; };
 		2E6365D4F6FE91F2ABAA5891 /* PersonalRecordsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersonalRecordsView.swift; sourceTree = "<group>"; };
+		3487467E1969D8FC02F39D3F /* BackgroundRefresh.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundRefresh.swift; sourceTree = "<group>"; };
 		3526C2C12DCFA7E94716F6C5 /* APIKeyStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIKeyStore.swift; sourceTree = "<group>"; };
 		35FF2E339B10BE1D133BFB61 /* ActivityStatsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityStatsView.swift; sourceTree = "<group>"; };
 		36D74569B2AAD248B9B50035 /* ApexLogo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApexLogo.swift; sourceTree = "<group>"; };
@@ -240,6 +243,7 @@
 		A83816945191FDA883FEDF0B /* BodyBatteryDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BodyBatteryDetailView.swift; sourceTree = "<group>"; };
 		A92D6E29026301A8CBC351FF /* Keychain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Keychain.swift; sourceTree = "<group>"; };
 		AF2A5B1EE522BBB3AD980C17 /* MetricCalendarTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetricCalendarTests.swift; sourceTree = "<group>"; };
+		B0770FF0039B1EC493AC273B /* DailyMetricsRecorder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyMetricsRecorder.swift; sourceTree = "<group>"; };
 		B2DDF406A5C0537227EF9EC5 /* DailySnapshotStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailySnapshotStoreTests.swift; sourceTree = "<group>"; };
 		B8EC660AD3076205E1BF524F /* WorkoutLogStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutLogStore.swift; sourceTree = "<group>"; };
 		BA8104DA37D19A942B47E271 /* SmartTipBanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartTipBanner.swift; sourceTree = "<group>"; };
@@ -391,7 +395,9 @@
 				71C4AB399CF0252BB7A32845 /* AIPrompts.swift */,
 				7085B67C96F3791C8445CD73 /* AIService.swift */,
 				3526C2C12DCFA7E94716F6C5 /* APIKeyStore.swift */,
+				3487467E1969D8FC02F39D3F /* BackgroundRefresh.swift */,
 				0221011D637CBB3132A3C28F /* BodyBatteryStore.swift */,
+				B0770FF0039B1EC493AC273B /* DailyMetricsRecorder.swift */,
 				5F76B9B06D62C837E5C1647D /* DailySnapshotStore.swift */,
 				6B6EF1B7EFB932C65DA7EA71 /* HealthKitManager.swift */,
 				A92D6E29026301A8CBC351FF /* Keychain.swift */,
@@ -727,11 +733,13 @@
 				F1460305CC88C6AB5326DBEB /* ActivityTracker.swift in Sources */,
 				A3EA3F7EFF380248F6820678 /* ApexApp.swift in Sources */,
 				BCCDD7B9E2814C098EBB9BD7 /* ApexLogo.swift in Sources */,
+				24D70BCA0D5B304199E81A88 /* BackgroundRefresh.swift in Sources */,
 				5995891A086AEAE25FE2E1B2 /* BiologicalAgeDetailView.swift in Sources */,
 				B2513318DD327D8CE70286A7 /* BodyBatteryDetailView.swift in Sources */,
 				57FCB03479DE95C9B20CA4F1 /* BodyBatteryStore.swift in Sources */,
 				09BFAB66E82950A9E7E2BB78 /* BodyCompositionView.swift in Sources */,
 				F4EF52685A79BDEA7719E2F6 /* CoachChatView.swift in Sources */,
+				EBA9C57B2E029BAB9B79E2FF /* DailyMetricsRecorder.swift in Sources */,
 				29761C6B9AC1EB8BD2D69FCB /* DailySnapshotStore.swift in Sources */,
 				B2F36CA794FFB1FFD9D2C7DD /* DashboardView.swift in Sources */,
 				898E20BDB5FD62C506097C7F /* DashboardViewModel.swift in Sources */,

@@ -279,8 +279,14 @@ que consultar un día pasado devuelva lo que se vio aquel día y no un recálcul
 los parámetros actuales. Esas fotos, como el resto del estado, viven en UserDefaults:
 unos 100 KB para 90 días.
 
-Eso significa que **el histórico se pierde al borrar la app y no viaja a un móvil
-nuevo**. La solución sin backend es `NSUbiquitousKeyValueStore` (iCloud clave-valor),
+El registro lo dispara tanto abrir la app como una tarea de `BGAppRefreshTask`, que
+pide a iOS despertar la app cada pocas horas para no depender de que el usuario la
+abra. Los datos están en HealthKit, en el dispositivo, así que no hay forma de
+calcularlos desde fuera; y iOS concede esas ejecuciones según el uso de la app, de
+modo que **mejora la cobertura pero no garantiza un registro diario**.
+
+Eso significa además que **el histórico se pierde al borrar la app y no viaja a un
+móvil nuevo**. La solución sin backend es `NSUbiquitousKeyValueStore` (iCloud clave-valor),
 donde cabría holgadamente —su límite es 1 MB—, pero iCloud es un entitlement que
 requiere cuenta de desarrollador de pago, así que queda pendiente junto con lo
 anterior.
