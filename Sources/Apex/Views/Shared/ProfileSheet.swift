@@ -107,7 +107,7 @@ struct ProfileSheet: View {
                         ConnectedAppRow(
                             icon: "sparkles",
                             iconColor: .purple,
-                            name: "Coach de IA",
+                            name: "Apex IA",
                             status: APIKeyStore.hasKey ? "Clave configurada" : "Falta tu clave",
                             connected: APIKeyStore.hasKey
                         )

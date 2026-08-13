@@ -77,7 +77,7 @@ struct APIKeySheet: View {
                     Text("Sin clave, el resto de la app funciona igual: solo se desactivan los análisis y el coach de IA.")
                 }
             }
-            .navigationTitle("Coach de IA")
+            .navigationTitle("Apex IA")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {

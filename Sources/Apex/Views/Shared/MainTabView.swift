@@ -21,7 +21,7 @@ struct MainTabView: View {
                 .tabItem { Label("Rutina", systemImage: "calendar") }
 
             InsightsView()
-                .tabItem { Label("IA Coach", systemImage: "sparkles") }
+                .tabItem { Label("Apex IA", systemImage: "sparkles") }
         }
         .tint(.primary)
         .environmentObject(dashVM)

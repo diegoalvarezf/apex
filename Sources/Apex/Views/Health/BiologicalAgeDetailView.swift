@@ -25,7 +25,7 @@ struct BiologicalAgeDetailView: View {
                             Text(String(format: "%.1f", result.biologicalAge))
                                 .font(.system(size: 56, weight: .bold, design: .rounded))
                                 .foregroundColor(result.deltaColor)
-                            Text("Edad de fitness").font(.caption).foregroundColor(.secondary)
+                            Text("Edad Apex").font(.caption).foregroundColor(.secondary)
                         }
                     }
 
@@ -60,7 +60,7 @@ struct BiologicalAgeDetailView: View {
 
                 // Qué es la edad de fitness
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Qué es la edad de fitness").font(.headline)
+                    Text("Qué es la Edad Apex").font(.headline)
                     Text("Es la edad a la que tu VO₂Max sería el promedio de la población. Se calcula SOLO con tu capacidad aeróbica frente a las normas del estudio HUNT (Nes et al. 2011, >4.600 adultos) — el mismo método validado que usa Garmin, y el mejor predictor de longevidad a partir de un wearable.\n\nLos demás marcadores (FC en reposo, HRV, sueño, IMC, actividad) se muestran como CONTEXTO complementario, pero NO se suman al número: no existe una fórmula publicada que los combine con el VO₂Max en una sola edad.\n\nNota: las normas HUNT son de una población noruega en forma, así que la referencia es exigente.")
                         .font(.subheadline).foregroundColor(.secondary)
                 }
@@ -70,7 +70,7 @@ struct BiologicalAgeDetailView: View {
 
                 // Cómo mejorarla
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Cómo bajar tu edad de fitness").font(.headline)
+                    Text("Cómo bajar tu Edad Apex").font(.headline)
                     VStack(alignment: .leading, spacing: 6) {
                         TipRow(icon: "figure.run", text: "Entrena en zona 2 (aeróbico suave) 3-4 días/semana — es el mayor impulsor del VO2Max")
                         TipRow(icon: "moon.fill", text: "Duerme 7-9h con horarios regulares para mejorar HRV y sueño profundo")
@@ -85,7 +85,7 @@ struct BiologicalAgeDetailView: View {
             .padding(.top).padding(.bottom, 32)
         }
         .background(Color(.systemGroupedBackground))
-        .navigationTitle("Edad de fitness")
+        .navigationTitle("Edad Apex")
         .navigationBarTitleDisplayMode(.inline)
     }
 }

@@ -374,7 +374,7 @@ struct BiologicalAgeResult {
                     if porCociente != nil {
                         return "No hay una medición reciente de VO₂Max en Apple Salud ni carreras suficientes para estimarlo con ritmo y FC, así que se usa el cociente FCmáx/FCreposo (Uth et al. 2004): VO₂Max ≈ 15,3 × (FCmáx/FCreposo). Es un método publicado, pero el más grueso de los tres: con unas cuantas carreras registradas la estimación mejora sola."
                     }
-                    return "Tu edad de fitness es la edad a la que la media poblacional de VO₂Max iguala tu valor medido (estudio HUNT, Nes 2011, >4.600 adultos). Es el método validado que usa Garmin. Nota: las normas HUNT son de una población en forma, así que la referencia es exigente."
+                    return "Tu Edad Apex es la edad a la que la media poblacional de VO₂Max iguala tu valor medido (estudio HUNT, Nes 2011, >4.600 adultos). Es el método validado que usa Garmin. Nota: las normas HUNT son de una población en forma, así que la referencia es exigente."
                 }()
             ))
         } else {
@@ -392,28 +392,28 @@ struct BiologicalAgeResult {
         if let rhr = restingHR {
             factors.append(.init(name: "FC en reposo", icon: "heart.fill", color: .red,
                 ageDelta: 0, valueLabel: "\(Int(rhr)) bpm · \(infoTone(rhrDelta(rhr)))",
-                explanation: "Marcador complementario (no entra en la edad de fitness). Una FC en reposo baja indica un corazón eficiente; <60 bpm es propio de personas entrenadas."))
+                explanation: "Marcador complementario (no entra en la Edad Apex). Una FC en reposo baja indica un corazón eficiente; <60 bpm es propio de personas entrenadas."))
         }
         if let h = hrv {
             factors.append(.init(name: "HRV", icon: "waveform.path.ecg", color: .green,
                 ageDelta: 0, valueLabel: "\(Int(h)) ms · \(infoTone(hrvDelta(h, age: chronologicalAge)))",
-                explanation: "Marcador complementario (no entra en la edad de fitness). Refleja el sistema nervioso autónomo; declina con la edad y valores altos indican resiliencia."))
+                explanation: "Marcador complementario (no entra en la Edad Apex). Refleja el sistema nervioso autónomo; declina con la edad y valores altos indican resiliencia."))
         }
         if let score = sleepScore {
             factors.append(.init(name: "Calidad del sueño", icon: "moon.fill", color: .indigo,
                 ageDelta: 0, valueLabel: "Score \(score)/100 · \(infoTone(sleepDelta(score)))",
-                explanation: "Marcador complementario (no entra en la edad de fitness). El sueño profundo repara el cuerpo; su déficit crónico acelera el envejecimiento."))
+                explanation: "Marcador complementario (no entra en la Edad Apex). El sueño profundo repara el cuerpo; su déficit crónico acelera el envejecimiento."))
         }
         if let b = bmi {
             factors.append(.init(name: "Composición corporal", icon: "figure.stand", color: .pink,
                 ageDelta: 0, valueLabel: String(format: "IMC %.1f · %@", b, infoTone(bmiDelta(b))),
-                explanation: "Marcador complementario (no entra en la edad de fitness). Un IMC saludable (18.5-24.9) reduce inflamación y estrés cardiovascular."))
+                explanation: "Marcador complementario (no entra en la Edad Apex). Un IMC saludable (18.5-24.9) reduce inflamación y estrés cardiovascular."))
         }
         if let mins = weeklyActiveMinutes {
             let label = mins < 60 ? "< 1h/sem" : mins < 150 ? String(format: "%.0f min/sem", mins) : String(format: "%.0fh/sem", mins / 60)
             factors.append(.init(name: "Actividad física", icon: "figure.run", color: .orange,
                 ageDelta: 0, valueLabel: "\(label) · \(infoTone(exerciseDelta(mins)))",
-                explanation: "Marcador complementario (no entra en la edad de fitness). Las guías OMS recomiendan 150-300 min/semana; el ejercicio es el mayor modificador de la longevidad."))
+                explanation: "Marcador complementario (no entra en la Edad Apex). Las guías OMS recomiendan 150-300 min/semana; el ejercicio es el mayor modificador de la longevidad."))
         }
 
         let rounded = ((max(18.0, age)) * 10).rounded() / 10

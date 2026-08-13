@@ -10,7 +10,7 @@ enum HealthSectionID: String, CaseIterable, Codable, Identifiable {
 
     var title: String {
         switch self {
-        case .bioAge:   return "Edad de fitness"
+        case .bioAge:   return "Edad Apex"
         case .vitals:   return "Métricas corporales"
         case .activity: return "Actividad"
         case .body:     return "Composición corporal"

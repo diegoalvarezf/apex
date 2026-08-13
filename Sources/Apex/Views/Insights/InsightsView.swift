@@ -170,7 +170,7 @@ struct InsightsView: View {
                 .padding(.bottom, 32)
             }
             .background(Color(.systemGroupedBackground))
-            .navigationTitle("IA Coach")
+            .navigationTitle("Apex IA")
             .onAppear { analyzeIfStale() }
         }
     }
