@@ -17,6 +17,7 @@ App iOS nativa de seguimiento de rendimiento deportivo. Integra Strava, Apple He
 - **Carga de entrenamiento (ACWR)** — ATL/CTL con 180 días de historial. Barra de 4 colores: azul (<0.8), verde (0.8–1.3), amarillo (1.3–1.5), rojo (>1.5).
 - **Sueño** — duración, sueño profundo, score y tendencia semanal.
 - **Smart Tips** — alertas locales instantáneas basadas en recuperación, HRV, carga acumulada y déficit de sueño.
+- **Calendario** — desde la cabecera "Hoy": el mes con el valor de cada día (Body Battery, estrés o recuperación) y, al entrar en un día, sus métricas, la curva horaria de batería, el sueño y las actividades de esa jornada.
 
 ### Pestaña Salud
 - **Edad Apex** — edad de fitness anclada al VO2max: la edad a la que la media poblacional de VO2max (datos normativos HUNT / Loe 2013, n=3.816) iguala tu valor. FC reposo, HRV, IMC, sueño y actividad aplican ajustes menores (a media potencia cuando hay VO2max, por correlación). Delta con 1 decimal.
@@ -43,8 +44,8 @@ App iOS nativa de seguimiento de rendimiento deportivo. Integra Strava, Apple He
 
 ### Widget
 - **Body Battery** (small) — anillo con valor actual.
-- **Forma · Resumen** (medium) — 4 barras: Body Battery, Recuperación, Esfuerzo, Sueño.
-- **Forma · Detalle** (large) — igual con valores grandes y barras con degradado.
+- **Apex · Resumen** (medium) — 4 barras: Body Battery, Recuperación, Esfuerzo, Sueño.
+- **Apex · Detalle** (large) — igual con valores grandes y barras con degradado.
 
 ### Apple Watch
 - Dashboard en muñeca con Battery, Recovery, HRV, sueño, historial de actividades.
