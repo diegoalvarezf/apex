@@ -686,38 +686,6 @@ struct PWMetricCard: View {
     }
 }
 
-private struct BodyCompositionRow: View {
-    let composition: BodyCompositionData?
-
-    var body: some View {
-        HStack(spacing: 14) {
-            RoundedRectangle(cornerRadius: 2)
-                .fill(Color.pink)
-                .frame(width: 3, height: 44)
-
-            Image(systemName: "figure.stand")
-                .font(.system(size: 16, weight: .semibold))
-                .foregroundColor(.pink)
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Peso e IMC").font(.subheadline).fontWeight(.medium)
-                if let b = composition, let w = b.weightKg, let bmi = b.bmi {
-                    Text(String(format: "%.1f kg · IMC %.1f", w, bmi))
-                        .font(.caption).foregroundColor(.secondary)
-                } else {
-                    Text("Toca para registrar").font(.caption).foregroundColor(.secondary)
-                }
-            }
-
-            Spacer()
-            Image(systemName: "chevron.right").font(.caption).foregroundStyle(.tertiary)
-        }
-        .padding(14)
-        .background(Color(.secondarySystemGroupedBackground),
-                    in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-    }
-}
-
 private struct HealthAuthCard: View {
     @EnvironmentObject var healthKit: HealthKitManager
 
