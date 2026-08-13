@@ -7,16 +7,25 @@ struct TrendSparkline: View {
     let samples: [MetricSample]
     let color: Color
     var height: CGFloat = 28
-    // Nº de muestras más recientes a dibujar. nil = todas.
-    var latest: Int? = nil
+    // Días hacia atrás a dibujar. nil = todas las muestras.
+    //
+    // Se recorta por FECHA y no por número de muestras para que la miniatura enseñe
+    // el mismo tramo que la gráfica que se abre al pulsarla, que también filtra por
+    // fecha. Con "las N últimas muestras" ambas mostraban periodos distintos y no
+    // se parecían.
+    var days: Int? = nil
 
-    // Las series no llegan todas en el mismo orden (el HRV viene con la más
-    // reciente primero, el resto al revés), así que aquí se ordenan siempre antes
-    // de recortar: si no, "las últimas N" acaban siendo las más antiguas.
     private var visible: [MetricSample] {
+        // Las series ya van todas en orden cronológico, pero se ordena igualmente:
+        // este componente recibe arrays de muchos sitios y no debe fiarse.
         let ordenadas = samples.sorted { $0.date < $1.date }
-        guard let latest else { return ordenadas }
-        return Array(ordenadas.suffix(latest))
+        guard let days,
+              let corte = Calendar.current.date(byAdding: .day, value: -days, to: Date())
+        else { return ordenadas }
+        let recientes = ordenadas.filter { $0.date >= corte }
+        // Si en la ventana no hay casi nada (métricas que se miden de uvas a peras),
+        // se dibuja todo antes que enseñar una línea de dos puntos.
+        return recientes.count >= 4 ? recientes : ordenadas
     }
 
     var body: some View {

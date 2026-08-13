@@ -692,7 +692,7 @@ struct PWMetricCard: View {
                     // TrendSparkline, que ordena antes: hacerlo aquí con suffix()
                     // cogía las más antiguas en las series que vienen invertidas.
                     if samples.count >= 4 {
-                        TrendSparkline(samples: samples, color: color, height: 20, latest: 12)
+                        TrendSparkline(samples: samples, color: color, height: 20, days: 30)
                     }
 
                     Text(title)
