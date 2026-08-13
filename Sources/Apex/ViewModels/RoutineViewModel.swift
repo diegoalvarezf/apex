@@ -7,7 +7,26 @@ final class RoutineViewModel: ObservableObject {
     @Published var isParsingAI = false
     @Published var aiError: String?
 
+    // Rutina que el usuario está siguiendo ahora. Se guarda aparte del modelo para
+    // no meter un campo en el JSON que produce la IA. Las demás quedan de archivo:
+    // siguen consultables, pero no cuentan como entreno actual ni alimentan a la IA.
+    @Published private(set) var activeRoutineID: UUID?
+
+    var activeRoutine: GymRoutine? {
+        routines.first { $0.id == activeRoutineID } ?? routines.first
+    }
+
+    func isActive(_ routine: GymRoutine) -> Bool {
+        activeRoutine?.id == routine.id
+    }
+
+    func setActive(_ routine: GymRoutine) {
+        activeRoutineID = routine.id
+        UserDefaults.standard.set(routine.id.uuidString, forKey: activeKey)
+    }
+
     private let storageKey = "apex_gym_routines_v1"
+    private let activeKey = "apex_active_routine_id"
 
     init() { load() }
 
@@ -20,6 +39,9 @@ final class RoutineViewModel: ObservableObject {
     }
 
     private func load() {
+        if let raw = UserDefaults.standard.string(forKey: activeKey) {
+            activeRoutineID = UUID(uuidString: raw)
+        }
         guard let data = UserDefaults.standard.data(forKey: storageKey),
               let saved = try? JSONDecoder().decode([GymRoutine].self, from: data) else { return }
         routines = saved
@@ -27,6 +49,12 @@ final class RoutineViewModel: ObservableObject {
 
     func delete(_ routine: GymRoutine) {
         routines.removeAll { $0.id == routine.id }
+        // Si se borra la activa, pasa a serlo la primera que quede (activeRoutine ya
+        // recurre a `routines.first`, pero se persiste para no depender del orden).
+        if activeRoutineID == routine.id {
+            activeRoutineID = routines.first?.id
+            UserDefaults.standard.set(activeRoutineID?.uuidString, forKey: activeKey)
+        }
         save()
     }
 
@@ -119,6 +147,8 @@ final class RoutineViewModel: ObservableObject {
                 var parsed = try decoder.decode(GymRoutine.self, from: data)
                 parsed.updatedAt = Date()
                 routines.insert(parsed, at: 0)
+                // La recién importada pasa a ser la que se sigue; la anterior queda de archivo.
+                setActive(parsed)
                 save()
             } catch {
                 // Muestra qué devolvió Claude para facilitar el diagnóstico
@@ -225,6 +255,9 @@ final class RoutineViewModel: ObservableObject {
                 var parsed = try decoder.decode(GymRoutine.self, from: data)
                 parsed.updatedAt = Date()
                 routines.insert(parsed, at: 0)
+                // La recién creada pasa a ser la que se sigue; la anterior queda de
+                // archivo. Es lo que espera quien acaba de pedir una rutina nueva.
+                setActive(parsed)
                 save()
             } catch {
                 let preview = String(jsonString.prefix(200))

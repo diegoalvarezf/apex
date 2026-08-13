@@ -47,11 +47,23 @@ private struct RoutineListView: View {
         List {
             ForEach(routineVM.routines) { routine in
                 NavigationLink(destination: RoutineDetailView(routine: routine)) {
-                    RoutineRowCard(routine: routine, isNewest: routine.id == newestID)
+                    RoutineRowCard(routine: routine,
+                                   isNewest: routine.id == newestID,
+                                   isActive: routineVM.isActive(routine))
                 }
                 .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
                 .listRowBackground(Color.clear)
                 .listRowSeparator(.hidden)
+                .swipeActions(edge: .leading) {
+                    if !routineVM.isActive(routine) {
+                        Button {
+                            routineVM.setActive(routine)
+                        } label: {
+                            Label("Activar", systemImage: "checkmark.circle")
+                        }
+                        .tint(.green)
+                    }
+                }
             }
             .onDelete { idx in
                 idx.forEach { routineVM.delete(routineVM.routines[$0]) }
@@ -65,9 +77,12 @@ private struct RoutineListView: View {
 private struct RoutineRowCard: View {
     let routine: GymRoutine
     var isNewest: Bool = false
+    // La que se está siguiendo: es la que alimenta a la IA. Antes el distintivo
+    // marcaba solo la más reciente por fecha, que no es lo mismo.
+    var isActive: Bool = false
     @State private var exportURL: ExportFile?
 
-    private var accent: Color { isNewest ? .green : .purple }
+    private var accent: Color { isActive ? .green : .purple }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -75,11 +90,16 @@ private struct RoutineRowCard: View {
                 VStack(alignment: .leading, spacing: 3) {
                     HStack(spacing: 8) {
                         Text(routine.name).font(.headline)
-                        if isNewest {
-                            Text("Actual").font(.caption2).fontWeight(.bold)
+                        if isActive {
+                            Text("Activa").font(.caption2).fontWeight(.bold)
                                 .padding(.horizontal, 8).padding(.vertical, 2)
                                 .background(Color.green.opacity(0.18), in: Capsule())
                                 .foregroundColor(.green)
+                        } else if isNewest {
+                            Text("Nueva").font(.caption2).fontWeight(.bold)
+                                .padding(.horizontal, 8).padding(.vertical, 2)
+                                .background(Color.purple.opacity(0.15), in: Capsule())
+                                .foregroundColor(.purple)
                         }
                     }
                     Text(routine.updatedAt, format: .dateTime.day().month(.abbreviated).year())

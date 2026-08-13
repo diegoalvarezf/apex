@@ -287,7 +287,9 @@ private struct CrearSection: View {
         }
         var progresiones: [String] = []
         var vistos = Set<String>()
-        for routine in routineVM.routines {
+        // Solo la rutina activa: las archivadas tienen ejercicios que ya no se hacen
+        // y su progresión, congelada hace meses, distorsionaría la propuesta.
+        for routine in [routineVM.activeRoutine].compactMap({ $0 }) {
             for day in routine.days {
                 for ex in day.exercises where !vistos.contains(ex.name) {
                     let entries = RoutineProgressStore.shared.entries(for: ex.id).suffix(4)
@@ -314,7 +316,7 @@ private struct CrearSection: View {
         // machacar dos veces un grupo que ya viene cargado.
         let semanaCutoff = Calendar.current.date(byAdding: .day, value: -7, to: Date()) ?? Date()
         var gruposRecientes: [String: Int] = [:]
-        for routine in routineVM.routines {
+        for routine in [routineVM.activeRoutine].compactMap({ $0 }) {
             for day in routine.days {
                 for ex in day.exercises where !ex.muscleGroup.isEmpty {
                     let sesiones = RoutineProgressStore.shared.entries(for: ex.id)
