@@ -19,7 +19,7 @@ App iOS nativa de seguimiento de rendimiento deportivo. Integra Strava, Apple He
 - **Smart Tips** — alertas locales instantáneas basadas en recuperación, HRV, carga acumulada y déficit de sueño.
 
 ### Pestaña Salud
-- **Edad biológica (edad de fitness)** — anclada al VO2max medido: la edad a la que la media poblacional de VO2max (datos normativos HUNT / Loe 2013, n=3.816) iguala tu valor. FC reposo, HRV, IMC, sueño y actividad aplican ajustes menores (a media potencia cuando hay VO2max, por correlación). Delta con 1 decimal.
+- **Edad Apex** — edad de fitness anclada al VO2max: la edad a la que la media poblacional de VO2max (datos normativos HUNT / Loe 2013, n=3.816) iguala tu valor. FC reposo, HRV, IMC, sueño y actividad aplican ajustes menores (a media potencia cuando hay VO2max, por correlación). Delta con 1 decimal.
 - **Métricas corporales** — HRV, FC reposo, temperatura de muñeca, luz solar.
 - **Actividad** — VO2max, frecuencia respiratoria, SpO2.
 - **Composición corporal** — peso, IMC, masa grasa estimada.
@@ -30,10 +30,15 @@ App iOS nativa de seguimiento de rendimiento deportivo. Integra Strava, Apple He
 - Progresión de ejercicios de fuerza.
 
 ### Rutina
-- Planificación semanal con generación de rutinas por IA (Claude).
+- Planificación semanal con generación de rutinas por IA, que usa tu progresión
+  registrada, los grupos trabajados esta semana y tus métricas de recuperación.
+- Una rutina **activa** a la vez; las demás quedan archivadas y no alimentan a la IA.
 
-### IA Coach
-- Análisis personalizado con Claude Sonnet que procesa recuperación, sueño, HRV, carga y actividades recientes para dar recomendaciones accionables.
+### Apex IA
+- Análisis personalizado que procesa recuperación, sueño, HRV, carga y actividades recientes para dar recomendaciones accionables.
+- Alertas diarias, resumen semanal y análisis por métrica, cacheados para no repetir llamadas.
+- Chat con el coach usando tus datos como contexto.
+- Sonnet para los análisis y Opus para diseñar rutinas, que es la tarea que más razonamiento exige.
 - Notificaciones diarias a las 8:30 con tu estado de recuperación.
 
 ### Widget
@@ -54,11 +59,11 @@ App iOS nativa de seguimiento de rendimiento deportivo. Integra Strava, Apple He
 | UI | SwiftUI |
 | Datos de salud | HealthKit |
 | Actividades | Strava API v3 |
-| IA | Anthropic Claude (claude-sonnet-4-6) |
+| IA | Anthropic Claude (Sonnet para análisis, Opus para rutinas) |
 | Widget | WidgetKit + App Groups |
 | Watch | watchOS + WatchConnectivity |
 | Autenticación | ASWebAuthenticationSession (OAuth 2.0) |
-| Persistencia | UserDefaults + App Groups |
+| Persistencia | UserDefaults + App Groups · **Keychain** para credenciales |
 
 ---
 
@@ -89,19 +94,22 @@ enum StravaConfig {
 
 ### 3. Anthropic API
 
-1. Obtén tu API key en [console.anthropic.com](https://console.anthropic.com).
-2. En `Sources/Apex/Services/AIService.swift`:
+La clave la introduce cada usuario desde la propia app: **Perfil → Apex IA**. Se
+valida contra la API antes de guardarla y se almacena en el **Keychain** del
+dispositivo, no en el binario ni en UserDefaults. Cada uno usa su clave y su
+consumo se factura a su cuenta.
 
-```swift
-enum ClaudeConfig {
-    static let apiKey = "TU_API_KEY"
-    static let model  = "claude-sonnet-4-6"
-}
-```
+1. Crea una clave en [console.anthropic.com](https://console.anthropic.com/settings/keys).
+2. Ábrela en la app en Perfil → Apex IA y pulsa "Comprobar y guardar".
+
+Sin clave, el resto de la app funciona igual: solo se desactivan los análisis de IA.
+
+> Para desarrollo puedes dejarla en `StravaSecrets.plist` (bajo `AnthropicAPIKey`),
+> que está en `.gitignore`. La del Keychain tiene prioridad sobre esa.
 
 ### 4. App Groups (widget)
 
-1. En el [Apple Developer Portal](https://developer.apple.com/account), crea el grupo `group.com.tudominio.forma`.
+1. En el [Apple Developer Portal](https://developer.apple.com/account), crea el grupo `group.com.tudominio.apex`.
 2. Actívalo en los targets **Apex** y **ApexWidget** en Xcode → Signing & Capabilities → App Groups.
 3. Actualiza el identificador en `ApexWidget.swift` y `UserProfileManager.swift`.
 
@@ -149,9 +157,9 @@ Sources/
 │   │   └── RoutineViewModel
 │   └── Views/
 │       ├── Dashboard/          # Inicio, cards de métricas, detalle
-│       ├── Health/             # Salud, edad biológica, sueño, composición
+│       ├── Health/             # Salud, Edad Apex, sueño, composición
 │       ├── Activities/         # Historial Strava, récords, progresión
-│       ├── Insights/           # IA Coach, Smart Tips
+│       ├── Insights/           # Apex IA, alertas
 │       ├── Routine/
 │       └── Shared/             # Componentes reutilizables
 ├── ApexWidget/                 # Widget de iOS (WidgetKit)
@@ -200,12 +208,81 @@ TRIMP de Banister continuo acumulado en el día: cada actividad + cada hora de f
 ### Sueño
 Score anclado a normas AASM / National Sleep Foundation: duración 40% (óptimo 7–9h), sueño profundo N3 20% (≥16% del total), REM 20% (≥20%), eficiencia 20% (≥85%). Eficiencia = tiempo dormido / tiempo en cama (definición AASM).
 
-### Edad de fitness
+### Edad Apex (edad de fitness)
 `FitnessAgeNorms.fitnessAge(vo2Max:)` invierte la curva normativa de VO2max por edad/sexo del HUNT Study (Loe 2013) para dar la edad a la que la media poblacional iguala tu VO2max.
 
-Si HealthKit no trae un VO2max medido (hay relojes que no lo exportan a Salud), se estima con el cociente FCmáx/FCreposo — `VO2max ≈ 15,3 × (FCmáx/FCreposo)`, Uth et al. 2004 — y se etiqueta explícitamente como estimación en la app. Un VO2max medido siempre tiene prioridad sobre el estimado.
+**Prioridad del VO2max**: medido y vigente (HealthKit, ≤14 días) → estimado con tus
+carreras → cociente FCmáx/FCreposo. Cuando no procede de una medición, la app lo
+etiqueta como estimado e indica el método en la propia tarjeta.
+
+La estimación con carreras sigue la misma idea que Garmin o Suunto —qué ritmo
+sostienes a qué frecuencia cardíaca— pero con ecuaciones publicadas, ya que sus
+algoritmos son propietarios: coste de oxígeno por la ecuación de carrera del **ACSM**
+y extrapolación al máximo por reserva de FC (**Swain & Leutholtz 1997**). Se toma la
+mediana de 90 días descartando series, cuestas y rodajes cortos. Detalle y filtros en
+[`docs/METRICS_SOURCES.md`](docs/METRICS_SOURCES.md) §12.
 
 ---
+
+## Limitaciones conocidas y trabajo futuro
+
+APEX está construida para uso personal: todo ocurre en el dispositivo y no hay
+servidor. Eso mantiene el proyecto simple y sin coste, pero pone tres límites que
+conviene declarar antes que disimular.
+
+### 1. El `client_secret` de Strava viaja en la app
+
+El flujo OAuth de Strava exige el `client_secret` para canjear el código por el
+token, y no admite PKCE, que es el mecanismo pensado para que las apps móviles no
+tengan que llevar secretos. Sin un servidor intermedio no hay forma correcta de
+hacerlo: el secreto acaba dentro del binario, de donde se puede extraer.
+
+No permite entrar en la cuenta de nadie —identifica a la aplicación, no al
+usuario—, pero sí suplantar a APEX ante Strava o agotar su cuota de peticiones,
+que es por aplicación. Con la app sin distribuir el riesgo es teórico; dejaría de
+serlo al publicarla.
+
+Los tokens que devuelve Strava, esos sí credenciales del usuario, se guardan en el
+**Keychain** (`kSecAttrAccessibleWhenUnlockedThisDeviceOnly`), igual que la clave de
+la API de IA.
+
+### 2. Distribuir la app exige un backend
+
+Publicarla obligaría a montar un servidor intermedio, y no principalmente por
+seguridad:
+
+- El `client_secret` y la clave de IA dejarían de estar en el dispositivo, y podrían
+  rotarse sin publicar una actualización.
+- Se podría limitar el consumo por usuario. Hoy cada uno pone su clave de Anthropic
+  precisamente porque no hay forma de repartir ese coste.
+- Permitiría un modelo de suscripción, que en iOS debe pasar por In-App Purchase.
+
+Tiene contrapartida: hoy los datos de salud van del dispositivo directos a la API de
+Anthropic, mientras que con backend pasarían por un servidor propio. Se gana control
+sobre las claves a cambio de custodiar datos de salud ajenos, lo que en la UE es más
+responsabilidad, no menos.
+
+### 3. Salir al mercado es un proyecto distinto
+
+Además del backend, distribuir la app en la UE implicaría cumplir el **RGPD** con
+datos de categoría especial (art. 9): HRV, sueño y frecuencia cardíaca lo son. Eso
+exige consentimiento explícito y granular, política de privacidad real, finalidad
+limitada, plazos de conservación y derecho de acceso y borrado. También habría que
+declarar a Anthropic como encargado del tratamiento, firmar el acuerdo
+correspondiente y advertir de forma clara que los análisis no son consejo médico.
+
+### Mejoras identificadas
+
+- **Recuperar los datos por RAG** en la generación de rutinas: hoy el modelo diseña
+  con su conocimiento interno guiado por los principios del prompt (documentados en
+  `METRICS_SOURCES.md`). Una base documental con contraindicaciones por lesión y
+  técnica de ejercicios daría respuestas más precisas y trazables.
+- **Tipo de dominio propio para las actividades.** Las vistas consumen
+  `StravaActivity`, el DTO del proveedor. Mientras Strava sea la única fuente no
+  molesta; con una segunda haría falta un `Workout` propio al que ambas mapeen.
+- **Inversión de dependencias.** La app usa MVVM pragmático sin protocolos: SwiftUI
+  ya inyecta con `@EnvironmentObject` y el valor está en la validez de las métricas,
+  no en las capas. Abstraer los servicios permitiría testear también las vistas.
 
 ## Requisitos
 
