@@ -201,7 +201,9 @@ TRIMP de Banister continuo acumulado en el día: cada actividad + cada hora de f
 Score anclado a normas AASM / National Sleep Foundation: duración 40% (óptimo 7–9h), sueño profundo N3 20% (≥16% del total), REM 20% (≥20%), eficiencia 20% (≥85%). Eficiencia = tiempo dormido / tiempo en cama (definición AASM).
 
 ### Edad de fitness
-`FitnessAgeNorms.fitnessAge(vo2Max:)` invierte la curva normativa de VO2max por edad/sexo del HUNT Study (Loe 2013) para dar la edad a la que la media poblacional iguala tu VO2max. Ecuación de Nes 2011 disponible como estimador no-ejercicio de VO2max.
+`FitnessAgeNorms.fitnessAge(vo2Max:)` invierte la curva normativa de VO2max por edad/sexo del HUNT Study (Loe 2013) para dar la edad a la que la media poblacional iguala tu VO2max.
+
+Si HealthKit no trae un VO2max medido (hay relojes que no lo exportan a Salud), se estima con el cociente FCmáx/FCreposo — `VO2max ≈ 15,3 × (FCmáx/FCreposo)`, Uth et al. 2004 — y se etiqueta explícitamente como estimación en la app. Un VO2max medido siempre tiene prioridad sobre el estimado.
 
 ---
 

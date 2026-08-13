@@ -244,6 +244,18 @@ enum FitnessAgeNorms {
         return t.last!.1
     }
 
+    // VO2max estimado a partir del cociente FCmáx/FCreposo (Uth, Sørensen, Overgaard
+    // & Pedersen 2004, Eur J Appl Physiol): VO2max ≈ 15.3 · (FCmáx / FCreposo).
+    // Es un método publicado, pensado justo para cuando no hay prueba de esfuerzo.
+    // Se usa SOLO si HealthKit no trae un VO2max medido, y se etiqueta como estimado:
+    // un cociente no mide el consumo de oxígeno, lo infiere.
+    static func estimatedVO2max(maxHR: Double, restingHR: Double) -> Double? {
+        // Fuera de rangos fisiológicos plausibles no se estima nada: mejor "sin dato"
+        // que un número inventado.
+        guard restingHR >= 30, restingHR <= 100, maxHR >= 120, maxHR <= 220, maxHR > restingHR else { return nil }
+        return 15.3 * (maxHR / restingHR)
+    }
+
     // Edad a la que la media poblacional de VO2max = tu VO2max (invierte la curva).
     static func fitnessAge(vo2Max: Double, male isMale: Bool) -> Double {
         let t = isMale ? male : female
@@ -304,7 +316,8 @@ struct BiologicalAgeResult {
         hrv: Double?,
         sleepScore: Int?,
         bmi: Double?,
-        weeklyActiveMinutes: Double? = nil
+        weeklyActiveMinutes: Double? = nil,
+        maxHR: Double? = nil
     ) -> BiologicalAgeResult {
 
         var factors: [BiologicalAgeFactor] = []
@@ -314,20 +327,30 @@ struct BiologicalAgeResult {
         // Es la ÚNICA "edad" a partir de wearables con respaldo científico (la usa
         // Garmin). SOLO depende del VO2max — no se mezcla con otros marcadores con
         // pesos inventados. HealthKit puede infravalorar el VO2max si no corres fuera.
+        // Si HealthKit no trae VO2max medido (p. ej. relojes que no lo exportan a
+        // Salud), se recurre al estimado por FCmáx/FCreposo, avisando de que lo es.
+        let medido = vo2Max
+        let estimado: Double? = medido == nil
+            ? FitnessAgeNorms.estimatedVO2max(maxHR: maxHR ?? 0, restingHR: restingHR ?? 0)
+            : nil
+
         let age: Double
-        if let v = vo2Max {
+        if let v = medido ?? estimado {
+            let esEstimado = medido == nil
             age = FitnessAgeNorms.fitnessAge(vo2Max: v, male: isMale)
             let expected = FitnessAgeNorms.expectedVO2max(age: Double(chronologicalAge), male: isMale)
             factors.append(.init(
-                name: "VO₂Max",
+                name: esEstimado ? "VO₂Max (estimado)" : "VO₂Max",
                 icon: "lungs.fill",
                 color: .cyan,
                 ageDelta: age - Double(chronologicalAge),
-                valueLabel: String(format: "%.1f ml/kg/min (media %.0f a tu edad)", v, expected),
-                explanation: "Tu edad de fitness es la edad a la que la media poblacional de VO₂Max iguala tu valor medido (estudio HUNT, Nes 2011, >4.600 adultos). Es el método validado que usa Garmin. Nota: las normas HUNT son de una población en forma, así que la referencia es exigente."
+                valueLabel: String(format: esEstimado ? "~%.1f ml/kg/min estimado (media %.0f a tu edad)" : "%.1f ml/kg/min (media %.0f a tu edad)", v, expected),
+                explanation: esEstimado
+                    ? "Tu reloj no exporta el VO₂Max a Salud, así que se estima con el cociente FCmáx/FCreposo (Uth et al. 2004): VO₂Max ≈ 15,3 × (FCmáx/FCreposo). Es un método publicado para cuando no hay prueba de esfuerzo, pero es una ESTIMACIÓN: si registras tu VO₂Max real en Salud, se usará ese."
+                    : "Tu edad de fitness es la edad a la que la media poblacional de VO₂Max iguala tu valor medido (estudio HUNT, Nes 2011, >4.600 adultos). Es el método validado que usa Garmin. Nota: las normas HUNT son de una población en forma, así que la referencia es exigente."
             ))
         } else {
-            // Sin VO2max no hay edad de fitness; se muestra la edad real
+            // Ni medido ni estimable: se muestra la edad real
             age = Double(chronologicalAge)
         }
 

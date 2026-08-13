@@ -24,7 +24,7 @@ publicada y verificable. Donde una constante es una **calibración de producto**
 | Sueño | `Models/HealthData.swift` | Normas AASM / NSF |
 | Zonas de FC | `Views/Health/HeartRateZonesView.swift` | Modelo %FCmáx de 5 zonas |
 | Edad de fitness | `Models/HealthData.swift` | VO2max normativo HUNT (Loe 2013) |
-| VO2max no-ejercicio (fallback) | `Models/HealthData.swift` | Nes 2011 (HUNT) |
+| VO2max no-ejercicio (fallback) | `Models/HealthData.swift` | Uth et al. 2004 (FCmáx/FCreposo) |
 | FCmáx | `Services/UserProfileManager.swift` | Máx. observada 30d / 220−edad |
 
 ---
@@ -262,15 +262,30 @@ HUNT son de una cohorte noruega en forma (una persona "media" saldrá mayor de s
 
 ## 12. VO2max no-ejercicio (fallback cuando el reloj no lo mide)
 
-**Ecuaciones de Nes 2011 (HUNT):**
+**Implementado: cociente FCmáx/FCreposo (Uth et al. 2004)**
+
+```
+VO2max ≈ 15.3 · (FCmáx / FCreposo)
+```
+
+Se usa solo si HealthKit no trae un VO2max medido, y la app lo etiqueta como
+estimación en la propia tarjeta. Un valor medido siempre tiene prioridad. Fuera de
+rangos fisiológicos plausibles (FCreposo 30–100, FCmáx 120–220) no se estima nada:
+se muestra la edad cronológica en vez de un número inventado.
+
+- Uth N, Sørensen H, Overgaard K, Pedersen PK. *Estimation of VO2max from the ratio between
+  HRmax and HRrest.* Eur J Appl Physiol. 2004;91(1):111-5.
+
+**Descartado: ecuaciones de Nes 2011 (HUNT).** Son más precisas (error estándar
+±3.5 ml/kg/min) pero necesitan el **perímetro de cintura**, que la app no tiene y que
+exigiría que el usuario se lo midiera y lo registrase a mano. Se documentan aquí por
+si algún día se recogen esos datos:
 
 ```
 Hombres: VO2max = 100.27 − 0.296·edad + 0.226·PA − 0.369·WC − 0.155·RHR
 Mujeres: VO2max = 74.736 − 0.247·edad + 0.198·PA − 0.259·WC − 0.114·RHR
    PA = índice de actividad física · WC = perímetro de cintura (cm) · RHR = FC reposo
 ```
-
-Error estándar ±3.5 ml/kg/min.
 
 - Nes BM, Janszky I, Wisløff U, Støylen A, Karlsen T. *Estimating V̇O2peak from a nonexercise
   prediction model: the HUNT Study, Norway.* Med Sci Sports Exerc. 2011;43(11):2024-30.

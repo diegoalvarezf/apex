@@ -70,6 +70,7 @@
 		B5848EBE45A36A5E42EB3B2E /* SmartTipBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA8104DA37D19A942B47E271 /* SmartTipBanner.swift */; };
 		B9DEE5ED14C5450EC7460F8B /* HealthLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7E2CE3201CB2C882BD27556 /* HealthLayout.swift */; };
 		BCCDD7B9E2814C098EBB9BD7 /* ApexLogo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36D74569B2AAD248B9B50035 /* ApexLogo.swift */; };
+		C04D77A817001F87BEDE22A5 /* FitnessAgeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF1743C0689451AD5241E5A4 /* FitnessAgeTests.swift */; };
 		C17FAF211C25302C0130DC0E /* StravaSecrets.example.plist in Resources */ = {isa = PBXBuildFile; fileRef = 27BE0E5F42E910E1195161B5 /* StravaSecrets.example.plist */; };
 		C1C424B764AD8253D93FCB48 /* AIService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7085B67C96F3791C8445CD73 /* AIService.swift */; };
 		C7F187D963AFFF075DB59168 /* StartActivitySheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A4C69AB6473F5BC5F1AE98C /* StartActivitySheet.swift */; };
@@ -218,6 +219,7 @@
 		BDB4907A302A7EB9BC3AE081 /* ApexWatch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ApexWatch.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		BE7C3F5BC95DECD880ED3FCB /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		BED5F20A376BEEBB2933AB42 /* WorkoutLogSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutLogSession.swift; sourceTree = "<group>"; };
+		BF1743C0689451AD5241E5A4 /* FitnessAgeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FitnessAgeTests.swift; sourceTree = "<group>"; };
 		BF755D279BC97FD0AD59B978 /* UserProfileManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserProfileManager.swift; sourceTree = "<group>"; };
 		C3DA5C81DAE39EFD8E208A8E /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
 		C7C58AE38292797DEA856365 /* Apex.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Apex.entitlements; sourceTree = "<group>"; };
@@ -293,6 +295,7 @@
 		3307656ED946B55184CA6E33 /* ApexTests */ = {
 			isa = PBXGroup;
 			children = (
+				BF1743C0689451AD5241E5A4 /* FitnessAgeTests.swift */,
 				E34E9B77B5A6EED2A7D75D18 /* SessionLoadTests.swift */,
 				937343D1AD328D38F1AEA9C7 /* StravaActivityFixture.swift */,
 				F96D25617D324C362F8E34FC /* TrainingMetricsTests.swift */,
@@ -650,6 +653,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C04D77A817001F87BEDE22A5 /* FitnessAgeTests.swift in Sources */,
 				1756E84C3A0A0157979643F6 /* SessionLoadTests.swift in Sources */,
 				42D6822A661F262B432F3DD6 /* StravaActivityFixture.swift in Sources */,
 				5F66B03ED35EF2F60F49A293 /* TrainingMetricsTests.swift in Sources */,

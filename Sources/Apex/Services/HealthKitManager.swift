@@ -233,7 +233,8 @@ final class HealthKitManager: ObservableObject {
             hrv: hrv,
             sleepScore: sleepScore,
             bmi: bmi,
-            weeklyActiveMinutes: weeklyActiveMinutes
+            weeklyActiveMinutes: weeklyActiveMinutes,
+            maxHR: UserProfile.effectiveMaxHR
         )
     }
 
