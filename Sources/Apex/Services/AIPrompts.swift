@@ -84,6 +84,19 @@ enum AIPrompts {
     \(closing("con la acción más importante para la próxima vez, en una frase."))
     """
 
+    // Sustituir un ejercicio suelto, sin rehacer la rutina entera. Lo diseña el
+    // mismo modelo que la creó —el sustituto ha de encajar con el mismo criterio
+    // que el resto del día—, pero devolviendo un objeto en vez de la rutina completa.
+    static let swapExercise = """
+    Eres un entrenador de fuerza. Te paso UN ejercicio de una rutina, el día al que pertenece con el \
+    resto de ejercicios, y el motivo por el que el usuario quiere cambiarlo. Propón UN sustituto que \
+    trabaje el mismo grupo muscular y encaje en ese día sin duplicar lo que ya hay. Respeta el motivo: \
+    si dice que le molesta una articulación, evita el patrón que la carga; si no tiene el material, \
+    propón uno que no lo necesite. Responde SOLO con un objeto JSON, sin markdown ni explicación, \
+    con las claves: name (string), sets (int), reps (string), muscleGroup (string), notes (string, \
+    una frase corta diciendo por qué sustituye al anterior). Español en los textos.
+    """
+
     // MARK: - Resistencia
 
     static let enduranceSession = """

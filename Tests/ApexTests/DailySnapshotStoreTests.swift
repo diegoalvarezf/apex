@@ -74,7 +74,10 @@ struct DailySnapshotStoreTests {
         DailySnapshotStore.shared.save(day: dia, battery: 45)
         #expect(DailySnapshotStore.shared.snapshot(for: dia)?.battery == 45)
 
-        let mismoDiaOtraHora = dia.addingTimeInterval(5 * 3600)
+        // Ancla a una hora concreta del día: sumar horas a "ahora" cruza la
+        // medianoche cuando el test corre por la tarde, y entonces no se estaría
+        // comprobando el mismo día sino el siguiente.
+        let mismoDiaOtraHora = Calendar.current.startOfDay(for: dia).addingTimeInterval(5 * 3600)
         #expect(DailySnapshotStore.shared.snapshot(for: mismoDiaOtraHora)?.battery == 45)
     }
 }

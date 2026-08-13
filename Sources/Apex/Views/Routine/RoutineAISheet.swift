@@ -219,6 +219,10 @@ private struct CrearSection: View {
             }
 
             Section {
+                cuotaRestante
+            }
+
+            Section {
                 Button {
                     Task {
                         await routineVM.createRoutineWithAI(brief: buildBrief(),
@@ -243,6 +247,26 @@ private struct CrearSection: View {
     }
 
     // MARK: - Construcción de prompts
+
+    // Se enseña antes de generar, no al agotarse: quedarse sin cuota al pulsar el
+    // botón sería una sorpresa desagradable.
+    @ViewBuilder private var cuotaRestante: some View {
+        let quedan = RoutineQuota.restantes()
+        HStack {
+            Image(systemName: quedan > 0 ? "sparkles" : "hourglass")
+                .foregroundStyle(quedan > 0 ? Color.secondary : Color.orange)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(quedan > 0
+                     ? "Te quedan \(quedan) de \(RoutineQuota.porMes) rutinas este mes"
+                     : "Sin rutinas disponibles este mes")
+                    .font(.subheadline)
+                Text(quedan > 0
+                     ? "Cambiar un ejercicio suelto no gasta cuota."
+                     : "Puedes seguir cambiando ejercicios sueltos, que no gastan cuota.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+        }
+    }
 
     private func buildBrief() -> String {
         var parts: [String] = [

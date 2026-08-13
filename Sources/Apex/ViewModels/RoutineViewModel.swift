@@ -73,6 +73,24 @@ final class RoutineViewModel: ObservableObject {
         }
     }
 
+    // MARK: - Cambiar un ejercicio suelto
+
+    // Alternativa barata a regenerar la rutina cuando solo falla un ejercicio.
+    // No consume cuota: cuesta una fracción de lo que cuesta rehacerla entera.
+    func swapExercise(_ exercise: GymExercise, in day: GymDay, reason: String) async {
+        isParsingAI = true
+        aiError = nil
+        defer { isParsingAI = false }
+
+        do {
+            let sustituto = try await ExerciseSwapper.swap(
+                exercise: exercise, in: day, reason: reason)
+            updateExercise(sustituto)
+        } catch {
+            aiError = error.localizedDescription
+        }
+    }
+
     // MARK: - Importar rutina con IA
 
     func parseRoutineWithAI(description: String) async {
@@ -167,9 +185,17 @@ final class RoutineViewModel: ObservableObject {
     // y pesos ya registrados (montado por la vista). La IA diseña la rutina y la
     // devuelve en el MISMO esquema JSON que el parser.
     func createRoutineWithAI(brief: String, context: String) async {
+        // Diseñar una rutina es la llamada más cara de la app; la cuota mantiene el
+        // coste por usuario acotado. Cambiar un ejercicio suelto no la consume.
+        guard RoutineQuota.puedeGenerar() else {
+            aiError = "Has usado las \(RoutineQuota.porMes) rutinas de este mes. "
+                + "Puedes seguir cambiando ejercicios sueltos, que no gastan cuota."
+            return
+        }
         isParsingAI = true
         aiError = nil
         defer { isParsingAI = false }
+        RoutineQuota.registrar()
 
         let systemPrompt = """
         Eres un entrenador de fuerza titulado. Diseñas rutinas de gimnasio seguras y

@@ -288,6 +288,7 @@ private struct DayDetailView: View {
                     VStack(spacing: 1) {
                         ForEach(Array(day.exercises.enumerated()), id: \.element.id) { idx, ex in
                             ExerciseRow(exercise: ex, index: idx + 1,
+                                        day: day,
                                         supersetColor: supersetColor(ex.supersetGroup))
                             if idx < day.exercises.count - 1 {
                                 Divider().padding(.leading, 56)
@@ -404,10 +405,14 @@ private func supersetColor(_ group: String?) -> Color? {
 private struct ExerciseRow: View {
     let exercise: GymExercise
     let index: Int
+    // El día al que pertenece: el sustituto debe encajar con el resto del día y no
+    // duplicar lo que ya hay en él.
+    let day: GymDay
     var supersetColor: Color? = nil   // no nil → es parte de superserie
     @ObservedObject private var progress = RoutineProgressStore.shared
     @State private var showProgress = false
     @State private var showEdit = false
+    @State private var showSwap = false
 
     private var accentColor: Color { supersetColor ?? muscleColor }
     private var latest: LiftEntry? { progress.latest(for: exercise.id) }
@@ -476,12 +481,18 @@ private struct ExerciseRow: View {
         .sheet(isPresented: $showEdit) {
             EditExerciseSheet(exercise: exercise)
         }
+        .sheet(isPresented: $showSwap) {
+            SwapExerciseSheet(exercise: exercise, day: day)
+        }
         .contextMenu {
             Button { showProgress = true } label: {
                 Label("Ver progresión", systemImage: "chart.line.uptrend.xyaxis")
             }
             Button { showEdit = true } label: {
                 Label("Editar ejercicio", systemImage: "pencil")
+            }
+            Button { showSwap = true } label: {
+                Label("No me cuadra, cámbialo", systemImage: "arrow.triangle.2.circlepath")
             }
         }
     }
