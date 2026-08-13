@@ -151,13 +151,10 @@ targets:
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         WKApplication: true
         WKCompanionAppBundleIdentifier: com.diegoalvarezfrancos.apex
-        NSHealthShareUsageDescription: "Apex uses Health data to show your recovery and fitness metrics on Apple Watch."
-    entitlements:
-      path: Sources/ApexWatch/ApexWatch.entitlements
-      properties:
-        com.apple.developer.healthkit: true
-        com.apple.security.application-groups:
-          - group.com.diegoalvarezfrancos.apex
+    # Sin entitlements: el reloj no lee HealthKit ni el grupo compartido, recibe
+    # todo del iPhone por WatchConnectivity. Declararlos obligaba a provisionarlos
+    # —y HealthKit y App Groups exigen cuenta de desarrollador de pago—, lo que hacía
+    # fallar la instalación en un reloj real con "could not be installed at this time".
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.diegoalvarezfrancos.apex.watchkitapp
