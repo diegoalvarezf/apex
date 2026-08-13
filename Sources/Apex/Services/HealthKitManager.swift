@@ -364,8 +364,13 @@ final class HealthKitManager: ObservableObject {
         let start = Calendar.current.date(byAdding: .day, value: -days, to: Date())!
         let predicate = HKQuery.predicateForSamples(withStart: start, end: Date())
         let sort = NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: true)
+        // Sin límite: con `limit: days` y orden ascendente, HealthKit devolvía las N
+        // muestras MÁS ANTIGUAS de la ventana. En cuanto había más de una lectura por
+        // día, las semanas recientes se perdían y la app daba por "actual" un valor de
+        // hace un mes. El predicado ya acota el rango, que es lo que limita el tamaño.
         return await withCheckedContinuation { continuation in
-            let query = HKSampleQuery(sampleType: type, predicate: predicate, limit: days, sortDescriptors: [sort]) { _, samples, _ in
+            let query = HKSampleQuery(sampleType: type, predicate: predicate,
+                                      limit: HKObjectQueryNoLimit, sortDescriptors: [sort]) { _, samples, _ in
                 let data = (samples as? [HKQuantitySample] ?? []).map {
                     MetricSample(date: $0.startDate, value: $0.quantity.doubleValue(for: unit))
                 }
@@ -431,7 +436,10 @@ final class HealthKitManager: ObservableObject {
         let predicate = HKQuery.predicateForSamples(withStart: start, end: Date())
         let sort = NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: true)
         let samples: [MetricSample] = await withCheckedContinuation { continuation in
-            let query = HKSampleQuery(sampleType: type, predicate: predicate, limit: 30, sortDescriptors: [sort]) { _, s, _ in
+            // Sin límite, por lo mismo que en fetchQuantitySamples: un límite con orden
+            // ascendente recorta por el lado nuevo, no por el viejo.
+            let query = HKSampleQuery(sampleType: type, predicate: predicate,
+                                      limit: HKObjectQueryNoLimit, sortDescriptors: [sort]) { _, s, _ in
                 let data = (s as? [HKQuantitySample] ?? []).map {
                     MetricSample(date: $0.startDate, value: $0.quantity.doubleValue(for: .degreeCelsius()))
                 }
