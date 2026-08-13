@@ -133,7 +133,7 @@ final class DashboardViewModel: ObservableObject {
         do {
             let text = try await AIService.shared.rawCompletion(
                 prompt: context.buildWeeklySummaryPrompt(),
-                model: ClaudeConfig.opusModel, maxTokens: 600)
+                model: ClaudeConfig.opusModel, maxTokens: 400)
             let clean = text.trimmingCharacters(in: .whitespacesAndNewlines)
             guard !clean.isEmpty else { return }
             weeklySummary = clean

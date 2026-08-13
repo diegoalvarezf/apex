@@ -226,10 +226,9 @@ private struct WeeklySummaryCard: View {
                         .font(.caption2).foregroundStyle(.secondary)
                 }
             }
-            Text(text)
-                .font(.subheadline)
-                .foregroundStyle(.primary)
-                .fixedSize(horizontal: false, vertical: true)
+            // Mismo cuerpo que el resto de análisis: viñetas y conclusión destacada.
+            // Los resúmenes ya cacheados, que son prosa, siguen saliendo como párrafo.
+            AIAnalysisBody(text: text)
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)

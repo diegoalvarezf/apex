@@ -421,13 +421,16 @@ Genera 3-5 insights, priorizando los de entrenamiento (training/performance).
         return parts.joined(separator: "\n")
     }
 
-    // Resumen semanal en prosa (no JSON) para la tarjeta y la notificación
+    // Resumen semanal para la tarjeta. En viñetas y no en prosa: se lee de un
+    // vistazo, igual que el análisis del día.
     func buildWeeklySummaryPrompt() -> String {
-        var parts = ["Eres un entrenador deportivo de élite. Escribe el RESUMEN SEMANAL del usuario en español: qué tal ha ido la semana de entrenamiento, cómo evolucionan su carga/fitness y su progresión de fuerza, y qué enfocar la semana que viene.", ""]
+        var parts = ["Eres un entrenador deportivo de élite. Resume la SEMANA del usuario: cómo ha ido el entrenamiento, cómo evolucionan su carga y su progresión de fuerza, y qué enfocar la semana que viene.", ""]
         parts += metricsBlock()
         parts.append("""
 
-Escribe 2 párrafos cortos (máx. 90 palabras en total), tono directo de coach, en TEXTO PLANO (sin markdown, sin listas, sin JSON). Párrafo 1: balance de la semana (volumen, carga, progresión). Párrafo 2: foco y ajuste concreto para la semana que viene.
+Devuelve SOLO conclusiones, sin introducción ni párrafos. Formato EXACTO: de 3 a 4 líneas, cada una empezando por '• ' y de una sola frase corta (máx ~14 palabras). Español. Tono directo de entrenador.
+
+TERMINA SIEMPRE con una línea aparte que empiece por 'Conclusión: ' con el ajuste más importante para la semana que viene, en una frase.
 
 \(AICoachContext.noInventarCifras)
 """)
