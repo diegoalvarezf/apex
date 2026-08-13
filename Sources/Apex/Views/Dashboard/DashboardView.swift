@@ -16,7 +16,7 @@ struct DashboardView: View {
     private var smartTips: [SmartTip] {
         SmartTipsEngine.compute(
             recovery: healthKit.recoveryScore,
-            sleep: healthKit.sleepHistory.first,
+            sleep: healthKit.sleepHistory.last,
             sleepHistory: healthKit.sleepHistory,
             hourlyHR: healthKit.recentHourlyHR,
             rhr: healthKit.todaySummary?.restingHR,
@@ -53,12 +53,12 @@ struct DashboardView: View {
             recovery: score.value,
             label: score.label,
             effort: effort,
-            sleep: healthKit.sleepHistory.first?.score ?? 0
+            sleep: healthKit.sleepHistory.last?.score ?? 0
         )
     }
 
     private func sendToWatch() {
-        let activities = dashVM.activities.prefix(5).map { act -> WatchActivity in
+        let activities = dashVM.activities.suffix(5).reversed().map { act -> WatchActivity in
             let emoji: String
             switch act.sportType.lowercased() {
             case "run", "trail_run": emoji = "🏃"
@@ -83,9 +83,9 @@ struct DashboardView: View {
             battery: healthKit.recoveryScore?.value ?? 0,
             recovery: healthKit.recoveryScore?.value ?? 0,
             recoveryLabel: healthKit.recoveryScore?.label ?? "--",
-            sleepHours: healthKit.sleepHistory.first.map { $0.totalSleep / 3600 } ?? 0,
-            sleepScore: healthKit.sleepHistory.first?.score ?? 0,
-            hrv: healthKit.hrvHistory.first?.sdnn ?? 0,
+            sleepHours: healthKit.sleepHistory.last.map { $0.totalSleep / 3600 } ?? 0,
+            sleepScore: healthKit.sleepHistory.last?.score ?? 0,
+            hrv: healthKit.hrvHistory.last?.sdnn ?? 0,
             rhr: healthKit.todaySummary?.restingHR ?? 0,
             kcal: healthKit.todaySummary?.activeCalories ?? 0,
             atl: dashVM.trainingLoad?.atl ?? 0,
@@ -176,7 +176,7 @@ struct DashboardView: View {
             if let load = dashVM.trainingLoad { trainingLoadLink(load: load) }
             quickMetrics()
             if !dashVM.activities.isEmpty {
-                RecentActivitiesCard(activities: Array(dashVM.activities.prefix(3))).padding(.horizontal)
+                RecentActivitiesCard(activities: Array(dashVM.activities.suffix(3).reversed())).padding(.horizontal)
             }
             if dashVM.isLoadingActivities { ProgressView().padding() }
         }
@@ -196,7 +196,7 @@ struct DashboardView: View {
             hourlyHR: healthKit.recentHourlyHR,
             todayActiveKcal: healthKit.todaySummary?.activeCalories ?? 0,
             trainingLoad: dashVM.trainingLoad,
-            sleep: healthKit.sleepHistory.first,
+            sleep: healthKit.sleepHistory.last,
             sleepHistory: healthKit.sleepHistory
         )
         .padding(.horizontal)

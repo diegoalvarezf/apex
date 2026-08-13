@@ -8,6 +8,11 @@ final class HealthKitManager: ObservableObject {
 
     @Published var isAuthorized = false
     @Published var todaySummary: DailyHealthSummary?
+    // CONVENCIÓN: todas las series de la app van en orden cronológico, de la muestra
+    // más antigua a la más reciente. Es decir, `.last` es el dato de hoy y `.suffix(n)`
+    // son los n más recientes. Antes convivían los dos sentidos y había que recordar
+    // cuál tocaba en cada una, lo que ya provocó que alguna gráfica pintara el tramo
+    // más viejo creyendo que era el actual.
     @Published var sleepHistory: [SleepData] = []
     @Published var hrvHistory: [HRVData] = []
     @Published var recoveryScore: RecoveryScore?
@@ -343,7 +348,7 @@ final class HealthKitManager: ObservableObject {
                              totalSleep: total, deepSleep: deep, remSleep: rem,
                              coreSleep: core, awake: awake)
         }
-        .sorted { $0.date > $1.date }
+        .sorted { $0.date < $1.date }   // cronológico: la más reciente al final
     }
 
     // MARK: - Generic quantity fetchers
@@ -408,7 +413,7 @@ final class HealthKitManager: ObservableObject {
 
         return byDay
             .map { day, values in HRVData(date: day, sdnn: values.reduce(0, +) / Double(values.count)) }
-            .sorted { $0.date > $1.date }  // más reciente primero
+            .sorted { $0.date < $1.date }   // cronológico: la más reciente al final
     }
 
     // MARK: - VO2Max
@@ -623,7 +628,7 @@ final class HealthKitManager: ObservableObject {
 
         // ── Consistencia circadiana (ajuste sobre sleepScore) ─────────────────
         // Varianza de hora de inicio de sueño últimos 7 días (en minutos)
-        let recentStarts = sleepHistory.prefix(7).map { s -> Double in
+        let recentStarts = sleepHistory.suffix(7).map { s -> Double in
             let c = Calendar.current.dateComponents([.hour, .minute], from: s.sleepStart)
             return Double((c.hour ?? 23) * 60 + (c.minute ?? 0))
         }
@@ -707,8 +712,8 @@ final class HealthKitManager: ObservableObject {
             // como la estimación por carreras.
             vo2Max: vo2MaxData?.currentIfFresh,
             restingHR: rhr,
-            hrv: hrvHistory.first?.sdnn,
-            sleepScore: sleepHistory.first?.score,
+            hrv: hrvHistory.last?.sdnn,
+            sleepScore: sleepHistory.last?.score,
             bmi: bodyComposition?.bmi,
             weeklyActiveMinutes: weeklyMinutes,
             runBasedVO2Max: porCarreras

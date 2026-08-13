@@ -110,7 +110,7 @@ struct QuickMetricsGrid: View {
         .padding(.horizontal)
     }
 
-    private var hrvValue: Double? { hrvHistory.first?.sdnn }
+    private var hrvValue: Double? { hrvHistory.last?.sdnn }
 
     private func metricDetail(
         title: String, icon: String, color: Color,

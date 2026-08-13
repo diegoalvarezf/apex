@@ -16,14 +16,14 @@ struct RecoveryDetailView: View {
         if let s = score {
             lines.append("Recuperación hoy: \(s.value)/100 (sub-puntuaciones sobre 100, NO son bpm ni ms — HRV: \(s.hrvScore)/100, FC reposo: \(s.restingHRScore)/100, sueño: \(s.sleepScore)/100, carga: \(s.trainingLoadScore)/100).")
         }
-        if let hrv = hrvHistory.first { lines.append("HRV hoy: \(Int(hrv.sdnn)) ms.") }
-        let hrvVals = hrvHistory.prefix(14).map(\.sdnn)
+        if let hrv = hrvHistory.last { lines.append("HRV hoy: \(Int(hrv.sdnn)) ms.") }
+        let hrvVals = hrvHistory.suffix(14).map(\.sdnn)
         if hrvVals.count >= 3 {
             let mean = hrvVals.reduce(0, +) / Double(hrvVals.count)
             lines.append("HRV media 14 días: \(Int(mean.rounded())) ms.")
         }
         if let rhr = todayRHR { lines.append("FC en reposo hoy: \(Int(rhr)) bpm.") }
-        let rhrVals = rhrHistory.prefix(14).map(\.value)
+        let rhrVals = rhrHistory.suffix(14).map(\.value)
         if rhrVals.count >= 3 {
             let mean = rhrVals.reduce(0, +) / Double(rhrVals.count)
             lines.append("FC reposo media 14 días: \(Int(mean.rounded())) bpm.")
@@ -36,7 +36,7 @@ struct RecoveryDetailView: View {
         return try await AIService.shared.rawCompletion(prompt: lines.joined(separator: "\n"), system: system, maxTokens: 400)
     }
 
-    private var todayHRV: Double? { hrvHistory.first?.sdnn }
+    private var todayHRV: Double? { hrvHistory.last?.sdnn }
     private var hrvBaseline: Double? {
         guard hrvHistory.count >= 3 else { return nil }
         let vals = hrvHistory.map(\.sdnn)

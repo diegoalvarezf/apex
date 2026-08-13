@@ -3,6 +3,7 @@ import Combine
 
 @MainActor
 final class DashboardViewModel: ObservableObject {
+    // Cronológico, como el resto de series de la app: la más reciente al final.
     @Published var activities: [StravaActivity] = []
     @Published var trainingLoad: TrainingLoad?
     @Published var loadHistory: [LoadSample] = []
@@ -105,9 +106,9 @@ final class DashboardViewModel: ObservableObject {
 
     private func buildContext(health: HealthKitManager, strengthSummary: String?, localAlerts: String?) -> AICoachContext {
         AICoachContext(
-            recentActivities: Array(activities.prefix(15)),
+            recentActivities: Array(activities.suffix(15)),
             sleepLast7Days: health.sleepHistory,
-            latestHRV: health.hrvHistory.first,
+            latestHRV: health.hrvHistory.last,
             restingHR: health.todaySummary?.restingHR,
             vo2Max: health.displayVO2Max?.value,
             trainingLoad: trainingLoad,
@@ -160,7 +161,7 @@ final class DashboardViewModel: ObservableObject {
             // >200 actividades en la ventana, sin esto se perderían y el CTL/ATL bajaría.
             let sixMonthsAgo = Calendar.current.date(byAdding: .day, value: -180, to: Date())!
             let fetched = try await StravaAPI.shared.fetchAllActivities(token: token, after: sixMonthsAgo)
-            activities = fetched.sorted { $0.startDate > $1.startDate }
+            activities = fetched.sorted { $0.startDate < $1.startDate }   // cronológico: la más reciente al final
             let (load, history) = computeTrainingLoad(from: activities)
             trainingLoad = load
             loadHistory = history
@@ -175,9 +176,9 @@ final class DashboardViewModel: ObservableObject {
         defer { isLoadingInsights = false }
 
         let context = AICoachContext(
-            recentActivities: Array(activities.prefix(15)),
+            recentActivities: Array(activities.suffix(15)),
             sleepLast7Days: health.sleepHistory,
-            latestHRV: health.hrvHistory.first,
+            latestHRV: health.hrvHistory.last,
             restingHR: health.todaySummary?.restingHR,
             vo2Max: health.displayVO2Max?.value,
             trainingLoad: trainingLoad,

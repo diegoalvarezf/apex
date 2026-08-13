@@ -266,7 +266,7 @@ private struct CrearSection: View {
         var lines: [String] = []
 
         if let r = healthKit.recoveryScore { lines.append("Recuperación hoy: \(r.value)/100 (\(r.label))") }
-        if let hrv = healthKit.hrvHistory.first?.sdnn { lines.append("HRV (SDNN): \(Int(hrv)) ms") }
+        if let hrv = healthKit.hrvHistory.last?.sdnn { lines.append("HRV (SDNN): \(Int(hrv)) ms") }
         if let rhr = healthKit.todaySummary?.restingHR { lines.append("FC en reposo: \(Int(rhr)) bpm") }
         // Misma cascada que el resto de la app: si el medido caducó, el estimado.
         if let vo2 = healthKit.displayVO2Max {
@@ -274,10 +274,10 @@ private struct CrearSection: View {
         }
         // Anoche y la tendencia de la semana: una mala noche no es lo mismo que
         // arrastrar siete, y cambia cuánto volumen tiene sentido proponer.
-        if let sleep = healthKit.sleepHistory.first {
+        if let sleep = healthKit.sleepHistory.last {
             lines.append(String(format: "Sueño anoche: %.1f h (score %d/100)", sleep.totalSleep / 3600, sleep.score))
         }
-        let semana = healthKit.sleepHistory.prefix(7)
+        let semana = healthKit.sleepHistory.suffix(7)
         if semana.count >= 3 {
             let horas = semana.reduce(0.0) { $0 + $1.totalSleep } / Double(semana.count) / 3600
             let score = semana.reduce(0) { $0 + $1.score } / semana.count

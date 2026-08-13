@@ -71,7 +71,7 @@ struct HealthView: View {
             SectionHeader(title: "Métricas corporales", icon: "waveform.path.ecg")
 
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
-                if layout.isVisible(.hrv), let hrv = healthKit.hrvHistory.first {
+                if layout.isVisible(.hrv), let hrv = healthKit.hrvHistory.last {
                     let samples = healthKit.hrvHistory.map { MetricSample(date: $0.date, value: $0.sdnn) }
                     NavigationLink(destination: MetricDetailView(config: MetricConfig(
                         title: "HRV", icon: "waveform.path.ecg", color: .green,

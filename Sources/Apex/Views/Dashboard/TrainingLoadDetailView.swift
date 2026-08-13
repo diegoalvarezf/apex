@@ -124,7 +124,7 @@ struct TrainingLoadDetailView: View {
                             .padding(.top, 16)
                             .padding(.bottom, 12)
 
-                        ForEach(Array(activities.prefix(10).enumerated()), id: \.element.id) { i, act in
+                        ForEach(Array(activities.suffix(10).reversed().enumerated()), id: \.element.id) { i, act in
                             HStack(spacing: 12) {
                                 Text(act.sportEmoji).frame(width: 28)
                                 VStack(alignment: .leading, spacing: 2) {

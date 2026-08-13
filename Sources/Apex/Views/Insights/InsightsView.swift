@@ -65,7 +65,7 @@ struct InsightsView: View {
     private var smartTips: [SmartTip] {
         SmartTipsEngine.compute(
             recovery: healthKit.recoveryScore,
-            sleep: healthKit.sleepHistory.first,
+            sleep: healthKit.sleepHistory.last,
             sleepHistory: healthKit.sleepHistory,
             hourlyHR: healthKit.recentHourlyHR,
             rhr: healthKit.todaySummary?.restingHR,

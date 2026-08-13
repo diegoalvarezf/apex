@@ -174,7 +174,7 @@ enum SmartTipsEngine {
         }
 
         // Déficit sueño acumulado (últimas 3 noches)
-        let last3 = Array(sleepHistory.prefix(3))
+        let last3 = Array(sleepHistory.suffix(3))
         if last3.count == 3 {
             let totalH: Double = last3.reduce(0.0) { $0 + $1.totalSleep / 3600.0 }
             let avgH: Double = totalH / 3.0
@@ -190,8 +190,8 @@ enum SmartTipsEngine {
 
         // ── HRV ───────────────────────────────────────────────────────
         if hrvHistory.count >= 7 {
-            let recent: Double = hrvHistory.first.map { $0.sdnn } ?? 0.0
-            let sdnnVals: [Double] = hrvHistory.prefix(7).map { $0.sdnn }
+            let recent: Double = hrvHistory.last.map { $0.sdnn } ?? 0.0
+            let sdnnVals: [Double] = hrvHistory.suffix(7).map { $0.sdnn }
             let baseline: Double = sdnnVals.reduce(0.0, +) / 7.0
             let drop: Double = baseline > 0.0 ? (baseline - recent) / baseline : 0.0
             if drop > 0.2 {
@@ -235,7 +235,7 @@ enum SmartTipsEngine {
         }
 
         // ── Actividad reciente ─────────────────────────────────────────
-        let lastAct = activities.first
+        let lastAct = activities.last
         if let act = lastAct, let elapsed = cal.dateComponents([.hour], from: act.startDate, to: Date()).hour {
             if elapsed < 24, let hr = act.averageHeartrate, hr > 165 {
                 tips.append(SmartTip(
@@ -248,7 +248,7 @@ enum SmartTipsEngine {
         }
 
         // ── Racha sin actividad ────────────────────────────────────────
-        if let last = activities.first {
+        if let last = activities.last {
             let daysSince = cal.dateComponents([.day], from: last.startDate, to: Date()).day ?? 0
             if daysSince >= 5 {
                 tips.append(SmartTip(
@@ -328,7 +328,7 @@ struct AICoachContext {
         // ── Sesiones recientes con detalle ────────────────────────────────
         if !recentActivities.isEmpty {
             parts.append("SESIONES RECIENTES:")
-            for a in recentActivities.prefix(8) {
+            for a in recentActivities.suffix(8).reversed() {
                 let daysAgo = cal.dateComponents([.day], from: a.startDate, to: now).day ?? 0
                 var line = "  hace \(daysAgo)d \(a.sportEmoji) \(a.name): \(a.formattedDistance) \(a.formattedDuration)"
                 if a.distance > 0 { line += " ritmo_medio:\(a.formattedPace)" }
@@ -350,7 +350,7 @@ struct AICoachContext {
 
         if !sleepLast7Days.isEmpty {
             parts.append("SUEÑO 7 días:")
-            for s in sleepLast7Days.prefix(5) {
+            for s in sleepLast7Days.suffix(5).reversed() {
                 parts.append("  \(s.formattedTotal) profundo:\(String(format: "%.0f", s.deepSleep/60))min score:\(s.score)")
             }
         }
