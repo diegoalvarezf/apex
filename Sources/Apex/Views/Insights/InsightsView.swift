@@ -181,6 +181,13 @@ struct InsightsView: View {
             }
             .background(Color(.systemGroupedBackground))
             .navigationTitle("Apex IA")
+            // Deslizar recarga los datos de origen y revisa si toca regenerar. No
+            // fuerza las llamadas a la IA: las alertas son de 1×/día y el resumen
+            // de 1×/semana, y cada tarjeta tiene su botón para rehacerlas a mano.
+            .refreshable {
+                await healthKit.loadAll()
+                analyzeIfStale()
+            }
             .onAppear { analyzeIfStale() }
         }
     }
