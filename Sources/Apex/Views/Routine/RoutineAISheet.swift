@@ -251,9 +251,20 @@ private struct CrearSection: View {
         if let r = healthKit.recoveryScore { lines.append("Recuperación hoy: \(r.value)/100 (\(r.label))") }
         if let hrv = healthKit.hrvHistory.first?.sdnn { lines.append("HRV (SDNN): \(Int(hrv)) ms") }
         if let rhr = healthKit.todaySummary?.restingHR { lines.append("FC en reposo: \(Int(rhr)) bpm") }
-        if let vo2 = healthKit.vo2MaxData?.current { lines.append(String(format: "VO₂max: %.1f ml/kg/min", vo2)) }
+        // Misma cascada que el resto de la app: si el medido caducó, el estimado.
+        if let vo2 = healthKit.displayVO2Max {
+            lines.append(String(format: "VO₂max: %.1f ml/kg/min%@", vo2.value, vo2.isEstimated ? " (estimado)" : ""))
+        }
+        // Anoche y la tendencia de la semana: una mala noche no es lo mismo que
+        // arrastrar siete, y cambia cuánto volumen tiene sentido proponer.
         if let sleep = healthKit.sleepHistory.first {
-            lines.append(String(format: "Sueño reciente: %.1f h (score %d/100)", sleep.totalSleep / 3600, sleep.score))
+            lines.append(String(format: "Sueño anoche: %.1f h (score %d/100)", sleep.totalSleep / 3600, sleep.score))
+        }
+        let semana = healthKit.sleepHistory.prefix(7)
+        if semana.count >= 3 {
+            let horas = semana.reduce(0.0) { $0 + $1.totalSleep } / Double(semana.count) / 3600
+            let score = semana.reduce(0) { $0 + $1.score } / semana.count
+            lines.append(String(format: "Sueño media 7 días: %.1f h (score %d/100)", horas, score))
         }
         if let load = dashVM.trainingLoad {
             lines.append(String(format: "Carga: ATL %.0f · CTL %.0f · ACWR %.2f (%@)",
@@ -268,20 +279,56 @@ private struct CrearSection: View {
             lines.append(String(format: "Actividad últimas 4 semanas: %d sesiones, %.1f h totales", recent.count, hours))
         }
 
-        // Pesos ya registrados por ejercicio (de las rutinas guardadas)
-        var lifts: [String] = []
+        // Progresión por ejercicio, no solo el último peso: con las últimas sesiones
+        // la IA distingue lo que sube de lo que lleva semanas clavado, y puede
+        // proponer descarga o cambio de ejercicio en vez de "sube 2,5 kg" a ciegas.
+        func fmt(_ w: Double) -> String {
+            w == w.rounded() ? "\(Int(w))" : String(format: "%.1f", w)
+        }
+        var progresiones: [String] = []
+        var vistos = Set<String>()
         for routine in routineVM.routines {
             for day in routine.days {
-                for ex in day.exercises {
-                    if let latest = RoutineProgressStore.shared.latest(for: ex.id) {
-                        let w = latest.weight == latest.weight.rounded() ? "\(Int(latest.weight))" : String(format: "%.1f", latest.weight)
-                        lifts.append("\(ex.name): \(w) kg")
+                for ex in day.exercises where !vistos.contains(ex.name) {
+                    let entries = RoutineProgressStore.shared.entries(for: ex.id).suffix(4)
+                    guard !entries.isEmpty else { continue }
+                    vistos.insert(ex.name)
+                    let serie = entries.map { e -> String in
+                        var p: [String] = []
+                        if e.weight > 0 { p.append("\(fmt(e.weight))kg") }
+                        if let r = e.reps { p.append("\(r)r") }
+                        if let s = e.seconds { p.append("\(s)s") }
+                        if let m = e.meters { p.append("\(m)m") }
+                        return p.isEmpty ? "—" : p.joined(separator: "×")
+                    }.joined(separator: " → ")
+                    progresiones.append("\(ex.name): \(serie)")
+                }
+            }
+        }
+        if !progresiones.isEmpty {
+            lines.append("Progresión registrada (de más antiguo a más reciente, máx. 4 sesiones):")
+            lines.append(contentsOf: progresiones.sorted().prefix(25).map { "  " + $0 })
+        }
+
+        // Qué se ha trabajado los últimos 7 días, para repartir la frecuencia sin
+        // machacar dos veces un grupo que ya viene cargado.
+        let semanaCutoff = Calendar.current.date(byAdding: .day, value: -7, to: Date()) ?? Date()
+        var gruposRecientes: [String: Int] = [:]
+        for routine in routineVM.routines {
+            for day in routine.days {
+                for ex in day.exercises where !ex.muscleGroup.isEmpty {
+                    let sesiones = RoutineProgressStore.shared.entries(for: ex.id)
+                        .filter { $0.date >= semanaCutoff }
+                    if !sesiones.isEmpty {
+                        gruposRecientes[ex.muscleGroup, default: 0] += sesiones.count
                     }
                 }
             }
         }
-        if !lifts.isEmpty {
-            lines.append("Pesos recientes registrados — " + Array(Set(lifts)).sorted().prefix(25).joined(separator: "; "))
+        if !gruposRecientes.isEmpty {
+            let resumen = gruposRecientes.sorted { $0.value > $1.value }
+                .map { "\($0.key) (\($0.value) series)" }.joined(separator: ", ")
+            lines.append("Trabajado en los últimos 7 días: " + resumen)
         }
 
         // Rutinas actuales (nombres) para no duplicar
