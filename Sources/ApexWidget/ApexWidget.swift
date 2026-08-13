@@ -115,7 +115,7 @@ struct QuadMediumView: View {
         VStack(alignment: .leading, spacing: 0) {
             // Cabecera
             HStack {
-                Text("FORMA")
+                Text("APEX")
                     .font(.system(size: 10, weight: .black))
                     .foregroundStyle(.primary)
                     .tracking(1.5)
@@ -164,7 +164,7 @@ struct QuadLargeView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
             HStack {
-                Text("FORMA")
+                Text("APEX")
                     .font(.system(size: 12, weight: .black))
                     .foregroundStyle(.primary)
                     .tracking(2)
