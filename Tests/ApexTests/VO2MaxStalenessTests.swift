@@ -19,21 +19,28 @@ struct VO2MaxStalenessTests {
     }
 
     @Test func unaLecturaDeHaceMesesCaduca() {
-        let vo2 = data(daysAgo: 120)
+        let vo2 = data(daysAgo: 45)
         #expect(vo2.isStale)
         #expect(vo2.currentIfFresh == nil)
         // El valor se conserva: la tarjeta lo sigue mostrando, pero avisando.
         #expect(vo2.current == 45)
     }
 
-    // El umbral son 60 días: justo antes vigente, justo después caducado.
-    @Test func elUmbralSonSesentaDias() {
-        #expect(!data(daysAgo: 59).isStale)
-        #expect(data(daysAgo: 61).isStale)
+    // El umbral son 30 días: justo antes vigente, justo después caducado.
+    @Test func elUmbralSonTreintaDias() {
+        #expect(!data(daysAgo: 29).isStale)
+        #expect(data(daysAgo: 31).isStale)
+    }
+
+    // Caso real: una lectura de mes y medio, de un reloj que ya no se usa, no debe
+    // ganarle a una estimación hecha con las carreras recientes.
+    @Test func unaLecturaDeMesYMedioNoEsVigente() {
+        #expect(data(daysAgo: 45).isStale)
+        #expect(data(daysAgo: 45).currentIfFresh == nil)
     }
 
     @Test func cuentaLosDiasDesdeLaMedicion() {
-        #expect(data(daysAgo: 45).daysSinceMeasured == 45)
+        #expect(data(daysAgo: 20).daysSinceMeasured == 20)
     }
 
     @Test func sinMuestrasNoHayFecha() {

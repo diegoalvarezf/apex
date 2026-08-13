@@ -167,10 +167,12 @@ struct VO2MaxData {
         return Calendar.current.dateComponents([.day], from: d, to: Date()).day
     }
 
-    // El VO2max evoluciona despacio, pero un valor de hace más de 60 días ya no
+    // El VO2max evoluciona despacio, pero un valor de hace más de un mes ya no
     // describe tu estado actual: se deja de tratar como medida vigente para no
-    // presentar como "de hoy" lo que es de otro reloj o de otra temporada.
-    static let stalenessDays = 60
+    // presentar como "de hoy" lo que es de otro reloj o de otra temporada. Con 30
+    // días, una estimación hecha con las carreras de esta semana le gana a una
+    // lectura antigua, que es lo que queremos: manda la evidencia más reciente.
+    static let stalenessDays = 30
     var isStale: Bool { (daysSinceMeasured ?? .max) > Self.stalenessDays }
 
     // Solo el valor que sigue siendo representativo. La edad de fitness usa este:
