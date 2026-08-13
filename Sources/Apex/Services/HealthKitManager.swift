@@ -51,7 +51,7 @@ final class HealthKitManager: ObservableObject {
     @Published var biologicalAge: BiologicalAgeResult?
     @Published var sleepAge: SleepAgeResult?
     // Muestras de FC por hora del día de hoy (para gráficas horarias)
-    @Published var recentHourlyHR: [MetricSample] = []  // últimos 7 días, una muestra por hora
+    @Published var recentHourlyHR: [MetricSample] = []  // últimos 30 días, una muestra por hora
 
     // Actualizado por DashboardViewModel tras cargar actividades Strava
     private var stravaTrainingScore: Int? = nil
@@ -101,7 +101,7 @@ final class HealthKitManager: ObservableObject {
     }
 
     func loadAll() async {
-        async let sleep = fetchSleepLast7Days()
+        async let sleep = fetchSleepLast30Days()
         async let hrv = fetchHRVLast60Days()
         async let rhr = fetchLatestQuantity(.restingHeartRate, unit: .count().unitDivided(by: .minute()))
         async let rhrHistory = fetchQuantitySamples(.restingHeartRate, days: 60, unit: .count().unitDivided(by: .minute()))
@@ -260,9 +260,11 @@ final class HealthKitManager: ObservableObject {
 
     // MARK: - Sleep
 
-    private func fetchSleepLast7Days() async -> [SleepData] {
+    // 30 días: además de la semana que usan las tarjetas, alimenta el calendario
+    // mensual y da baseline al score de recuperación.
+    private func fetchSleepLast30Days() async -> [SleepData] {
         guard let sleepType = HKObjectType.categoryType(forIdentifier: .sleepAnalysis) else { return [] }
-        let start = Calendar.current.date(byAdding: .day, value: -7, to: Date())!
+        let start = Calendar.current.date(byAdding: .day, value: -30, to: Date())!
         let predicate = HKQuery.predicateForSamples(withStart: start, end: Date())
         let sort = NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: false)
         return await withCheckedContinuation { continuation in
@@ -755,11 +757,13 @@ final class HealthKitManager: ObservableObject {
         }
     }
 
-    // FC por hora — últimos 7 días, una muestra por hora exacta
+    // FC por hora — últimos 30 días, una muestra por hora exacta. Son ~720 puntos:
+    // más que los 7 días de antes, pero es lo que necesita el calendario mensual
+    // para poder calcular el estrés y el esfuerzo de cada día.
     private func fetchRecentHourlyHR() async -> [MetricSample] {
         guard let type = HKQuantityType.quantityType(forIdentifier: .heartRate) else { return [] }
         let cal = Calendar.current
-        let start = cal.date(byAdding: .day, value: -7, to: cal.startOfDay(for: Date()))!
+        let start = cal.date(byAdding: .day, value: -30, to: cal.startOfDay(for: Date()))!
         let predicate = HKQuery.predicateForSamples(withStart: start, end: Date())
         let unit = HKUnit.count().unitDivided(by: .minute())
         let rawSamples: [MetricSample] = await withCheckedContinuation { continuation in

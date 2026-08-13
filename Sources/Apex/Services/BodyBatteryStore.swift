@@ -267,6 +267,17 @@ final class BodyBatteryStore {
 
     // MARK: - Persistencia
 
+    // Todos los cierres de día guardados (hasta 30), para el calendario mensual.
+    // Son el valor con el que terminó cada día, que es el que encadena con el siguiente.
+    func storedDailyValues() -> [Date: Double] {
+        let dict = UserDefaults.standard.dictionary(forKey: storageKey) as? [String: Double] ?? [:]
+        var out: [Date: Double] = [:]
+        for (k, v) in dict {
+            if let d = parseKey(k) { out[cal.startOfDay(for: d)] = v }
+        }
+        return out
+    }
+
     func storedValue(for date: Date) -> Double? {
         let dict = UserDefaults.standard.dictionary(forKey: storageKey) as? [String: Double] ?? [:]
         return dict[dateKey(date)]

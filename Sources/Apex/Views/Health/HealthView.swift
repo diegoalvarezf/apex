@@ -5,6 +5,7 @@ struct HealthView: View {
     @EnvironmentObject var dashVM: DashboardViewModel
     @ObservedObject private var layout = HealthLayoutStore.shared
     @State private var showEdit = false
+    @State private var showCalendar = false
 
     var body: some View {
         NavigationStack {
@@ -34,6 +35,14 @@ struct HealthView: View {
             .navigationTitle("Salud")
             .refreshable { await healthKit.loadAll() }
             .sheet(isPresented: $showEdit) { EditHealthPageView(layout: layout) }
+            .sheet(isPresented: $showCalendar) { MetricCalendarView() }
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button { showCalendar = true } label: {
+                        Image(systemName: "calendar")
+                    }
+                }
+            }
         }
     }
 

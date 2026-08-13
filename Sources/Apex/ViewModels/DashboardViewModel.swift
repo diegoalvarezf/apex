@@ -112,7 +112,7 @@ final class DashboardViewModel: ObservableObject {
     private func buildContext(health: HealthKitManager, strengthSummary: String?, localAlerts: String?) -> AICoachContext {
         AICoachContext(
             recentActivities: Array(activities.suffix(15)),
-            sleepLast7Days: health.sleepHistory,
+            sleepLast7Days: Array(health.sleepHistory.suffix(7)),
             latestHRV: health.hrvHistory.last,
             restingHR: health.todaySummary?.restingHR,
             vo2Max: health.displayVO2Max?.value,
@@ -186,7 +186,7 @@ final class DashboardViewModel: ObservableObject {
 
         let context = AICoachContext(
             recentActivities: Array(activities.suffix(15)),
-            sleepLast7Days: health.sleepHistory,
+            sleepLast7Days: Array(health.sleepHistory.suffix(7)),
             latestHRV: health.hrvHistory.last,
             restingHR: health.todaySummary?.restingHR,
             vo2Max: health.displayVO2Max?.value,
