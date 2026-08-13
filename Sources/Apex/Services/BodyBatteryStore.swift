@@ -20,6 +20,13 @@ final class BodyBatteryStore {
 
     private init() {}
 
+    // Memoria del último cálculo. La serie se pide desde propiedades computadas de
+    // la vista (valor, color, tendencia y gráfica), así que sin esto SwiftUI rehacía
+    // la simulación de 7 días —y sus escrituras a UserDefaults— varias veces por
+    // repintado. La firma cambia en cuanto cambia cualquier dato de entrada.
+    private var cacheSignature: String?
+    private var cachedSamples: [MetricSample] = []
+
     // MARK: - API pública
 
     // Serie horaria de HOY. Encadena la simulación de los últimos 7 días con la FC
@@ -33,6 +40,44 @@ final class BodyBatteryStore {
         recoveryHistory: [MetricSample] = [],
         activities: [StravaActivity] = [],
         hrvHistory: [MetricSample] = []
+    ) -> [MetricSample] {
+        var partes: [String] = []
+        partes.append(String(recoveryScore?.value ?? -1))
+        partes.append(String(sleepHistory.count))
+        partes.append(String(hourlyHR.count))
+        let ultimaHora: Double = hourlyHR.last?.date.timeIntervalSince1970 ?? 0
+        partes.append(String(ultimaHora))
+        // Los VALORES, no solo cuántos hay: con la misma cantidad de muestras y otra
+        // FC el resultado cambia, y sin esto la caché devolvía la serie anterior.
+        let sumaHR: Double = hourlyHR.reduce(0) { $0 + $1.value }
+        partes.append(String(sumaHR))
+        partes.append(String(restingHR ?? -1))
+        partes.append(String(recoveryHistory.count))
+        partes.append(String(activities.count))
+        partes.append(String(hrvHistory.count))
+        let hoy: Double = cal.startOfDay(for: Date()).timeIntervalSince1970
+        partes.append(String(hoy))
+        let firma = partes.joined(separator: "|")
+        if firma == cacheSignature { return cachedSamples }
+
+        let resultado = computeHourlyBattery(
+            recoveryScore: recoveryScore, sleepHistory: sleepHistory,
+            hourlyHR: hourlyHR, restingHR: restingHR,
+            recoveryHistory: recoveryHistory, activities: activities,
+            hrvHistory: hrvHistory)
+        cacheSignature = firma
+        cachedSamples = resultado
+        return resultado
+    }
+
+    private func computeHourlyBattery(
+        recoveryScore: RecoveryScore?,
+        sleepHistory: [SleepData],
+        hourlyHR: [MetricSample],
+        restingHR: Double?,
+        recoveryHistory: [MetricSample],
+        activities: [StravaActivity],
+        hrvHistory: [MetricSample]
     ) -> [MetricSample] {
         let recoveryToday = Double(recoveryScore?.value ?? 65)
         let rhr = restingHR ?? UserProfile.restingHR
