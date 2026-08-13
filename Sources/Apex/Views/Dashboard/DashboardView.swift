@@ -6,6 +6,7 @@ struct DashboardView: View {
     @EnvironmentObject var stravaAuth: StravaAuthManager
 
     @State private var showProfile = false
+    @State private var showCalendar = false
 
     // Alertas del día: las escribe la IA (cacheadas 1×/día). Si aún no hay o falló
     // la llamada, se usan las reglas locales como red de seguridad.
@@ -111,8 +112,8 @@ struct DashboardView: View {
                 // loadAlertsIfStale solo llama a la IA si las alertas NO son de hoy
                 await dashVM.loadAlertsIfStale(health: healthKit)
             }
-            .navigationTitle(Date.now.formatted(.dateTime.weekday(.wide).day().month(.wide)))
-            .navigationBarTitleDisplayMode(.large)
+            .navigationBarTitleDisplayMode(.inline)
+            .sheet(isPresented: $showCalendar) { MetricCalendarView() }
             .onChange(of: dashVM.trainingLoad) { _, load in
                 if let load = load { healthKit.updateStravaTrainingLoad(load) }
                 sendToWatch()
@@ -155,11 +156,37 @@ struct DashboardView: View {
         }
     }
 
+    // Cabecera con la fecha y "Hoy" pulsable, que abre el calendario del mes. Se
+    // hace a mano en lugar de con navigationTitle porque el título del sistema no
+    // admite un botón dentro.
+    private var dateHeader: some View {
+        Button { showCalendar = true } label: {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(Date.now, format: .dateTime.month(.abbreviated).day().weekday(.wide))
+                    .font(.subheadline).foregroundStyle(.secondary)
+                HStack(spacing: 8) {
+                    Text("Hoy")
+                        .font(.system(size: 34, weight: .bold))
+                        .foregroundStyle(.primary)
+                    Image(systemName: "chevron.down")
+                        .font(.title3.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal)
+            .padding(.top, 4)
+        }
+        .buttonStyle(.plain)
+    }
+
     @ViewBuilder
     private func dashboardContent() -> some View {
         // VStack (no Lazy): con LazyVStack el scroll se quedaba pillado al usar
         // "deslizar para recargar", porque el contenido se re-mide durante el gesto.
         VStack(spacing: 16) {
+            dateHeader
+
             if dashVM.isLoadingAlerts && dashVM.aiAlerts.isEmpty {
                 AlertsLoadingBanner().padding(.horizontal)
             } else if !displayedTips.isEmpty {
