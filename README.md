@@ -271,6 +271,19 @@ limitada, plazos de conservación y derecho de acceso y borrado. También habrí
 declarar a Anthropic como encargado del tratamiento, firmar el acuerdo
 correspondiente y advertir de forma clara que los análisis no son consejo médico.
 
+### 4. El histórico vive solo en el dispositivo
+
+La app guarda una foto diaria de las métricas calculadas (`DailySnapshotStore`) para
+que consultar un día pasado devuelva lo que se vio aquel día y no un recálculo con
+los parámetros actuales. Esas fotos, como el resto del estado, viven en UserDefaults:
+unos 100 KB para 90 días.
+
+Eso significa que **el histórico se pierde al borrar la app y no viaja a un móvil
+nuevo**. La solución sin backend es `NSUbiquitousKeyValueStore` (iCloud clave-valor),
+donde cabría holgadamente —su límite es 1 MB—, pero iCloud es un entitlement que
+requiere cuenta de desarrollador de pago, así que queda pendiente junto con lo
+anterior.
+
 ### Mejoras identificadas
 
 - **Recuperar los datos por RAG** en la generación de rutinas: hoy el modelo diseña
