@@ -15,9 +15,17 @@ struct HealthDayDetailView: View {
 
     private var cal: Calendar { Calendar.current }
 
+    // Lo que la app calculó ese día. Es la única fuente para los cuatro valores:
+    // no se recalculan, porque los parámetros de hoy (FC en reposo, FCmáx) pueden
+    // no ser los de entonces y el número saldría distinto al que se vio.
+    private var snapshot: DailySnapshot? { DailySnapshotStore.shared.snapshot(for: day) }
+
+    private var esHoy: Bool { cal.isDateInToday(day) }
+
     var body: some View {
         ScrollView {
             VStack(spacing: 16) {
+                if sinSnapshot && !sinNada { avisoSinRegistro }
                 resumen
                 if !batteryCurve.isEmpty { curvaBateria }
                 if let sleep = sleepDelDia { tarjetaSueno(sleep) }
@@ -46,61 +54,29 @@ struct HealthDayDetailView: View {
         healthKit.sleepHistory.first { cal.isDate($0.date, inSameDayAs: day) }
     }
 
-    private var recoveryDelDia: Int? {
-        healthKit.recoveryHistory.first { cal.isDate($0.date, inSameDayAs: day) }
-            .map { Int($0.value.rounded()) }
-    }
+    private var recoveryDelDia: Int? { snapshot?.recovery }
 
     private var restingHR: Double { healthKit.todaySummary?.restingHR ?? UserProfile.restingHR }
 
     // Curva horaria de batería de ese día, reconstruida con el cierre del día
     // anterior como punto de partida (el mismo encadenado que usa el dashboard).
+    // Curva guardada tal cual se calculó ese día.
     private var batteryCurve: [MetricSample] {
-        guard !hourlyHRDelDia.isEmpty else { return [] }
-        let ayer = cal.date(byAdding: .day, value: -1, to: day) ?? day
-        let inicio = BodyBatteryStore.shared.storedValue(for: ayer) ?? 70
-        let hrv = healthKit.hrvHistory
-        return BodyBatteryStore.shared.simulateDay(
-            day: day,
-            hourlyHR: hourlyHRDelDia,
-            sleep: sleepDelDia,
-            startBattery: inicio,
-            restingHR: restingHR,
-            activities: actividadesDelDia,
-            nightHRV: hrv.first { cal.isDate($0.date, inSameDayAs: day) }?.sdnn,
-            hrvBaseline: hrv.filter { $0.date < cal.startOfDay(for: day) }.map(\.sdnn)
-        )
+        (snapshot?.batteryCurve ?? []).map { MetricSample(date: $0.date, value: $0.value) }
     }
 
-    private var batteryDelDia: Int? {
-        BodyBatteryStore.shared.storedValue(for: day).map { Int($0.rounded()) }
-            ?? batteryCurve.last.map { Int($0.value.rounded()) }
-    }
+    private var batteryDelDia: Int? { snapshot?.battery }
 
-    private var estresDelDia: Int? {
-        guard !hourlyHRDelDia.isEmpty else { return nil }
-        let maxHR = TrainingMetrics.observedMaxHR(hourlyHR: healthKit.recentHourlyHR)
-        let previas = healthKit.hrvHistory.filter { $0.date < cal.startOfDay(for: day) }.map(\.sdnn)
-        let deEseDia = healthKit.hrvHistory.first { cal.isDate($0.date, inSameDayAs: day) }?.sdnn
-        let base = TrainingMetrics.hrvBaseStress(todaySDNN: deEseDia, baseline: previas)
-        let valores = hourlyHRDelDia.map {
-            TrainingMetrics.physiologicalStress(hr: $0.value, restingHR: restingHR, maxHR: maxHR, hrvBase: base)
-        }
-        return Int((valores.reduce(0, +) / Double(valores.count)).rounded())
-    }
+    private var estresDelDia: Int? { snapshot?.stress }
 
-    private var esfuerzoDelDia: Int? {
-        guard !hourlyHRDelDia.isEmpty || !actividadesDelDia.isEmpty else { return nil }
-        let maxHR = TrainingMetrics.observedMaxHR(hourlyHR: healthKit.recentHourlyHR)
-        let trimp = TrainingMetrics.dailyEffortTRIMP(
-            day: day, activities: dashVM.activities, hourlyHR: healthKit.recentHourlyHR,
-            restingHR: restingHR, maxHR: maxHR, isMale: UserProfile.isMale)
-        return TrainingMetrics.effortScore(dailyTRIMP: trimp)
-    }
+    private var esfuerzoDelDia: Int? { snapshot?.effort }
+
+    // No hay foto guardada de ese día: puede ser anterior a que la app empezara a
+    // guardarlas. El sueño y las actividades sí son registros reales y se muestran.
+    private var sinSnapshot: Bool { snapshot?.isEmpty ?? true }
 
     private var sinNada: Bool {
-        batteryDelDia == nil && recoveryDelDia == nil && estresDelDia == nil
-            && sleepDelDia == nil && actividadesDelDia.isEmpty
+        sinSnapshot && sleepDelDia == nil && actividadesDelDia.isEmpty
     }
 
     // MARK: - Secciones
@@ -203,6 +179,20 @@ struct HealthDayDetailView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Color(.secondarySystemGroupedBackground),
                     in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+    }
+
+    // Se dice de forma explícita en lugar de rellenar con un recálculo: los valores
+    // dependen de parámetros que pueden haber cambiado desde entonces.
+    private var avisoSinRegistro: some View {
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: "info.circle.fill").foregroundStyle(.secondary)
+            Text("De este día no hay valores guardados: es anterior a que la app empezara a registrarlos. El sueño y las actividades sí son datos reales de ese día.")
+                .font(.caption).foregroundStyle(.secondary)
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color(.secondarySystemGroupedBackground),
+                    in: RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 
     private var sinDatos: some View {

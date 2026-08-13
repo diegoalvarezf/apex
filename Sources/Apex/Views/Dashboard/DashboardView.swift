@@ -56,6 +56,44 @@ struct DashboardView: View {
             effort: effort,
             sleep: healthKit.sleepHistory.last?.score ?? 0
         )
+
+        // Se guarda lo que se acaba de calcular para HOY. Mirar ese día dentro de un
+        // mes debe devolver este número, no uno recalculado con la FC en reposo que
+        // se tenga entonces.
+        let curva = BodyBatteryStore.shared.hourlyBattery(
+            recoveryScore: score,
+            sleepHistory: healthKit.sleepHistory,
+            hourlyHR: healthKit.recentHourlyHR,
+            restingHR: healthKit.todaySummary?.restingHR,
+            recoveryHistory: healthKit.recoveryHistory,
+            activities: dashVM.activities,
+            hrvHistory: healthKit.hrvHistory.map { MetricSample(date: $0.date, value: $0.sdnn) })
+        DailySnapshotStore.shared.save(
+            day: Date(),
+            battery: battery,
+            recovery: score.value,
+            stress: estresDeHoy,
+            effort: effort,
+            batteryCurve: curva,
+            restingHR: rhr,
+            maxHR: maxHR)
+    }
+
+    // Media del estrés horario de hoy, con la misma fórmula que el tile.
+    private var estresDeHoy: Int? {
+        let hoy = Calendar.current.startOfDay(for: Date())
+        let muestras = healthKit.recentHourlyHR.filter { $0.date >= hoy }
+        guard !muestras.isEmpty else { return nil }
+        let rhr = healthKit.todaySummary?.restingHR ?? UserProfile.restingHR
+        let maxHR = TrainingMetrics.observedMaxHR(hourlyHR: healthKit.recentHourlyHR)
+        let sorted = healthKit.hrvHistory.sorted { $0.date > $1.date }
+        let base = TrainingMetrics.hrvBaseStress(
+            todaySDNN: sorted.first?.sdnn,
+            baseline: Array(sorted.dropFirst().map(\.sdnn)))
+        let valores = muestras.map {
+            TrainingMetrics.physiologicalStress(hr: $0.value, restingHR: rhr, maxHR: maxHR, hrvBase: base)
+        }
+        return Int((valores.reduce(0, +) / Double(valores.count)).rounded())
     }
 
     private func sendToWatch() {
