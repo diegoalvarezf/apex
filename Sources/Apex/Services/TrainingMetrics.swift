@@ -113,7 +113,7 @@ enum TrainingMetrics {
             // (una noche con HRV algo bajo no debe leer "estrés muy alto").
             return max(8.0, min(60.0, 23.0 - z * 8.0))
         }
-        // Sin baseline: mapa absoluto suave (SDNN 76→~15, 40→30, 20→50)
+        // Sin baseline: mapa absoluto suave (SDNN 76→12, 40→30, 20→50)
         return max(12.0, min(60.0, 70.0 - sdnn))
     }
 
