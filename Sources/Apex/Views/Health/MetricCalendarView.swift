@@ -47,7 +47,12 @@ struct MetricCalendarView: View {
                     monthHeader
                     weekdayHeader
                     grid
-                    if let selectedDay { dayDetail(selectedDay) }
+                    if let selectedDay {
+                        NavigationLink { HealthDayDetailView(day: selectedDay) } label: {
+                            dayDetail(selectedDay)
+                        }
+                        .buttonStyle(.plain)
+                    }
                     legend
                 }
                 .padding(.horizontal)
@@ -204,6 +209,8 @@ struct MetricCalendarView: View {
                     .font(.system(size: 26, weight: .bold, design: .rounded))
                     .foregroundStyle(color(for: valor))
             }
+            Image(systemName: "chevron.right")
+                .font(.caption).foregroundStyle(.tertiary)
         }
         .padding(14)
         .background(Color(.secondarySystemGroupedBackground),

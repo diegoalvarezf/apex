@@ -94,6 +94,7 @@
 		E0916FF9B9A23C1A1B655DA2 /* StressRecoveryEffortRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C305AC858A30B735C9D6518 /* StressRecoveryEffortRow.swift */; };
 		E4600BAE7DC219CEF9DE1354 /* RoutineAISheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A38CD8F940C1CBCF0C97148 /* RoutineAISheet.swift */; };
 		E84BF498D110F931D4F79242 /* RunAIAnalysisCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E99751B63AB5AAE7641F8FD /* RunAIAnalysisCard.swift */; };
+		EBC85D912F711961F75E32CA /* HealthDayDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70D1E5096476CDF79CF1D14F /* HealthDayDetailView.swift */; };
 		F1460305CC88C6AB5326DBEB /* ActivityTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2325B077EAC479002B9505EA /* ActivityTracker.swift */; };
 		F1CB9CB37D89103771258830 /* VO2MaxEstimatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C8CD34D2CFDC45EB32C055B /* VO2MaxEstimatorTests.swift */; };
 		F34E969E41CB652EDA9B3B9B /* WatchBatteryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A00622900A0532E9DDD6448 /* WatchBatteryView.swift */; };
@@ -196,7 +197,7 @@
 		44C5D570EA6243B6B67E2AEA /* TrainingLoadCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrainingLoadCard.swift; sourceTree = "<group>"; };
 		48E4E0D4C2D8D482779E6B19 /* VO2MaxEstimator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VO2MaxEstimator.swift; sourceTree = "<group>"; };
 		4D98E51CB174C34F4540BEF9 /* AIInsight.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIInsight.swift; sourceTree = "<group>"; };
-		55DAD81B00BA688F089A40F3 /* Apex.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Apex.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		55DAD81B00BA688F089A40F3 /* Apex.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Apex.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		588F608DCC40E95DD8647E18 /* RoutineView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoutineView.swift; sourceTree = "<group>"; };
 		5B29A7E2D63C7414E34B5E82 /* InsightsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InsightsView.swift; sourceTree = "<group>"; };
 		5E755A8A669E92EB89A93F2A /* WorkoutHistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutHistoryView.swift; sourceTree = "<group>"; };
@@ -205,6 +206,7 @@
 		6B6EF1B7EFB932C65DA7EA71 /* HealthKitManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthKitManager.swift; sourceTree = "<group>"; };
 		6D6B47C4A6F4B5FC7DF83EE5 /* RoutineProgressStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoutineProgressStore.swift; sourceTree = "<group>"; };
 		7085B67C96F3791C8445CD73 /* AIService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIService.swift; sourceTree = "<group>"; };
+		70D1E5096476CDF79CF1D14F /* HealthDayDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthDayDetailView.swift; sourceTree = "<group>"; };
 		71C4AB399CF0252BB7A32845 /* AIPrompts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIPrompts.swift; sourceTree = "<group>"; };
 		754A60D104BB37520752F315 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 		75DFA1B591B1EC4769347A1B /* WatchActivitiesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchActivitiesView.swift; sourceTree = "<group>"; };
@@ -218,7 +220,7 @@
 		8039A0B056518A564A0AF7F2 /* StravaAPI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StravaAPI.swift; sourceTree = "<group>"; };
 		80B935AD169367DDA6AAC122 /* MetricCalendarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetricCalendarView.swift; sourceTree = "<group>"; };
 		80F6286BC0DDD85727CBB683 /* WatchMetricsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchMetricsView.swift; sourceTree = "<group>"; };
-		81AAEDC457D97B1EFF7576CA /* ApexWidget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = ApexWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		81AAEDC457D97B1EFF7576CA /* ApexWidget.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = ApexWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		81F597DE06694FA79047E2CA /* EditExerciseSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditExerciseSheet.swift; sourceTree = "<group>"; };
 		84F95477213FB0DE9EB839EF /* NotificationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationManager.swift; sourceTree = "<group>"; };
 		87B3B74F5EFB6A9969BAF19C /* StressDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StressDetailView.swift; sourceTree = "<group>"; };
@@ -347,6 +349,7 @@
 				772C231E1EF6F463B0630868 /* BiologicalAgeDetailView.swift */,
 				90337467BDC4143EB9231C9B /* BodyCompositionView.swift */,
 				D0C2D135889BA724867BEBEB /* EditHealthPageView.swift */,
+				70D1E5096476CDF79CF1D14F /* HealthDayDetailView.swift */,
 				F417BA50CB365A1774F285F6 /* HealthView.swift */,
 				22D49CA2C42043D68700404D /* HeartRateZonesView.swift */,
 				80B935AD169367DDA6AAC122 /* MetricCalendarView.swift */,
@@ -730,6 +733,7 @@
 				7486E200DC9C0416E96240FB /* ExerciseProgressSheet.swift in Sources */,
 				DE0F638D99C058F5AF1952D6 /* ExerciseProgressionView.swift in Sources */,
 				8AF7CC3E2772E77A7BC2D57E /* HealthData.swift in Sources */,
+				EBC85D912F711961F75E32CA /* HealthDayDetailView.swift in Sources */,
 				08A8F85F47CCD69569DBAFC1 /* HealthKitManager.swift in Sources */,
 				B9DEE5ED14C5450EC7460F8B /* HealthLayout.swift in Sources */,
 				A388CF94C564DF10E083D070 /* HealthView.swift in Sources */,
@@ -866,7 +870,6 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				DEVELOPMENT_TEAM = ZBL544FP3Q;
 				INFOPLIST_FILE = Sources/ApexWatch/Info.plist;
 				PRODUCT_BUNDLE_IDENTIFIER = com.diegoalvarezfrancos.apex.watchkitapp;
 				SDKROOT = watchos;
@@ -881,7 +884,6 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = Sources/ApexWidget/ApexWidget.entitlements;
-				DEVELOPMENT_TEAM = ZBL544FP3Q;
 				INFOPLIST_FILE = Sources/ApexWidget/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -903,7 +905,6 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = Sources/Apex/App/Apex.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				DEVELOPMENT_TEAM = ZBL544FP3Q;
 				INFOPLIST_FILE = Sources/Apex/App/Info.plist;
 				INFOPLIST_KEY_UIStatusBarStyle = UIStatusBarStyleDarkContent;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -989,7 +990,6 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = Sources/Apex/App/Apex.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				DEVELOPMENT_TEAM = ZBL544FP3Q;
 				INFOPLIST_FILE = Sources/Apex/App/Info.plist;
 				INFOPLIST_KEY_UIStatusBarStyle = UIStatusBarStyleDarkContent;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -1065,7 +1065,6 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = Sources/ApexWidget/ApexWidget.entitlements;
-				DEVELOPMENT_TEAM = ZBL544FP3Q;
 				INFOPLIST_FILE = Sources/ApexWidget/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -1084,7 +1083,6 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				DEVELOPMENT_TEAM = ZBL544FP3Q;
 				INFOPLIST_FILE = Sources/ApexWatch/Info.plist;
 				PRODUCT_BUNDLE_IDENTIFIER = com.diegoalvarezfrancos.apex.watchkitapp;
 				SDKROOT = watchos;
