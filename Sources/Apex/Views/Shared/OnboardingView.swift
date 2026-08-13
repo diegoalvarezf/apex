@@ -35,9 +35,9 @@ private struct WelcomeStep: View {
             }
             Spacer()
             VStack(spacing: 0) {
-                FeatureRow(icon: "waveform.path.ecg", color: .green,  title: "Recuperación real", desc: "HRV, FC en reposo y sueño con algoritmos de PeakWatch")
+                FeatureRow(icon: "waveform.path.ecg", color: .green,  title: "Recuperación real", desc: "HRV, FC en reposo y sueño frente a tu propia media")
                 Divider().padding(.leading, 64)
-                FeatureRow(icon: "bolt.fill",         color: .orange, title: "Carga TRIMP",        desc: "ATL/CTL con media exponencial, como TrainingPeaks")
+                FeatureRow(icon: "bolt.fill",         color: .orange, title: "Carga de entreno",   desc: "TRIMP de Banister y ATL/CTL con media exponencial")
                 Divider().padding(.leading, 64)
                 FeatureRow(icon: "sparkles",          color: .purple, title: "Coach de IA",        desc: "Claude analiza tus datos y te da recomendaciones")
                 Divider().padding(.leading, 64)
@@ -160,7 +160,9 @@ private struct StravaStep: View {
                         .foregroundStyle(.white)
                         .clipShape(RoundedRectangle(cornerRadius: 14))
                 }
-                Text("Al continuar aceptas los Términos de Uso y la Política de Privacidad.")
+                // Se describe lo que hace la app con los datos, en vez de dar por
+                // aceptados unos términos que no existen ni se le muestran a nadie.
+                Text("Tus datos de salud se procesan en el dispositivo. Los análisis del coach se generan enviando un resumen de tus métricas a la API de Anthropic.")
                     .font(.caption2).foregroundStyle(.secondary).multilineTextAlignment(.center)
             }
             .padding(.horizontal).padding(.bottom, 48)
