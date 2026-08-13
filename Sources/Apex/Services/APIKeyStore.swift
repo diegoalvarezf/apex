@@ -12,7 +12,6 @@ import Security
 // todos los usuarios lo pagaría quien publicase la app.
 enum APIKeyStore {
 
-    private static let service = "com.diegoalvarezfrancos.apex"
     private static let account = "anthropic-api-key"
 
     // MARK: - Validación
@@ -44,51 +43,16 @@ enum APIKeyStore {
 
     // MARK: - Keychain
 
-    static var key: String? {
-        let query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service,
-            kSecAttrAccount as String: account,
-            kSecReturnData as String: true,
-            kSecMatchLimit as String: kSecMatchLimitOne
-        ]
-        var item: CFTypeRef?
-        guard SecItemCopyMatching(query as CFDictionary, &item) == errSecSuccess,
-              let data = item as? Data,
-              let value = String(data: data, encoding: .utf8) else { return nil }
-        return value
-    }
+
+    static var key: String? { Keychain.read(account) }
 
     @discardableResult
     static func save(_ key: String) -> Bool {
-        let value = key.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard let data = value.data(using: .utf8) else { return false }
-
-        let query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service,
-            kSecAttrAccount as String: account
-        ]
-        SecItemDelete(query as CFDictionary)
-
-        var attributes = query
-        attributes[kSecValueData as String] = data
-        // Accesible solo con el dispositivo desbloqueado y sin viajar a otros
-        // dispositivos en las copias de seguridad.
-        attributes[kSecAttrAccessible as String] = kSecAttrAccessibleWhenUnlockedThisDeviceOnly
-        return SecItemAdd(attributes as CFDictionary, nil) == errSecSuccess
+        Keychain.save(key.trimmingCharacters(in: .whitespacesAndNewlines), account: account)
     }
 
     @discardableResult
-    static func delete() -> Bool {
-        let query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service,
-            kSecAttrAccount as String: account
-        ]
-        let status = SecItemDelete(query as CFDictionary)
-        return status == errSecSuccess || status == errSecItemNotFound
-    }
+    static func delete() -> Bool { Keychain.delete(account) }
 
     static var hasKey: Bool { key?.isEmpty == false }
 

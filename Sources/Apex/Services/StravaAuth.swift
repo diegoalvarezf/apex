@@ -25,8 +25,10 @@ final class StravaAuthManager: NSObject, ObservableObject, ASWebAuthenticationPr
     @Published var accessToken: String?
     @Published var athlete: StravaAthlete?
 
-    private let tokenKey = "strava_access_token"
-    private let refreshKey = "strava_refresh_token"
+    // Los dos tokens son credenciales: van al Keychain, no a UserDefaults. La fecha
+    // de caducidad no lo es y se queda donde estaba.
+    private let tokenAccount = "strava-access-token"
+    private let refreshAccount = "strava-refresh-token"
     private let expiresKey = "strava_token_expires"
     private var authSession: ASWebAuthenticationSession?
 
@@ -99,7 +101,7 @@ final class StravaAuthManager: NSObject, ObservableObject, ASWebAuthenticationPr
         // Refrescar si el token expira en menos de 5 minutos o ya caducó
         let expires = UserDefaults.standard.object(forKey: expiresKey) as? Date ?? .distantPast
         guard expires < Date().addingTimeInterval(300),
-              let refresh = UserDefaults.standard.string(forKey: refreshKey)
+              let refresh = Keychain.read(refreshAccount)
         else {
             // Token vigente — aseguramos que el atleta esté cargado
             if athlete == nil, let token = accessToken {
@@ -137,8 +139,8 @@ final class StravaAuthManager: NSObject, ObservableObject, ASWebAuthenticationPr
     }
 
     private func saveToken(_ token: TokenResponse) {
-        UserDefaults.standard.set(token.accessToken, forKey: tokenKey)
-        UserDefaults.standard.set(token.refreshToken, forKey: refreshKey)
+        Keychain.save(token.accessToken, account: tokenAccount)
+        Keychain.save(token.refreshToken, account: refreshAccount)
         UserDefaults.standard.set(Date(timeIntervalSince1970: TimeInterval(token.expiresAt)), forKey: expiresKey)
         accessToken = token.accessToken
         isAuthenticated = true
@@ -148,8 +150,13 @@ final class StravaAuthManager: NSObject, ObservableObject, ASWebAuthenticationPr
     private func loadStoredToken() {
         // Si hay refresh token guardado marcamos autenticado aunque el access haya caducado.
         // refreshTokenIfNeeded() se llamará al arrancar y renovará el access token.
-        let hasRefresh = UserDefaults.standard.string(forKey: refreshKey) != nil
-        guard let token = UserDefaults.standard.string(forKey: tokenKey), hasRefresh else { return }
+        // Versiones anteriores los guardaban en UserDefaults: se trasladan al
+        // Keychain la primera vez, para no obligar a reconectar Strava.
+        Keychain.migrateFromUserDefaults(key: "strava_access_token", account: tokenAccount)
+        Keychain.migrateFromUserDefaults(key: "strava_refresh_token", account: refreshAccount)
+
+        let hasRefresh = Keychain.read(refreshAccount) != nil
+        guard let token = Keychain.read(tokenAccount), hasRefresh else { return }
         accessToken = token
         isAuthenticated = true
         // Si ya hay atleta en cache lo cargamos; se actualizará tras el refresh
@@ -157,8 +164,8 @@ final class StravaAuthManager: NSObject, ObservableObject, ASWebAuthenticationPr
     }
 
     func signOut() {
-        UserDefaults.standard.removeObject(forKey: tokenKey)
-        UserDefaults.standard.removeObject(forKey: refreshKey)
+        Keychain.delete(tokenAccount)
+        Keychain.delete(refreshAccount)
         UserDefaults.standard.removeObject(forKey: expiresKey)
         accessToken = nil
         isAuthenticated = false

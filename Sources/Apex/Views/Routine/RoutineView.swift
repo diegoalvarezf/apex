@@ -363,12 +363,12 @@ private struct DayDetailView: View {
         func fmt(_ w: Double) -> String { w == w.rounded() ? "\(Int(w))" : String(format: "%.1f", w) }
 
         var lines: [String] = [
-            "Día de entreno: \(day.name) — \(day.exercises.count) ejercicios.",
+            "Día de entreno: \(AICoachContext.safeText(day.name)) — \(day.exercises.count) ejercicios.",
             "Ejercicios y su progresión registrada (de más antiguo a reciente):"
         ]
         for ex in day.exercises {
             let entries = RoutineProgressStore.shared.entries(for: ex.id)
-            var head = "- \(ex.name)\(ex.muscleGroup.isEmpty ? "" : " (\(ex.muscleGroup))") [\(ex.sets)×\(ex.reps)\(ex.weight.isEmpty ? "" : ", obj \(ex.weight)")]"
+            var head = "- \(AICoachContext.safeText(ex.name))\(ex.muscleGroup.isEmpty ? "" : " (\(ex.muscleGroup))") [\(ex.sets)×\(ex.reps)\(ex.weight.isEmpty ? "" : ", obj \(ex.weight)")]"
             if entries.isEmpty { head += ": sin registros aún" }
             lines.append(head)
             for e in entries.suffix(6) {

@@ -320,7 +320,7 @@ private struct CrearSection: View {
                         if let m = e.meters { p.append("\(m)m") }
                         return p.isEmpty ? "—" : p.joined(separator: "×")
                     }.joined(separator: " → ")
-                    progresiones.append("\(ex.name): \(serie)")
+                    progresiones.append("\(AICoachContext.safeText(ex.name)): \(serie)")
                 }
             }
         }

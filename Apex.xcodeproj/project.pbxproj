@@ -14,6 +14,7 @@
 		0E98F02BED72F92AD37DBFF9 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 754A60D104BB37520752F315 /* OnboardingView.swift */; };
 		0ECE3E1166703807D161E527 /* ApexWatch.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = BDB4907A302A7EB9BC3AE081 /* ApexWatch.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		0F46B3672742F539EF50555D /* WeightTrainingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F39C9FFFB8CAF1B8E75A3ECD /* WeightTrainingView.swift */; };
+		1042B7477E174BAEAB5DF5BD /* Keychain.swift in Sources */ = {isa = PBXBuildFile; fileRef = A92D6E29026301A8CBC351FF /* Keychain.swift */; };
 		171FF970FDD875ED01FA03D7 /* MetricStyledTiles.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00E110C6129E39FDB7141FEB /* MetricStyledTiles.swift */; };
 		1756E84C3A0A0157979643F6 /* SessionLoadTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E34E9B77B5A6EED2A7D75D18 /* SessionLoadTests.swift */; };
 		1B57892F4D7C826275265F3A /* RoutineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 588F608DCC40E95DD8647E18 /* RoutineView.swift */; };
@@ -45,6 +46,7 @@
 		58AC9066B969DD4521E73CFD /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 116DEF7F3E2E27AADEA835B4 /* Assets.xcassets */; };
 		5959F0CE51CF3DF938600C5A /* TrainingMetrics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9CA05CE06DA7D0D8487B6525 /* TrainingMetrics.swift */; };
 		5995891A086AEAE25FE2E1B2 /* BiologicalAgeDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 772C231E1EF6F463B0630868 /* BiologicalAgeDetailView.swift */; };
+		5B1ABED22F673424F1B48351 /* PromptSafetyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04659271F9806B8400DF0F55 /* PromptSafetyTests.swift */; };
 		5F66B03ED35EF2F60F49A293 /* TrainingMetricsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F96D25617D324C362F8E34FC /* TrainingMetricsTests.swift */; };
 		6503B2038F56FC9AC18C4D8F /* Routine.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFDA0F7DAA57EB3FA5AA07D6 /* Routine.swift */; };
 		6D0E2A099C818BE5BB8FA14A /* RecoveryDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79B376466691D0445B83B9F5 /* RecoveryDetailView.swift */; };
@@ -153,6 +155,7 @@
 /* Begin PBXFileReference section */
 		00E110C6129E39FDB7141FEB /* MetricStyledTiles.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetricStyledTiles.swift; sourceTree = "<group>"; };
 		0221011D637CBB3132A3C28F /* BodyBatteryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BodyBatteryStore.swift; sourceTree = "<group>"; };
+		04659271F9806B8400DF0F55 /* PromptSafetyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PromptSafetyTests.swift; sourceTree = "<group>"; };
 		05F21291A955A7B08A5F92C1 /* Activity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Activity.swift; sourceTree = "<group>"; };
 		0D00BB0B41C709710EDE02FE /* CoachChatView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachChatView.swift; sourceTree = "<group>"; };
 		0DDB8DDED711F995D4DA916C /* SleepCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepCard.swift; sourceTree = "<group>"; };
@@ -226,6 +229,7 @@
 		9E501BD5E0A0BECBF744DA80 /* TrainingLoadDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrainingLoadDetailView.swift; sourceTree = "<group>"; };
 		A7E2CE3201CB2C882BD27556 /* HealthLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthLayout.swift; sourceTree = "<group>"; };
 		A83816945191FDA883FEDF0B /* BodyBatteryDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BodyBatteryDetailView.swift; sourceTree = "<group>"; };
+		A92D6E29026301A8CBC351FF /* Keychain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Keychain.swift; sourceTree = "<group>"; };
 		B6F2CECA2EF102C887C97BCF /* ApexWatch.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = ApexWatch.entitlements; sourceTree = "<group>"; };
 		B8EC660AD3076205E1BF524F /* WorkoutLogStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutLogStore.swift; sourceTree = "<group>"; };
 		BA8104DA37D19A942B47E271 /* SmartTipBanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartTipBanner.swift; sourceTree = "<group>"; };
@@ -312,6 +316,7 @@
 				40502C6EF9C40054F5EA782B /* APIKeyStoreTests.swift */,
 				7B432670E2ACFA40943CB349 /* BodyBatteryCacheTests.swift */,
 				BF1743C0689451AD5241E5A4 /* FitnessAgeTests.swift */,
+				04659271F9806B8400DF0F55 /* PromptSafetyTests.swift */,
 				E34E9B77B5A6EED2A7D75D18 /* SessionLoadTests.swift */,
 				937343D1AD328D38F1AEA9C7 /* StravaActivityFixture.swift */,
 				F96D25617D324C362F8E34FC /* TrainingMetricsTests.swift */,
@@ -373,6 +378,7 @@
 				3526C2C12DCFA7E94716F6C5 /* APIKeyStore.swift */,
 				0221011D637CBB3132A3C28F /* BodyBatteryStore.swift */,
 				6B6EF1B7EFB932C65DA7EA71 /* HealthKitManager.swift */,
+				A92D6E29026301A8CBC351FF /* Keychain.swift */,
 				84F95477213FB0DE9EB839EF /* NotificationManager.swift */,
 				1D65A3BD8BE6F51776E6070A /* PhoneConnectivityManager.swift */,
 				6D6B47C4A6F4B5FC7DF83EE5 /* RoutineProgressStore.swift */,
@@ -677,6 +683,7 @@
 				6F06B8AD5D1D20B799EDA8E7 /* APIKeyStoreTests.swift in Sources */,
 				45DFAF50C68DAC998E0265FD /* BodyBatteryCacheTests.swift in Sources */,
 				C04D77A817001F87BEDE22A5 /* FitnessAgeTests.swift in Sources */,
+				5B1ABED22F673424F1B48351 /* PromptSafetyTests.swift in Sources */,
 				1756E84C3A0A0157979643F6 /* SessionLoadTests.swift in Sources */,
 				42D6822A661F262B432F3DD6 /* StravaActivityFixture.swift in Sources */,
 				5F66B03ED35EF2F60F49A293 /* TrainingMetricsTests.swift in Sources */,
@@ -720,6 +727,7 @@
 				A388CF94C564DF10E083D070 /* HealthView.swift in Sources */,
 				F5C6E4F8473B6EB1E85012DE /* HeartRateZonesView.swift in Sources */,
 				6E0553C0BB3EAD34C49CF7CB /* InsightsView.swift in Sources */,
+				1042B7477E174BAEAB5DF5BD /* Keychain.swift in Sources */,
 				4052010EDC7E1448525EC9DE /* LiveActivityView.swift in Sources */,
 				7F26173322E50A83975C2405 /* MainTabView.swift in Sources */,
 				F489847B015CA5AF4449CEE2 /* MetricDetailComponents.swift in Sources */,

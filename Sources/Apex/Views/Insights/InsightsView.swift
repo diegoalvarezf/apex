@@ -44,7 +44,7 @@ struct InsightsView: View {
                     let series = entries.suffix(5)
                         .map { $0.weight == $0.weight.rounded() ? "\(Int($0.weight))" : String(format: "%.1f", $0.weight) }
                         .joined(separator: "→")
-                    lines.append("  \(ex.name): \(series) kg")
+                    lines.append("  \(AICoachContext.safeText(ex.name)): \(series) kg")
                 }
             }
         }
