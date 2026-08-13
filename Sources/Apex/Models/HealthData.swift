@@ -369,10 +369,10 @@ struct BiologicalAgeResult {
                 valueLabel: String(format: esEstimado ? "~%.1f ml/kg/min estimado (media %.0f a tu edad)" : "%.1f ml/kg/min (media %.0f a tu edad)", v, expected),
                 explanation: {
                     if porCarreras != nil {
-                        return "Tu reloj no exporta el VO₂Max a Salud, así que se estima con tus carreras: a partir del ritmo y la FC media de cada rodaje se calcula el consumo de oxígeno (ecuación de carrera del ACSM) y se extrapola al esfuerzo máximo usando la equivalencia entre reserva de FC y reserva de VO₂ (Swain & Leutholtz 1997). Se toma la mediana de los últimos 90 días, descartando series, cuestas y sesiones cortas. Es la misma idea que usan Garmin y Suunto, aunque su algoritmo exacto no es público. Si registras tu VO₂Max real en Salud, se usará ese."
+                        return "No hay una medición reciente de VO₂Max en Apple Salud, así que se estima a partir de tus carreras: del ritmo y la FC media de cada rodaje se calcula el consumo de oxígeno (ecuación de carrera del ACSM) y se extrapola al esfuerzo máximo usando la equivalencia entre reserva de FC y reserva de VO₂ (Swain & Leutholtz 1997). Se toma la mediana de los últimos 90 días, descartando series, cuestas y sesiones cortas. Es la misma idea que usan Garmin y Suunto, aunque su algoritmo exacto no es público. Si hay una medición registrada en Salud, se usa esa."
                     }
                     if porCociente != nil {
-                        return "Tu reloj no exporta el VO₂Max a Salud y no hay carreras suficientes para estimarlo con ritmo y FC, así que se usa el cociente FCmáx/FCreposo (Uth et al. 2004): VO₂Max ≈ 15,3 × (FCmáx/FCreposo). Es un método publicado, pero el más grueso de los tres: sal a correr unas cuantas veces y la estimación mejorará sola."
+                        return "No hay una medición reciente de VO₂Max en Apple Salud ni carreras suficientes para estimarlo con ritmo y FC, así que se usa el cociente FCmáx/FCreposo (Uth et al. 2004): VO₂Max ≈ 15,3 × (FCmáx/FCreposo). Es un método publicado, pero el más grueso de los tres: con unas cuantas carreras registradas la estimación mejora sola."
                     }
                     return "Tu edad de fitness es la edad a la que la media poblacional de VO₂Max iguala tu valor medido (estudio HUNT, Nes 2011, >4.600 adultos). Es el método validado que usa Garmin. Nota: las normas HUNT son de una población en forma, así que la referencia es exigente."
                 }()

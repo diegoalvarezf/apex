@@ -362,7 +362,7 @@ struct HealthView: View {
     private func vo2Explanation(_ vo2: (value: Double, isEstimated: Bool)) -> String {
         let base = "El VO₂Max es el predictor más potente de rendimiento aeróbico y longevidad."
         if vo2.isEstimated {
-            return base + "\n\nTu reloj no escribe el VO₂Max en Apple Salud, así que este valor se estima con tus carreras de Strava: del ritmo y la FC media de cada rodaje se calcula el consumo de oxígeno (ecuación de carrera del ACSM) y se extrapola al máximo por reserva de FC (Swain & Leutholtz 1997). Es la mediana de los últimos 90 días, descartando series, cuestas y rodajes cortos."
+            return base + "\n\nNo hay una medición reciente de VO₂Max en Apple Salud, así que este valor se estima a partir de tus carreras: del ritmo y la FC media de cada rodaje se calcula el consumo de oxígeno (ecuación de carrera del ACSM) y se extrapola al máximo por reserva de FC (Swain & Leutholtz 1997). Es la mediana de los últimos 90 días, descartando series, cuestas y rodajes cortos.\n\nEn cuanto haya una medición registrada en Apple Salud, se usará esa en lugar de la estimación."
         }
         if let d = healthKit.vo2MaxData, d.isStale {
             return base + "\n\nEsta lectura es de hace \(d.daysSinceMeasured ?? 0) días y no hay carreras suficientes para estimar un valor actual, así que puede no reflejar tu estado de hoy."

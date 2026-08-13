@@ -61,7 +61,7 @@ struct QuickMetricsGrid: View {
                         value: vo2Display.map { String(format: "%.1f", $0.value) } ?? "--", unit: "ml/kg/min",
                         samples: vo2MaxData?.samples ?? [], higherIsBetter: true, normalRange: 35...60,
                         explanation: vo2Display?.isEstimated == true
-                            ? "El VO₂Max es el predictor más potente de rendimiento aeróbico y longevidad.\n\nTu reloj no lo escribe en Apple Salud, así que se estima con tus carreras (ACSM + Swain & Leutholtz). Detalle en la pestaña Salud."
+                            ? "El VO₂Max es el predictor más potente de rendimiento aeróbico y longevidad.\n\nNo hay una medición reciente en Apple Salud, así que se estima a partir de tus carreras (ACSM + Swain & Leutholtz). Detalle en la pestaña Salud."
                             : "El VO₂Max es el predictor más potente de rendimiento aeróbico y longevidad."
                     )) {
                         MetricColumn(icon: "figure.run", color: .mint,
