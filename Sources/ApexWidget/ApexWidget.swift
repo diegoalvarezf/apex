@@ -274,6 +274,9 @@ struct ApexBodyBatteryWidget: Widget {
 private struct SmallBatteryView: View {
     let entry: ApexEntry
     private var color: Color {
+        // Sin datos, gris: el caso por defecto del switch es el rojo crítico, y
+        // pintaba el anillo de rojo junto a un "--" que solo significa "aún no se sabe".
+        guard entry.hasData else { return .secondary }
         switch entry.battery {
         case 75...: return .green
         case 50..<75: return .cyan
