@@ -293,7 +293,7 @@ private struct SmallBatteryView: View {
                     Text(entry.hasData ? "\(entry.battery)" : "--")
                         .font(.system(size: 26, weight: .bold, design: .rounded))
                         .foregroundStyle(entry.hasData ? color : .secondary)
-                    Text("BATTERY")
+                    Text("BATERÍA")
                         .font(.system(size: 7, weight: .semibold))
                         .foregroundStyle(.secondary)
                         .tracking(1)
