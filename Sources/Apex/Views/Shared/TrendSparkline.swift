@@ -7,12 +7,23 @@ struct TrendSparkline: View {
     let samples: [MetricSample]
     let color: Color
     var height: CGFloat = 28
+    // Nº de muestras más recientes a dibujar. nil = todas.
+    var latest: Int? = nil
+
+    // Las series no llegan todas en el mismo orden (el HRV viene con la más
+    // reciente primero, el resto al revés), así que aquí se ordenan siempre antes
+    // de recortar: si no, "las últimas N" acaban siendo las más antiguas.
+    private var visible: [MetricSample] {
+        let ordenadas = samples.sorted { $0.date < $1.date }
+        guard let latest else { return ordenadas }
+        return Array(ordenadas.suffix(latest))
+    }
 
     var body: some View {
-        if samples.isEmpty {
+        if visible.isEmpty {
             Color.clear.frame(height: height)
         } else {
-            Chart(samples) { s in
+            Chart(visible) { s in
                 AreaMark(x: .value("t", s.date), y: .value("v", s.value))
                     .foregroundStyle(LinearGradient(
                         colors: [color.opacity(0.3), color.opacity(0)],

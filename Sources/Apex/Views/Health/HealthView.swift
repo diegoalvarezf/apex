@@ -99,18 +99,22 @@ struct HealthView: View {
                 }
 
                 if layout.isVisible(.vo2max), let vo2 = healthKit.displayVO2Max {
+                    // Con un valor estimado no se dibuja la serie de mediciones: son
+                    // cantidades distintas y la gráfica sugeriría una evolución del
+                    // número que se está enseñando, que es de otra procedencia.
+                    let serie = vo2.isEstimated ? [] : (healthKit.vo2MaxData?.samples ?? [])
                     NavigationLink(destination: MetricDetailView(config: MetricConfig(
                         title: vo2.isEstimated ? "VO₂Max (estimado)" : "VO₂Max",
                         icon: "lungs.fill", color: .blue,
                         unit: "ml/kg/min", value: String(format: "%.1f", vo2.value),
-                        samples: healthKit.vo2MaxData?.samples ?? [], higherIsBetter: true, normalRange: 35...60,
+                        samples: serie, higherIsBetter: true, normalRange: 35...60,
                         explanation: vo2Explanation(vo2)
                     ))) {
                         PWMetricCard(icon: "lungs.fill", color: .blue,
                                      title: vo2.isEstimated ? "VO₂Max (estimado)" : "VO₂Max",
                                      value: String(format: "%.1f", vo2.value), unit: "ml/kg/min",
                                      status: vo2.isEstimated ? .info : vo2Status(vo2.value),
-                                     samples: healthKit.vo2MaxData?.samples ?? [])
+                                     samples: serie)
                     }.buttonStyle(.plain)
                 }
 
@@ -682,9 +686,11 @@ struct PWMetricCard: View {
                             .foregroundColor(.secondary)
                     }
 
-                    // Sparkline si hay datos
+                    // Sparkline si hay datos. El recorte a las 12 últimas lo hace
+                    // TrendSparkline, que ordena antes: hacerlo aquí con suffix()
+                    // cogía las más antiguas en las series que vienen invertidas.
                     if samples.count >= 4 {
-                        TrendSparkline(samples: Array(samples.suffix(12)), color: color, height: 20)
+                        TrendSparkline(samples: samples, color: color, height: 20, latest: 12)
                     }
 
                     Text(title)
