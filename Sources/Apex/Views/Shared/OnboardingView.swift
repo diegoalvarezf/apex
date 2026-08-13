@@ -5,13 +5,17 @@ struct OnboardingView: View {
     @EnvironmentObject var healthKit: HealthKitManager
     @State private var step = 0
 
+    // Se llama cuando el usuario decide entrar sin conectar Strava. Si la conecta,
+    // RootView lo detecta por su cuenta y no hace falta avisar.
+    let onFinish: () -> Void
+
     var body: some View {
         ZStack {
             Color(.systemGroupedBackground).ignoresSafeArea()
             switch step {
             case 0:  WelcomeStep  { withAnimation(.spring()) { step = 1 } }
             case 1:  HealthStep   { withAnimation(.spring()) { step = 2 } }
-            default: StravaStep()
+            default: StravaStep(onSkip: onFinish)
             }
         }
         .animation(.easeInOut, value: step)
@@ -39,7 +43,7 @@ private struct WelcomeStep: View {
                 Divider().padding(.leading, 64)
                 FeatureRow(icon: "bolt.fill",         color: .orange, title: "Carga de entreno",   desc: "TRIMP de Banister y ATL/CTL con media exponencial")
                 Divider().padding(.leading, 64)
-                FeatureRow(icon: "sparkles",          color: .purple, title: "Coach de IA",        desc: "Claude analiza tus datos y te da recomendaciones")
+                FeatureRow(icon: "sparkles",          color: .purple, title: "Apex IA",        desc: "Claude analiza tus datos y te da recomendaciones")
                 Divider().padding(.leading, 64)
                 FeatureRow(icon: "map.fill",          color: .blue,   title: "Rutas GPS",          desc: "Registra actividades con mapa en tiempo real")
             }
@@ -126,6 +130,14 @@ private struct HealthStep: View {
 
 private struct StravaStep: View {
     @EnvironmentObject var stravaAuth: StravaAuthManager
+    let onSkip: () -> Void
+
+    // Las notificaciones se piden aquí y no al abrir la app: al arrancar salía el
+    // diálogo del sistema antes de que el usuario hubiera visto nada, y sin saber
+    // para qué son la respuesta por inercia es "No permitir".
+    private func pedirNotificaciones() async {
+        await NotificationManager.shared.requestPermission()
+    }
     var body: some View {
         VStack(spacing: 0) {
             Spacer()
@@ -152,7 +164,10 @@ private struct StravaStep: View {
             .padding(.horizontal)
             Spacer()
             VStack(spacing: 8) {
-                Button(action: stravaAuth.authorize) {
+                Button {
+                    Task { await pedirNotificaciones() }
+                    stravaAuth.authorize()
+                } label: {
                     Label("Conectar con Strava", systemImage: "link")
                         .font(.body).fontWeight(.semibold)
                         .frame(maxWidth: .infinity).padding(.vertical, 16)
@@ -162,6 +177,23 @@ private struct StravaStep: View {
                 }
                 // Se describe lo que hace la app con los datos, en vez de dar por
                 // aceptados unos términos que no existen ni se le muestran a nadie.
+                // Sin Strava la app sigue siendo útil: se puede entrar y conectarla
+                // después desde Perfil. Antes esta pantalla no tenía salida.
+                Button {
+                    Task {
+                        await pedirNotificaciones()
+                        onSkip()
+                    }
+                } label: {
+                    Text("Ahora no")
+                }
+                .font(.subheadline).foregroundStyle(.secondary)
+                .padding(.top, 4)
+
+                Text("Sin Strava tendrás recuperación, sueño y rutinas; se añadirán las actividades y la carga de entrenamiento cuando la conectes.")
+                    .font(.caption2).foregroundStyle(.secondary).multilineTextAlignment(.center)
+                    .padding(.top, 8)
+
                 Text("Tus datos de salud se procesan en el dispositivo. Los análisis del coach se generan enviando un resumen de tus métricas a la API de Anthropic.")
                     .font(.caption2).foregroundStyle(.secondary).multilineTextAlignment(.center)
             }

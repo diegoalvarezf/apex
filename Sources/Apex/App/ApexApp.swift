@@ -20,9 +20,6 @@ struct ApexApp: App {
                 .onOpenURL { url in
                     stravaAuth.handleCallback(url: url)
                 }
-                .task {
-                    await notificationManager.requestPermission()
-                }
         }
     }
 }

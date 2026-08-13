@@ -129,6 +129,16 @@ struct StressRecoveryEffortRow: View {
     }
     private var batteryTrend: MetricTrend { computeTrend(samples: batteryHourlySamples) }
 
+    // Sin FC horaria ni recuperación, la simulación arranca de un valor por defecto:
+    // el número que sale no describe nada y no debe presentarse como medida.
+    private var hasBatteryData: Bool { !hourlyHR.isEmpty || recoveryScore != nil }
+    // El estrés parte de la base autonómica por HRV, que sin dato devuelve un valor
+    // fijo. Hace falta al menos HRV o FC horaria para que signifique algo.
+    private var hasStressData: Bool { !hrvHistory.isEmpty || !hourlyHR.isEmpty }
+    // Un 0 de esfuerzo sin datos no significa "hoy no entrenaste", sino que no se
+    // sabe: hace falta FC horaria o alguna actividad para poder afirmarlo.
+    private var hasEffortData: Bool { !hourlyHR.isEmpty || !activities.isEmpty }
+
     // Etiquetas de estado (estilo PeakWatch)
     private var batteryStatusLabel: String {
         currentBattery >= 80 ? "Alta" : currentBattery >= 55 ? "Media" : currentBattery >= 30 ? "Baja" : "Muy baja"
@@ -154,7 +164,10 @@ struct StressRecoveryEffortRow: View {
                 hrvHistory: hrvSamples
             )) {
                 PeakMetricTile(title: "Body Battery", icon: "bolt.heart.fill",
-                               value: currentBattery, statusLabel: batteryStatusLabel, statusColor: batteryColor) {
+                               value: currentBattery,
+                               statusLabel: hasBatteryData ? batteryStatusLabel : "Sin datos",
+                               statusColor: hasBatteryData ? batteryColor : .secondary,
+                               hasData: hasBatteryData) {
                     TrendSparkline(samples: batteryHourlySamples, color: batteryColor, height: 40)
                 }
             }
@@ -165,7 +178,10 @@ struct StressRecoveryEffortRow: View {
                 color: recoveryColor, hrvHistory: hrvHistory, rhrHistory: rhrHistory, todayRHR: todayRHR
             )) {
                 PeakMetricTile(title: "Recuperación", icon: "arrow.up.heart.fill",
-                               value: recoveryValue, statusLabel: recoveryScore?.label ?? "--", statusColor: recoveryColor) {
+                               value: recoveryValue,
+                               statusLabel: recoveryScore?.label ?? "Sin datos",
+                               statusColor: recoveryScore == nil ? .secondary : recoveryColor,
+                               hasData: recoveryScore != nil) {
                     MetricGradientBar(value: recoveryValue, gradient: recoveryGradient)
                 }
             }
@@ -178,7 +194,10 @@ struct StressRecoveryEffortRow: View {
                 hrvBase: hrvBaseStress
             )) {
                 PeakMetricTile(title: "Estrés", icon: "brain.head.profile",
-                               value: stressValue, statusLabel: stressStatusLabel, statusColor: stressColor) {
+                               value: stressValue,
+                               statusLabel: hasStressData ? stressStatusLabel : "Sin datos",
+                               statusColor: hasStressData ? stressColor : .secondary,
+                               hasData: hasStressData) {
                     MetricGauge(value: stressValue, gradient: stressGradient)
                 }
             }
@@ -189,7 +208,10 @@ struct StressRecoveryEffortRow: View {
                 hourlyHR: hourlyHR, restingHR: todayRHR, history: effortHistory, color: effortColor, activities: activities
             )) {
                 PeakMetricTile(title: "Esfuerzo", icon: "bolt.fill",
-                               value: effortValue, statusLabel: effortStatusLabel, statusColor: effortColor) {
+                               value: effortValue,
+                               statusLabel: hasEffortData ? effortStatusLabel : "Sin datos",
+                               statusColor: hasEffortData ? effortColor : .secondary,
+                               hasData: hasEffortData) {
                     MetricGradientBar(value: effortValue, gradient: effortGradient, showTicks: true)
                 }
             }

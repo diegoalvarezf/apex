@@ -9,6 +9,10 @@ struct PeakMetricTile<Visual: View>: View {
     let value: Int
     let statusLabel: String
     let statusColor: Color
+    // Sin datos suficientes se enseña "--" en vez de una cifra: estos indicadores
+    // parten de valores por defecto cuando no hay nada, y presentarlos como si
+    // fueran una medición sería inventarse el dato.
+    var hasData: Bool = true
     @ViewBuilder var visual: () -> Visual
 
     var body: some View {
@@ -30,13 +34,15 @@ struct PeakMetricTile<Visual: View>: View {
 
             HStack(alignment: .firstTextBaseline) {
                 HStack(alignment: .firstTextBaseline, spacing: 1) {
-                    Text("\(value)")
+                    Text(hasData ? "\(value)" : "--")
                         .font(.system(size: 25, weight: .bold, design: .rounded))
-                        .foregroundStyle(.primary)
+                        .foregroundStyle(hasData ? .primary : .secondary)
                         .contentTransition(.numericText())
-                    Text("%")
-                        .font(.system(size: 13, weight: .semibold, design: .rounded))
-                        .foregroundStyle(.secondary)
+                    if hasData {
+                        Text("%")
+                            .font(.system(size: 13, weight: .semibold, design: .rounded))
+                            .foregroundStyle(.secondary)
+                    }
                 }
                 Spacer(minLength: 4)
                 Text(statusLabel)
