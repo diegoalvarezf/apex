@@ -1,0 +1,10 @@
+{
+  "name": "apex",
+  "private": true,
+  "description": "Raíz del repositorio. Existe solo para que Railway encuentre el backend sin tener que configurar el directorio raíz a mano en su interfaz.",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "build": "cd backend && npm ci && npm run build",
+    "start": "cd backend && npm run db:migrate && npm start"
+  }
+}

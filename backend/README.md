@@ -92,13 +92,14 @@ un doble.
 
 ## Despliegue en Railway
 
-1. Nuevo proyecto → añadir **PostgreSQL** (inyecta `DATABASE_URL` solo).
-2. Añadir el servicio desde este repositorio, con la raíz en `backend/`.
+1. Nuevo proyecto → desplegar desde este repositorio.
+2. Añadir **PostgreSQL** (inyecta `DATABASE_URL` solo).
 3. Poner las variables de `.env.example` en Settings → Variables.
 4. **Ponerle límite de gasto al proyecto**: la facturación es por uso.
 
-`railway.json` ya declara el build, el arranque (que migra antes) y el healthcheck
-contra `/v1/health`.
+No hace falta tocar el directorio raíz en la interfaz: el `package.json` de la raíz
+del repositorio delega en `backend/`, y el `railway.json` de la raíz declara el
+build, el arranque (que migra antes) y el healthcheck contra `/v1/health`.
 
 ## Estructura
 
