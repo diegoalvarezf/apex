@@ -32,6 +32,7 @@ function closing(what: string): string {
 }
 
 export type AnalysisKind =
+  | "insights"
   | "alerts"
   | "weekly"
   | "recovery"
@@ -41,6 +42,7 @@ export type AnalysisKind =
   | "run"
   | "routineDay"
   | "exerciseProgress"
+  | "routineParse"
   | "routineCreate"
   | "exerciseSwap";
 
@@ -53,6 +55,17 @@ export interface AnalysisSpec {
 }
 
 export const CATALOG: Record<AnalysisKind, AnalysisSpec> = {
+  // El análisis que abre la pantalla de Apex IA: varias conclusiones sobre el
+  // estado general, no una sola. De ahí que tenga más margen de tokens.
+  insights: {
+    system: `Eres un entrenador deportivo que analiza los datos de un atleta. Devuelves \
+EXCLUSIVAMENTE un objeto JSON con el esquema que se te indica, sin markdown ni explicación. \
+${onlyGivenNumbers}`,
+    model: MODELS.standard,
+    maxTokens: 1800,
+    quota: "daily",
+  },
+
   alerts: {
     system: `Eres un entrenador deportivo. A partir de las métricas del día, escribe las alertas \
 más importantes: qué hacer hoy y por qué. Prioriza lo accionable (descansar, entrenar \
@@ -134,6 +147,18 @@ series registradas. Valora el VOLUMEN y la fuerza estimada (Epley), no solo el p
 ser más fuerte que 85×5. ${rules} ${closing("con la recomendación para la próxima sesión.")}`,
     model: MODELS.standard,
     maxTokens: 400,
+    quota: "daily",
+  },
+
+  // Importar una rutina que el usuario ya tiene escrita. Es una conversión de
+  // texto a JSON, no un diseño: por eso va con el modelo pequeño aunque su
+  // hermana routineCreate use el grande.
+  routineParse: {
+    system: `Eres un parser de rutinas de gimnasio. Tu única función es convertir texto libre en \
+JSON válido. Responde SOLO con el objeto JSON, sin markdown, sin backticks, sin texto antes ni \
+después. El JSON debe empezar con { y terminar con }.`,
+    model: MODELS.standard,
+    maxTokens: 4000,
     quota: "daily",
   },
 
