@@ -97,9 +97,15 @@ un doble.
 3. Poner las variables de `.env.example` en Settings → Variables.
 4. **Ponerle límite de gasto al proyecto**: la facturación es por uso.
 
-No hace falta tocar el directorio raíz en la interfaz: el `package.json` de la raíz
-del repositorio delega en `backend/`, y el `railway.json` de la raíz declara el
-build, el arranque (que migra antes) y el healthcheck contra `/v1/health`.
+No hace falta tocar el directorio raíz en la interfaz: el `railway.json` de la raíz
+apunta a `backend/Dockerfile`, que construye en dos etapas.
+
+Esa imagen es multietapa a propósito. Railway inyecta todas las variables del
+servicio como `ARG`/`ENV` del build, y lo que entra en `ENV` queda grabado en las
+capas, legible con `docker history`. Compilar no necesita ninguna credencial, así
+que se quedan en la etapa de construcción y la imagen final no las hereda. De paso
+salen fuera el código fuente, TypeScript y las dependencias de desarrollo, y el
+proceso no corre como root.
 
 ## Estructura
 
