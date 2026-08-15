@@ -20,6 +20,10 @@ final class StravaAuthManager: NSObject, ObservableObject, ASWebAuthenticationPr
     @Published var isAuthenticated = false
     @Published var accessToken: String?
     @Published var athlete: StravaAthlete?
+    // Último error del canje. Antes se fallaba en silencio: el usuario volvía de
+    // Strava, seguía viendo "Conectado" porque el token viejo continuaba ahí, y no
+    // había forma de saber que la reconexión no había servido de nada.
+    @Published var connectError: String?
 
     // Los dos tokens son credenciales: van al Keychain, no a UserDefaults. La fecha
     // de caducidad no lo es y se queda donde estaba.
@@ -77,8 +81,12 @@ final class StravaAuthManager: NSObject, ObservableObject, ASWebAuthenticationPr
     // Strava no admite PKCE, así que dentro de la app ese secreto viajaba en el
     // binario y cualquiera podía sacarlo del .ipa. Ahora vive solo en el servidor.
     private func exchangeCode(_ code: String) async {
-        guard let json = try? await BackendClient.shared.stravaExchange(code: code) else { return }
-        saveToken(json)
+        connectError = nil
+        do {
+            saveToken(try await BackendClient.shared.stravaExchange(code: code))
+        } catch {
+            connectError = error.localizedDescription
+        }
     }
 
     func refreshTokenIfNeeded() async {

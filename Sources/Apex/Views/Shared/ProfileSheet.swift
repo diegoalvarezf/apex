@@ -144,7 +144,15 @@ struct ProfileSheet: View {
                         }
                     }
                 } footer: {
-                    Text("Si dejaste de ver tus actividades, reconecta para renovar el acceso a Strava.")
+                    // El error se enseña aquí y no en una alerta: la reconexión
+                    // vuelve de Safari, y una alerta al reaparecer se pierde con
+                    // facilidad. Aquí queda a la vista junto al botón que falló.
+                    if let error = stravaAuth.connectError {
+                        Label(error, systemImage: "exclamationmark.triangle.fill")
+                            .font(.caption).foregroundStyle(.red)
+                    } else {
+                        Text("Si dejaste de ver tus actividades, reconecta para renovar el acceso a Strava.")
+                    }
                 }
 
                 // ── Info app ─────────────────────────────────────────────────
