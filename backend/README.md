@@ -76,7 +76,18 @@ el mismo plan que daría la suscripción, así que la funcionalidad es real y se
 demostrar. El día que exista IAP, la validación del recibo llamará a la misma
 función y no cambia nada más.
 
-Un código puede admitir uno o varios canjes:
+La base de datos de Railway solo es accesible desde dentro, así que los códigos se
+siembran al arrancar con una variable del servicio —abrir Postgres a internet para
+emitir dos códigos no compensa—:
+
+```
+PRO_CODES=APEX-DESARROLLO:1,APEX-TRIBUNAL:0
+```
+
+`código:usos`, con 0 = sin límite. Sembrar es idempotente: reiniciar no revive un
+código revocado ni borra los canjes hechos.
+
+Con acceso a la base de datos, los scripts hacen lo mismo y algo más:
 
 ```bash
 npm run pro:issue -- --para "Diego" --code APEX-PRO-DIEGO      # personal, un uso, sin caducidad
