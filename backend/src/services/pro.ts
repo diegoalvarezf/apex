@@ -62,11 +62,12 @@ export async function canjear(code: string, deviceId: string): Promise<Resultado
     // Si ya lo canjeó ESTE mismo dispositivo, se deja pasar sin gastar otro uso:
     // reinstalar la app o repetir el gesto no debería castigarse con un error.
     if (!yaCanjeado) {
-      const [{ usados }] = await tx
+      const [recuento] = await tx
         .select({ usados: count() })
         .from(proRedemptions)
         .where(eq(proRedemptions.code, normalizado));
 
+      const usados = recuento?.usados ?? 0;
       const tope = encontrado.maxRedemptions;
       if (tope !== null && usados >= tope) return { ok: false, motivo: "ya_usado" };
 
