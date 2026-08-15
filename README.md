@@ -82,17 +82,11 @@ cd apex
 
 1. Crea una aplicación en [strava.com/settings/api](https://www.strava.com/settings/api).
 2. Anota tu **Client ID** y **Client Secret**.
-3. En `Sources/Apex/Services/StravaAuth.swift` rellena:
-
-```swift
-enum StravaConfig {
-    static let clientID     = "TU_CLIENT_ID"
-    static let clientSecret = "TU_CLIENT_SECRET"
-    static let redirectURI  = "apex-strava://localhost/oauth"
-}
-```
-
-4. En Xcode, añade el URL Scheme `apex-strava` en `Info.plist` → URL Types.
+3. El **Client ID** va en `StravaConfig` (`Sources/Apex/Services/StravaAuth.swift`).
+   No es secreto: viaja en la URL de autorización, a la vista de cualquiera.
+4. El **Client Secret** va en el backend, como variable de entorno. Nunca en la app:
+   ahí acabaría dentro del binario, de donde se extrae descomprimiendo el `.ipa`.
+5. En Xcode, añade el URL Scheme `apex-strava` en `Info.plist` → URL Types.
 
 ### 3. Backend
 
@@ -227,50 +221,53 @@ mediana de 90 días descartando series, cuestas y rodajes cortos. Detalle y filt
 
 ## Limitaciones conocidas y trabajo futuro
 
-APEX está construida para uso personal: todo ocurre en el dispositivo y no hay
-servidor. Eso mantiene el proyecto simple y sin coste, pero pone tres límites que
-conviene declarar antes que disimular.
+APEX tiene un servidor propio ([`backend/`](backend/)) que custodia las credenciales
+y aplica las cuotas. Lo que sigue son los límites que quedan, declarados antes que
+disimulados.
 
-### 1. El `client_secret` de Strava viaja en la app
+### 1. Resuelto: los secretos ya no viajan en la app
 
-El flujo OAuth de Strava exige el `client_secret` para canjear el código por el
-token, y no admite PKCE, que es el mecanismo pensado para que las apps móviles no
-tengan que llevar secretos. Sin un servidor intermedio no hay forma correcta de
-hacerlo: el secreto acaba dentro del binario, de donde se puede extraer.
+Durante buena parte del desarrollo la app llevaba dentro el `client_secret` de
+Strava y una clave de Anthropic. El de Strava no tenía arreglo posible en el
+cliente: su OAuth lo exige para canjear el código por el token y no admite PKCE,
+que es el mecanismo pensado para que las apps móviles no lleven secretos.
 
-No permite entrar en la cuenta de nadie —identifica a la aplicación, no al
-usuario—, pero sí suplantar a APEX ante Strava o agotar su cuota de peticiones,
-que es por aplicación. Con la app sin distribuir el riesgo es teórico; dejaría de
-serlo al publicarla.
+Hoy ambos viven solo en el servidor. La app manda **el tipo de análisis y los
+datos**, nunca un prompt ni una credencial, y el canje de Strava pasa por el
+backend. Comprobado con `strings` sobre una compilación limpia, fichero por
+fichero: ningún secreto aparece en el bundle.
 
-Los tokens que devuelve Strava, esos sí credenciales del usuario, se guardan en el
-**Keychain** (`kSecAttrAccessibleWhenUnlockedThisDeviceOnly`), igual que la clave de
-la API de IA.
+Los tokens que devuelve Strava —esos sí credenciales del usuario— y el token de
+dispositivo se guardan en el **Keychain**
+(`kSecAttrAccessibleWhenUnlockedThisDeviceOnly`). El servidor **no** guarda los
+tokens de Strava de nadie: los devuelve y los custodia la app, para no convertirse
+en un depósito de credenciales ajenas.
 
-### 2. Distribuir la app exige un backend
+### 2. La identidad del dispositivo no está atestiguada
 
-Publicarla obligaría a montar un servidor intermedio, y no principalmente por
-seguridad:
+No hay cuentas: en el primer arranque la app se registra y recibe un token. Para
+saber a quién aplicarle la cuota basta, pero **nada impide registrar dispositivos
+nuevos en bucle** para renovarla. Lo que acota el gasto son los topes por
+dispositivo, no la identidad.
 
-- El `client_secret` y la clave de IA dejarían de estar en el dispositivo, y podrían
-  rotarse sin publicar una actualización.
-- Se podría limitar el consumo por usuario. Hoy cada uno pone su clave de Anthropic
-  precisamente porque no hay forma de repartir ese coste.
-- Permitiría un modelo de suscripción, que en iOS debe pasar por In-App Purchase.
-
-Tiene contrapartida: hoy los datos de salud van del dispositivo directos a la API de
-Anthropic, mientras que con backend pasarían por un servidor propio. Se gana control
-sobre las claves a cambio de custodiar datos de salud ajenos, lo que en la UE es más
-responsabilidad, no menos.
+Cerrarlo de verdad requiere **App Attest**, que exige cuenta de desarrollador de
+pago (99 $/año). Es el mismo motivo por el que la suscripción queda escrita pero
+inactiva: sin esa cuenta no hay productos en App Store Connect ni recibos reales
+que validar.
 
 ### 3. Salir al mercado es un proyecto distinto
 
-Además del backend, distribuir la app en la UE implicaría cumplir el **RGPD** con
-datos de categoría especial (art. 9): HRV, sueño y frecuencia cardíaca lo son. Eso
-exige consentimiento explícito y granular, política de privacidad real, finalidad
+Distribuir la app en la UE implicaría cumplir el **RGPD** con datos de categoría
+especial (art. 9): HRV, sueño y frecuencia cardíaca lo son. Eso exige
+consentimiento explícito y granular, política de privacidad real, finalidad
 limitada, plazos de conservación y derecho de acceso y borrado. También habría que
 declarar a Anthropic como encargado del tratamiento, firmar el acuerdo
 correspondiente y advertir de forma clara que los análisis no son consejo médico.
+
+Y hay una contrapartida que el backend introduce: antes los datos de salud iban del
+dispositivo directos a la API de Anthropic; ahora pasan por un servidor propio. Se
+gana control sobre las claves a cambio de custodiar datos ajenos, lo que en la UE es
+más responsabilidad, no menos.
 
 ### 4. El histórico vive solo en el dispositivo
 
