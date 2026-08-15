@@ -58,4 +58,11 @@ describe("prompt del chat", () => {
     expect(CHAT_SYSTEM).toContain("NO eres médico ni dietista");
     expect(CHAT_SYSTEM).toContain("NO lo respondas");
   });
+
+  // La vista pinta la respuesta con Text(variable), que no interpreta markdown:
+  // cualquier ## o ** se vería literal en pantalla.
+  it("pide texto plano", () => {
+    expect(CHAT_SYSTEM).toContain("TEXTO PLANO");
+    expect(CHAT_SYSTEM).toContain("sin markdown");
+  });
 });

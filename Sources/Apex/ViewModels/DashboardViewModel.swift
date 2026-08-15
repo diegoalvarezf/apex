@@ -73,8 +73,8 @@ final class DashboardViewModel: ObservableObject {
 
         let context = buildContext(health: health, strengthSummary: strengthSummary, localAlerts: nil)
         do {
-            let text = try await AIService.shared.rawCompletion(
-                prompt: context.buildAlertsPrompt(), maxTokens: 700)
+            let text = try await AIService.shared.analyze(
+                .alerts, input: context.buildAlertsPrompt())
             guard let json = AIService.extractJSON(from: text),
                   let data = json.data(using: .utf8),
                   let parsed = try? JSONDecoder().decode(AlertsWrapper.self, from: data),
@@ -142,11 +142,10 @@ final class DashboardViewModel: ObservableObject {
 
         let context = buildContext(health: health, strengthSummary: strengthSummary, localAlerts: nil)
         do {
-            let text = try await AIService.shared.rawCompletion(
-                prompt: context.buildWeeklySummaryPrompt(),
-                // Sonnet basta: son cuatro viñetas sobre métricas ya calculadas.
-                // Opus se reserva para crear rutinas, que sí exige razonar más.
-                model: ClaudeConfig.model, maxTokens: 400)
+            // El modelo lo elige el servidor: Sonnet basta para cuatro viñetas
+            // sobre métricas ya calculadas.
+            let text = try await AIService.shared.analyze(
+                .weekly, input: context.buildWeeklySummaryPrompt())
             let clean = text.trimmingCharacters(in: .whitespacesAndNewlines)
             guard !clean.isEmpty else { return }
             weeklySummary = clean

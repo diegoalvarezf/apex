@@ -98,12 +98,6 @@ final class RoutineViewModel: ObservableObject {
         aiError = nil
         defer { isParsingAI = false }
 
-        let systemPrompt = """
-        Eres un parser de rutinas de gimnasio. Tu única función es convertir texto libre en JSON válido.
-        Responde SOLO con el objeto JSON, sin markdown, sin backticks, sin texto antes ni después.
-        El JSON debe empezar con { y terminar con }.
-        """
-
         let userPrompt = """
         Convierte esta rutina de gimnasio en JSON con la siguiente estructura exacta:
 
@@ -145,7 +139,7 @@ final class RoutineViewModel: ObservableObject {
         """
 
         do {
-            let raw = try await AIService.shared.rawCompletion(prompt: userPrompt, system: systemPrompt)
+            let raw = try await AIService.shared.analyze(.routineParse, input: userPrompt)
 
             // Extrae el bloque JSON aunque Claude añada texto extra
             guard let jsonString = AIService.extractJSON(from: raw) else {
@@ -197,29 +191,6 @@ final class RoutineViewModel: ObservableObject {
         defer { isParsingAI = false }
         RoutineQuota.registrar()
 
-        let systemPrompt = """
-        Eres un entrenador de fuerza titulado. Diseñas rutinas de gimnasio seguras y
-        efectivas basándote en principios reconocidos de la ciencia del entrenamiento:
-        - Sobrecarga progresiva y periodización.
-        - Volumen semanal por grupo muscular en el rango de hipertrofia (aprox. 10-20 series
-          efectivas/semana por grupo para intermedios), ajustado al nivel del usuario.
-        - Frecuencia de 2x/semana por grupo cuando el número de días lo permita.
-        - Selección de ejercicios: básicos multiarticulares primero, accesorios después.
-        - Rangos de repeticiones acordes al objetivo (fuerza 3-6, hipertrofia 6-12, resistencia 12-20).
-        - Respeta lesiones/limitaciones y el material disponible.
-        - Si el historial muestra la progresión de un ejercicio, úsala: propón el siguiente
-          paso sobre el último peso registrado. Si un ejercicio lleva varias sesiones sin
-          moverse, no repitas "sube peso": cambia el rango de repeticiones, descarga o
-          sustituye el ejercicio por otro del mismo patrón.
-        - Si se indica qué grupos se han trabajado los últimos 7 días, reparte la frecuencia
-          teniéndolo en cuenta en vez de recargar lo que ya viene cargado.
-        - Ajusta el volumen a la recuperación y al sueño: con la carga alta (ACWR elevado) o
-          varias noches durmiendo poco, no propongas la semana más exigente.
-
-        Responde SOLO con el objeto JSON, sin markdown, sin backticks, sin texto antes ni
-        después. El JSON debe empezar con { y terminar con }.
-        """
-
         let userPrompt = """
         Diseña una rutina de gimnasio personalizada y devuélvela en este esquema EXACTO:
 
@@ -262,9 +233,7 @@ final class RoutineViewModel: ObservableObject {
         """
 
         do {
-            let raw = try await AIService.shared.rawCompletion(
-                prompt: userPrompt, system: systemPrompt,
-                model: ClaudeConfig.opusModel, maxTokens: 8000)
+            let raw = try await AIService.shared.analyze(.routineCreate, input: userPrompt)
 
             guard let jsonString = AIService.extractJSON(from: raw) else {
                 aiError = "La IA no devolvió un JSON válido. Inténtalo de nuevo."

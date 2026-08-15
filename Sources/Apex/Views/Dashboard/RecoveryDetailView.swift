@@ -32,8 +32,7 @@ struct RecoveryDetailView: View {
             let recent = history.suffix(7).map { String(Int($0.value)) }
             lines.append("Recuperación últimos días: \(recent.joined(separator: "→")).")
         }
-        let system = AIPrompts.recovery
-        return try await AIService.shared.rawCompletion(prompt: lines.joined(separator: "\n"), system: system, maxTokens: 400)
+        return try await AIService.shared.analyze(.recovery, input: lines.joined(separator: "\n"))
     }
 
     private var todayHRV: Double? { hrvHistory.last?.sdnn }

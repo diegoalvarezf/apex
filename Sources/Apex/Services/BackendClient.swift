@@ -18,6 +18,9 @@ enum BackendError: LocalizedError {
     case tipoDesconocido
     case servidorCaido
     case respuestaIlegible
+    // Strava rechazó el canje o el refresh: el código o el refresh token ya no
+    // valen. Se distingue de un fallo de red porque obliga a reconectar.
+    case stravaRechazado
 
     var errorDescription: String? {
         switch self {
@@ -39,6 +42,8 @@ enum BackendError: LocalizedError {
             return "El servicio no está disponible ahora mismo. Inténtalo más tarde."
         case .respuestaIlegible:
             return "Respuesta inesperada del servidor."
+        case .stravaRechazado:
+            return "Strava ha rechazado la conexión. Vuelve a conectarla."
         }
     }
 }
@@ -47,6 +52,7 @@ enum BackendError: LocalizedError {
 // `backend/src/services/catalog.ts`: si aquí se pide uno que allí no existe, el
 // servidor responde 400 en vez de gastar tokens.
 enum AnalysisKind: String {
+    case insights
     case alerts
     case weekly
     case recovery
@@ -56,6 +62,7 @@ enum AnalysisKind: String {
     case run
     case routineDay
     case exerciseProgress
+    case routineParse
     case routineCreate
     case exerciseSwap
 }
@@ -132,6 +139,86 @@ final class BackendClient {
             }
         }
     }
+
+    // Chat del coach. Endpoint propio porque manda la conversación entera, no un
+    // bloque de datos.
+    func chat(messages: [[String: String]], context: String) async throws -> String {
+        try await withRetryOnUnauthorized { token in
+            var request = URLRequest(url: BackendConfig.url("/v1/ai/chat"))
+            request.httpMethod = "POST"
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+            request.timeoutInterval = 60
+            request.httpBody = try JSONSerialization.data(
+                withJSONObject: ["messages": messages, "context": context])
+
+            let (data, response) = try await URLSession.shared.data(for: request)
+            guard let http = response as? HTTPURLResponse else { throw BackendError.respuestaIlegible }
+
+            switch http.statusCode {
+            case 200:
+                struct R: Decodable { let text: String }
+                return try JSONDecoder().decode(R.self, from: data).text
+            case 401: throw BackendError.noAutorizado
+            case 400: throw BackendError.respuestaIlegible
+            case 429:
+                let e = try? JSONDecoder().decode(QuotaError.self, from: data)
+                throw BackendError.cuotaAgotada(
+                    restantes: 0, limite: e?.limit ?? 0,
+                    renuevaEn: e?.resetsAt.flatMap(Self.parseFecha))
+            default: throw BackendError.servidorCaido
+            }
+        }
+    }
+
+    // MARK: - Strava
+
+    // El servidor pone el client_secret y devuelve solo lo que la app necesita.
+    // Los tokens de Strava NO se guardan en el servidor: los custodia la app en su
+    // Keychain, para que este servicio no se convierta en un depósito de
+    // credenciales de terceros.
+    func stravaExchange(code: String) async throws -> StravaAuthManager.TokenResponse {
+        try await stravaCall(path: "/v1/strava/exchange", body: ["code": code])
+    }
+
+    func stravaRefresh(refreshToken: String) async throws -> StravaAuthManager.TokenResponse {
+        try await stravaCall(path: "/v1/strava/refresh", body: ["refreshToken": refreshToken])
+    }
+
+    private struct StravaTokens: Decodable {
+        let accessToken: String
+        let refreshToken: String
+        let expiresAt: Int
+    }
+
+    private func stravaCall(
+        path: String, body: [String: String]
+    ) async throws -> StravaAuthManager.TokenResponse {
+        try await withRetryOnUnauthorized { token in
+            var request = URLRequest(url: BackendConfig.url(path))
+            request.httpMethod = "POST"
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+            request.httpBody = try JSONSerialization.data(withJSONObject: body)
+
+            let (data, response) = try await URLSession.shared.data(for: request)
+            guard let http = response as? HTTPURLResponse else { throw BackendError.respuestaIlegible }
+
+            switch http.statusCode {
+            case 200:
+                let t = try JSONDecoder().decode(StravaTokens.self, from: data)
+                return StravaAuthManager.TokenResponse(
+                    accessToken: t.accessToken,
+                    refreshToken: t.refreshToken,
+                    expiresAt: t.expiresAt)
+            case 401: throw BackendError.noAutorizado
+            case 400: throw BackendError.stravaRechazado
+            default: throw BackendError.servidorCaido
+            }
+        }
+    }
+
+    // MARK: - Cuotas
 
     // Cuotas restantes, sin gastar nada. La usan las pantallas que enseñan
     // "te quedan N rutinas" antes de que el usuario pulse.

@@ -130,7 +130,7 @@ struct SleepDetailView: View {
             }
         }
 
-        return try await AIService.shared.rawCompletion(prompt: lines.joined(separator: "\n"), system: AIPrompts.sleep, maxTokens: 400)
+        return try await AIService.shared.analyze(.sleep, input: lines.joined(separator: "\n"))
     }
 }
 

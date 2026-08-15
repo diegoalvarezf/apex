@@ -85,8 +85,7 @@ private struct DayStressPage: View {
         if let peak = hourlyHR.map(\.value).max() {
             lines.append("FC máxima del día: \(Int(peak)) bpm (FCmáx de referencia \(Int(maxHR))).")
         }
-        let system = AIPrompts.stress
-        return try await AIService.shared.rawCompletion(prompt: lines.joined(separator: "\n"), system: system, maxTokens: 400)
+        return try await AIService.shared.analyze(.stress, input: lines.joined(separator: "\n"))
     }
 
     private var stressLabel: String {

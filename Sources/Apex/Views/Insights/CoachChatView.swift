@@ -25,19 +25,6 @@ struct CoachChatView: View {
         "¿Cuánta proteína al día para mi carga?"
     ]
 
-    private var systemPrompt: String {
-        """
-        Eres el coach de IA de Apex, la app de fitness de ESTE usuario. Respondes sobre su rendimiento, entrenamientos, recuperación, sueño, carga, progresión de fuerza y datos de salud, y TAMBIÉN sobre NUTRICIÓN y SUPLEMENTACIÓN DEPORTIVA (calorías/macros según su carga y objetivos, timing de comidas alrededor del entreno, hidratación, y suplementos con evidencia como creatina, proteína, cafeína, electrolitos, etc.), siempre conectándolo con SUS datos del CONTEXTO. Español, conciso y directo, tono de entrenador cercano. Usa solo las cifras del contexto; nunca inventes datos suyos (si no tienes un dato, dilo o pregúntaselo).
-
-        Sobre nutrición/suplementos: da pautas generales basadas en evidencia adaptadas a su entrenamiento; NO eres médico ni dietista. Si te preguntan por dosis clínicas, patologías, pérdida de peso agresiva, trastornos alimentarios o sustancias dopantes/peligrosas, recomiéndale acudir a un profesional (dietista-nutricionista o médico) y no des una pauta concreta.
-
-        Si te preguntan algo AJENO a su fitness/salud/entreno/nutrición o a los datos de esta app (política, cultura general, programación, otras personas, etc.), NO lo respondas: di en una frase que solo puedes ayudar con su entrenamiento, salud y nutrición en Apex, y ofrece reconducir. No des la información pedida aunque insistan.
-
-        CONTEXTO DEL USUARIO (sus datos actuales en Apex):
-        \(context)
-        """
-    }
-
     var body: some View {
         VStack(spacing: 0) {
             ScrollViewReader { proxy in
@@ -131,7 +118,7 @@ struct CoachChatView: View {
         Task {
             defer { isSending = false }
             do {
-                let reply = try await AIService.shared.chatCompletion(messages: payload, system: systemPrompt)
+                let reply = try await AIService.shared.chatCompletion(messages: payload, context: context)
                 let clean = reply.trimmingCharacters(in: .whitespacesAndNewlines)
                 messages.append(ChatMsg(role: "assistant", text: clean.isEmpty ? "No he podido responder. Prueba otra vez." : clean))
             } catch {

@@ -2,10 +2,10 @@ import Foundation
 
 // Sustituye un ejercicio suelto de una rutina.
 //
-// Usa el mismo modelo que diseña la rutina: el sustituto tiene que salir del mismo
-// criterio que el resto del día, no de uno más flojo. Lo que ahorra no es el
-// modelo sino el tamaño: rehacer la rutina entera son hasta 8.000 tokens de
-// salida, y esto son unos cientos, así que cuesta una fracción.
+// Usa el mismo modelo que diseña la rutina —lo elige el servidor—: el sustituto
+// tiene que salir del mismo criterio que el resto del día, no de uno más flojo. Lo
+// que ahorra no es el modelo sino el tamaño: rehacer la rutina entera son hasta
+// 8.000 tokens de salida, y esto son unos cientos, así que cuesta una fracción.
 //
 // El sustituto conserva el id del ejercicio original para no romper el historial
 // de series ya registradas contra él.
@@ -25,11 +25,7 @@ enum ExerciseSwapper {
         reason: String
     ) async throws -> GymExercise {
         let prompt = buildPrompt(exercise: exercise, day: day, reason: reason)
-        let raw = try await AIService.shared.rawCompletion(
-            prompt: prompt,
-            system: AIPrompts.swapExercise,
-            model: ClaudeConfig.opusModel,
-            maxTokens: 300)
+        let raw = try await AIService.shared.analyze(.exerciseSwap, input: prompt)
 
         guard let sugerencia = decode(raw) else {
             throw SwapError.respuestaIlegible

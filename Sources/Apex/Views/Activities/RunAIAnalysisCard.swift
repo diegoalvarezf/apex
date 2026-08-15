@@ -72,7 +72,7 @@ struct ActivityAIAnalysisCard: View {
         do {
             let streams = try await StravaAPI.shared.fetchStreams(id: activity.id, token: token)
             let prompt = buildPrompt(streams: streams)
-            let text = try await AIService.shared.rawCompletion(prompt: prompt, system: AIPrompts.enduranceSession, maxTokens: 500)
+            let text = try await AIService.shared.analyze(.run, input: prompt)
             let clean = text.trimmingCharacters(in: .whitespacesAndNewlines)
             guard !clean.isEmpty else { error = "La IA no devolvió análisis."; return }
             analysis = clean

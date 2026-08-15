@@ -3,18 +3,14 @@ import Foundation
 import UIKit
 
 enum StravaConfig {
-    // Credenciales desde StravaSecrets.plist (local, en .gitignore). Ver
-    // StravaSecrets.example.plist. Fallback al placeholder si el fichero no existe.
-    private static let secrets: [String: String] = {
-        guard let url = Bundle.main.url(forResource: "StravaSecrets", withExtension: "plist"),
-              let data = try? Data(contentsOf: url),
-              let dict = try? PropertyListSerialization.propertyList(from: data, format: nil) as? [String: String]
-        else { return [:] }
-        return dict
-    }()
-
-    static let clientID     = secrets["ClientID"]     ?? "YOUR_STRAVA_CLIENT_ID"
-    static let clientSecret = secrets["ClientSecret"] ?? "YOUR_STRAVA_CLIENT_SECRET"
+    // El client_id NO es secreto: viaja en la URL de autorización, a la vista de
+    // cualquiera, y Strava lo trata como público. Por eso puede estar aquí.
+    //
+    // El client_secret, en cambio, ya no está en la app: vive en el backend, que
+    // es quien canjea y refresca los tokens. Era la vulnerabilidad conocida del
+    // proyecto, porque el OAuth de Strava lo exige y no admite PKCE, así que
+    // dentro del binario no había forma de protegerlo.
+    static let clientID     = "259817"
     static let redirectURI  = "apex-strava://localhost/oauth"
     static let scopes       = "read,activity:read_all,profile:read_all"
 }
@@ -77,23 +73,11 @@ final class StravaAuthManager: NSObject, ObservableObject, ASWebAuthenticationPr
         Task { await exchangeCode(code) }
     }
 
+    // El canje pasa por el backend porque exige el client_secret: el OAuth de
+    // Strava no admite PKCE, así que dentro de la app ese secreto viajaba en el
+    // binario y cualquiera podía sacarlo del .ipa. Ahora vive solo en el servidor.
     private func exchangeCode(_ code: String) async {
-        guard let url = URL(string: "https://www.strava.com/oauth/token") else { return }
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        let body: [String: String] = [
-            "client_id": StravaConfig.clientID,
-            "client_secret": StravaConfig.clientSecret,
-            "code": code,
-            "grant_type": "authorization_code"
-        ]
-        request.httpBody = try? JSONSerialization.data(withJSONObject: body)
-
-        guard let (data, _) = try? await URLSession.shared.data(for: request),
-              let json = try? JSONDecoder().decode(TokenResponse.self, from: data)
-        else { return }
-
+        guard let json = try? await BackendClient.shared.stravaExchange(code: code) else { return }
         saveToken(json)
     }
 
@@ -110,30 +94,16 @@ final class StravaAuthManager: NSObject, ObservableObject, ASWebAuthenticationPr
             return
         }
 
-        guard let url = URL(string: "https://www.strava.com/oauth/token") else { return }
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        let body: [String: String] = [
-            "client_id": StravaConfig.clientID,
-            "client_secret": StravaConfig.clientSecret,
-            "refresh_token": refresh,
-            "grant_type": "refresh_token"
-        ]
-        request.httpBody = try? JSONSerialization.data(withJSONObject: body)
-
         do {
-            let (data, response) = try await URLSession.shared.data(for: request)
-            if let http = response as? HTTPURLResponse, !(200..<300).contains(http.statusCode) {
-                // 400/401 = refresh token revocado o inválido → forzar reconexión.
-                // Otros códigos (5xx, rate limit) son transitorios: mantener sesión.
-                if http.statusCode == 400 || http.statusCode == 401 { signOut() }
-                return
-            }
-            let json = try JSONDecoder().decode(TokenResponse.self, from: data)
+            let json = try await BackendClient.shared.stravaRefresh(refreshToken: refresh)
             saveToken(json)
+        } catch BackendError.stravaRechazado {
+            // El refresh token está revocado o caducado: hay que reconectar.
+            signOut()
         } catch {
-            // Error de red transitorio: mantener la sesión, se reintenta al reabrir.
+            // Red o servidor caído: la sesión se mantiene y se reintenta al
+            // reabrir. Cerrarla aquí obligaría a reconectar Strava cada vez que
+            // hubiera un corte pasajero.
             return
         }
     }
@@ -176,7 +146,7 @@ final class StravaAuthManager: NSObject, ObservableObject, ASWebAuthenticationPr
         ASPresentationAnchor()
     }
 
-    private struct TokenResponse: Codable {
+    struct TokenResponse: Codable {
         let accessToken: String
         let refreshToken: String
         let expiresAt: Int

@@ -37,8 +37,7 @@ struct EffortDetailView: View {
             let h = week.reduce(0.0) { $0 + Double($1.movingTime) } / 3600.0
             lines.append(String(format: "Últimos 7 días: %d sesiones, %.1f h.", week.count, h))
         }
-        let system = AIPrompts.effort
-        return try await AIService.shared.rawCompletion(prompt: lines.joined(separator: "\n"), system: system, maxTokens: 400)
+        return try await AIService.shared.analyze(.effort, input: lines.joined(separator: "\n"))
     }
 
     private let zoneNames  = ["Z1 Muy suave", "Z2 Aeróbico", "Z3 Umbral", "Z4 Anaeróbico", "Z5 Máximo"]

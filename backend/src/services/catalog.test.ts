@@ -20,6 +20,29 @@ describe("catálogo de análisis", () => {
     expect(isKnownKind("constructor")).toBe(false);
   });
 
+  // El acoplamiento más frágil del sistema: la app tiene su propio enum
+  // (`AnalysisKind` en BackendClient.swift) y pide análisis por nombre. Si aquí se
+  // renombra o se borra uno, las llamadas de esa versión de la app empiezan a
+  // recibir 400 sin que nada avise en tiempo de compilación. Esta lista fija el
+  // contrato: tocarla obliga a mirar también el lado Swift.
+  it("expone exactamente los análisis que la app conoce", () => {
+    expect(Object.keys(CATALOG).sort()).toEqual([
+      "alerts",
+      "effort",
+      "exerciseProgress",
+      "exerciseSwap",
+      "insights",
+      "recovery",
+      "routineCreate",
+      "routineDay",
+      "routineParse",
+      "run",
+      "sleep",
+      "stress",
+      "weekly",
+    ]);
+  });
+
   it("todos los análisis declaran prompt, modelo y tope", () => {
     for (const [kind, spec] of Object.entries(CATALOG)) {
       expect(spec.system.length, `${kind} sin prompt`).toBeGreaterThan(50);

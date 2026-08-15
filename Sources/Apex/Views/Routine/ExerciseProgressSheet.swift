@@ -439,6 +439,6 @@ struct ExerciseProgressSheet: View {
         }
         lines += sessionContext()
 
-        return try await AIService.shared.rawCompletion(prompt: lines.joined(separator: "\n"), system: AIPrompts.exerciseProgress, maxTokens: 400)
+        return try await AIService.shared.analyze(.exerciseProgress, input: lines.joined(separator: "\n"))
     }
 }

@@ -65,6 +65,7 @@ App iOS nativa de seguimiento de rendimiento deportivo. Integra Strava, Apple He
 | Watch | watchOS + WatchConnectivity |
 | Autenticación | ASWebAuthenticationSession (OAuth 2.0) |
 | Persistencia | UserDefaults + App Groups · **Keychain** para credenciales |
+| Backend | Node + TypeScript (Fastify, Drizzle, Postgres) en Railway |
 
 ---
 
@@ -93,20 +94,19 @@ enum StravaConfig {
 
 4. En Xcode, añade el URL Scheme `apex-strava` en `Info.plist` → URL Types.
 
-### 3. Anthropic API
+### 3. Backend
 
-La clave la introduce cada usuario desde la propia app: **Perfil → Apex IA**. Se
-valida contra la API antes de guardarla y se almacena en el **Keychain** del
-dispositivo, no en el binario ni en UserDefaults. Cada uno usa su clave y su
-consumo se factura a su cuenta.
+La app no habla directamente con Anthropic ni canjea tokens de Strava: ambas cosas
+pasan por un servidor propio, que custodia las credenciales y aplica las cuotas.
+Está en [`backend/`](backend/) y tiene su propio README.
 
-1. Crea una clave en [console.anthropic.com](https://console.anthropic.com/settings/keys).
-2. Ábrela en la app en Perfil → Apex IA y pulsa "Comprobar y guardar".
+En el primer arranque la app se registra contra él y guarda un token de dispositivo
+en el Keychain; a partir de ahí manda **el tipo de análisis y los datos**, nunca un
+prompt. Así, ni el `client_secret` de Strava ni la clave de Anthropic viajan dentro
+del `.ipa`.
 
-Sin clave, el resto de la app funciona igual: solo se desactivan los análisis de IA.
-
-> Para desarrollo puedes dejarla en `StravaSecrets.plist` (bajo `AnthropicAPIKey`),
-> que está en `.gitignore`. La del Keychain tiene prioridad sobre esa.
+Para apuntar a tu propio despliegue, cambia `BackendConfig.baseURL` en
+`Sources/Apex/Services/BackendClient.swift`.
 
 ### 4. App Groups (widget)
 

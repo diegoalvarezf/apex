@@ -7,5 +7,8 @@ DerivedData/
 *.xcarchive
 .build/
 
-# Credenciales locales de Strava (nunca subir al repo)
+# Credenciales locales (nunca subir al repo). Viven en .secrets/ y NO en
+# Sources/Apex/Resources: todo lo que hay en Resources se empaqueta dentro de la
+# app, así que ahí los secretos viajarían en el .ipa aunque ningún código los lea.
+.secrets/
 StravaSecrets.plist

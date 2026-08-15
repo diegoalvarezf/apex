@@ -382,7 +382,7 @@ private struct DayDetailView: View {
             }
         }
 
-        return try await AIService.shared.rawCompletion(prompt: lines.joined(separator: "\n"), system: AIPrompts.routineDay, maxTokens: 350)
+        return try await AIService.shared.analyze(.routineDay, input: lines.joined(separator: "\n"))
     }
 }
 
