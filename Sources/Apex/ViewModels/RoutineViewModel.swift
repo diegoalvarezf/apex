@@ -179,17 +179,13 @@ final class RoutineViewModel: ObservableObject {
     // y pesos ya registrados (montado por la vista). La IA diseña la rutina y la
     // devuelve en el MISMO esquema JSON que el parser.
     func createRoutineWithAI(brief: String, context: String) async {
-        // Diseñar una rutina es la llamada más cara de la app; la cuota mantiene el
-        // coste por usuario acotado. Cambiar un ejercicio suelto no la consume.
-        guard RoutineQuota.puedeGenerar() else {
-            aiError = "Has usado las \(RoutineQuota.porMes) rutinas de este mes. "
-                + "Puedes seguir cambiando ejercicios sueltos, que no gastan cuota."
-            return
-        }
+        // La cuota la lleva el servidor: es quien paga la llamada y el único que
+        // no se puede manipular desde el móvil. Aquí no se comprueba nada por
+        // adelantado —se intenta y, si está agotada, responde 429 y el error que
+        // llega ya trae el límite y la fecha de renovación correctos.
         isParsingAI = true
         aiError = nil
         defer { isParsingAI = false }
-        RoutineQuota.registrar()
 
         let userPrompt = """
         Diseña una rutina de gimnasio personalizada y devuélvela en este esquema EXACTO:

@@ -141,6 +141,7 @@ private struct CrearSection: View {
     enum Level: String, CaseIterable, Identifiable { case principiante = "Principiante", intermedio = "Intermedio", avanzado = "Avanzado"; var id: String { rawValue } }
     enum Equip: String, CaseIterable, Identifiable { case gym = "Gimnasio completo", barraMancuernas = "Barra y mancuernas", mancuernas = "Solo mancuernas", peso = "Peso corporal", casa = "Casa básico"; var id: String { rawValue } }
 
+    @State private var cuotas: AllQuotas?
     @State private var goal: Goal = .hipertrofia
     @State private var level: Level = .intermedio
     @State private var days = 4
@@ -244,26 +245,44 @@ private struct CrearSection: View {
                 .disabled(routineVM.isParsingAI)
             }
         }
+        // Se consulta al abrir, y de nuevo al terminar de generar: así el número
+        // que ve el usuario refleja lo que acaba de gastar.
+        .task { cuotas = try? await BackendClient.shared.quotas() }
+        .onChange(of: routineVM.isParsingAI) { _, generando in
+            if !generando {
+                Task { cuotas = try? await BackendClient.shared.quotas() }
+            }
+        }
     }
 
     // MARK: - Construcción de prompts
 
     // Se enseña antes de generar, no al agotarse: quedarse sin cuota al pulsar el
     // botón sería una sorpresa desagradable.
+    //
+    // La cifra viene del servidor, que es quien la aplica de verdad. Contarla en el
+    // móvil daba un número que podía no coincidir con el suyo: la app decía cuatro
+    // y el servidor rechazaba a la segunda.
     @ViewBuilder private var cuotaRestante: some View {
-        let quedan = RoutineQuota.restantes()
         HStack {
-            Image(systemName: quedan > 0 ? "sparkles" : "hourglass")
-                .foregroundStyle(quedan > 0 ? Color.secondary : Color.orange)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(quedan > 0
-                     ? "Te quedan \(quedan) de \(RoutineQuota.porMes) rutinas este mes"
-                     : "Sin rutinas disponibles este mes")
-                    .font(.subheadline)
-                Text(quedan > 0
-                     ? "Cambiar un ejercicio suelto no gasta cuota."
-                     : "Puedes seguir cambiando ejercicios sueltos, que no gastan cuota.")
-                    .font(.caption).foregroundStyle(.secondary)
+            if let c = cuotas {
+                let quedan = c.routine.remaining
+                Image(systemName: quedan > 0 ? "sparkles" : "hourglass")
+                    .foregroundStyle(quedan > 0 ? Color.secondary : Color.orange)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(quedan > 0
+                         ? "Te quedan \(quedan) de \(c.routine.limit) rutinas este mes"
+                         : "Sin rutinas disponibles este mes")
+                        .font(.subheadline)
+                    Text("Cambiar un ejercicio suelto no gasta cuota.")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+            } else {
+                // Mientras se consulta no se inventa un número: enseñar uno que
+                // luego cambie es peor que no enseñar ninguno.
+                ProgressView().controlSize(.small)
+                Text("Consultando tu cuota…")
+                    .font(.subheadline).foregroundStyle(.secondary)
             }
         }
     }

@@ -25,11 +25,10 @@
 		1FD786A0267CFF8FB9A1C448 /* RoutineViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14E0C93B42F7A793365F6D7D /* RoutineViewModel.swift */; };
 		24D70BCA0D5B304199E81A88 /* BackgroundRefresh.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3487467E1969D8FC02F39D3F /* BackgroundRefresh.swift */; };
 		29761C6B9AC1EB8BD2D69FCB /* DailySnapshotStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F76B9B06D62C837E5C1647D /* DailySnapshotStore.swift */; };
-		2AACEAB09944C7EF3CC26515 /* RoutineQuotaTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1167B75A1677E511BE9B04B /* RoutineQuotaTests.swift */; };
 		2D5F4AEBEB4D0D949780EF4C /* PersonalRecordsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E6365D4F6FE91F2ABAA5891 /* PersonalRecordsView.swift */; };
 		2FD5C1A5F77B0E9F234D532F /* PhoneConnectivityManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D65A3BD8BE6F51776E6070A /* PhoneConnectivityManager.swift */; };
-		31DD40256BCCF1BA73ED369D /* RoutineQuota.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E9F4D6BB0F42D8757628FBE /* RoutineQuota.swift */; };
 		322390A0882DBEDF36E6309F /* WorkoutHistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E755A8A669E92EB89A93F2A /* WorkoutHistoryView.swift */; };
+		32CD2F8609515285004E1FE3 /* ExerciseSwapperTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EB428E2B586B1CF6CB605A8 /* ExerciseSwapperTests.swift */; };
 		335FBF45FA0D90D7DDBA5142 /* VO2MaxEstimator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48E4E0D4C2D8D482779E6B19 /* VO2MaxEstimator.swift */; };
 		34BEA5DEC1EEDA5673829CFF /* VO2MaxStalenessTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E04B08A284D4E03379DA933E /* VO2MaxStalenessTests.swift */; };
 		35E8AE780B879EE68C1D32FE /* SleepDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3711C7634C698D2C39E28A17 /* SleepDetailView.swift */; };
@@ -169,6 +168,7 @@
 		0D00BB0B41C709710EDE02FE /* CoachChatView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachChatView.swift; sourceTree = "<group>"; };
 		0DDB8DDED711F995D4DA916C /* SleepCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepCard.swift; sourceTree = "<group>"; };
 		0E8C95A547E083280FBF8C24 /* DeviceAuth.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceAuth.swift; sourceTree = "<group>"; };
+		0EB428E2B586B1CF6CB605A8 /* ExerciseSwapperTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExerciseSwapperTests.swift; sourceTree = "<group>"; };
 		0F1EB6384FCBDC0036C04CFB /* ApexWidget.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = ApexWidget.entitlements; sourceTree = "<group>"; };
 		0F33426E91D5809804AAF0C2 /* EffortDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EffortDetailView.swift; sourceTree = "<group>"; };
 		116DEF7F3E2E27AADEA835B4 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -201,7 +201,6 @@
 		44C5D570EA6243B6B67E2AEA /* TrainingLoadCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrainingLoadCard.swift; sourceTree = "<group>"; };
 		48E4E0D4C2D8D482779E6B19 /* VO2MaxEstimator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VO2MaxEstimator.swift; sourceTree = "<group>"; };
 		4D98E51CB174C34F4540BEF9 /* AIInsight.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIInsight.swift; sourceTree = "<group>"; };
-		4E9F4D6BB0F42D8757628FBE /* RoutineQuota.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoutineQuota.swift; sourceTree = "<group>"; };
 		55DAD81B00BA688F089A40F3 /* Apex.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Apex.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		588F608DCC40E95DD8647E18 /* RoutineView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoutineView.swift; sourceTree = "<group>"; };
 		5B29A7E2D63C7414E34B5E82 /* InsightsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InsightsView.swift; sourceTree = "<group>"; };
@@ -239,7 +238,6 @@
 		9C8F99C86532776D9A595C37 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		9CA05CE06DA7D0D8487B6525 /* TrainingMetrics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrainingMetrics.swift; sourceTree = "<group>"; };
 		9E501BD5E0A0BECBF744DA80 /* TrainingLoadDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrainingLoadDetailView.swift; sourceTree = "<group>"; };
-		A1167B75A1677E511BE9B04B /* RoutineQuotaTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoutineQuotaTests.swift; sourceTree = "<group>"; };
 		A7E2CE3201CB2C882BD27556 /* HealthLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthLayout.swift; sourceTree = "<group>"; };
 		A83816945191FDA883FEDF0B /* BodyBatteryDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BodyBatteryDetailView.swift; sourceTree = "<group>"; };
 		A92D6E29026301A8CBC351FF /* Keychain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Keychain.swift; sourceTree = "<group>"; };
@@ -332,10 +330,10 @@
 			children = (
 				7B432670E2ACFA40943CB349 /* BodyBatteryCacheTests.swift */,
 				B2DDF406A5C0537227EF9EC5 /* DailySnapshotStoreTests.swift */,
+				0EB428E2B586B1CF6CB605A8 /* ExerciseSwapperTests.swift */,
 				BF1743C0689451AD5241E5A4 /* FitnessAgeTests.swift */,
 				AF2A5B1EE522BBB3AD980C17 /* MetricCalendarTests.swift */,
 				04659271F9806B8400DF0F55 /* PromptSafetyTests.swift */,
-				A1167B75A1677E511BE9B04B /* RoutineQuotaTests.swift */,
 				E34E9B77B5A6EED2A7D75D18 /* SessionLoadTests.swift */,
 				937343D1AD328D38F1AEA9C7 /* StravaActivityFixture.swift */,
 				F96D25617D324C362F8E34FC /* TrainingMetricsTests.swift */,
@@ -408,7 +406,6 @@
 				84F95477213FB0DE9EB839EF /* NotificationManager.swift */,
 				1D65A3BD8BE6F51776E6070A /* PhoneConnectivityManager.swift */,
 				6D6B47C4A6F4B5FC7DF83EE5 /* RoutineProgressStore.swift */,
-				4E9F4D6BB0F42D8757628FBE /* RoutineQuota.swift */,
 				8039A0B056518A564A0AF7F2 /* StravaAPI.swift */,
 				41370B6763ED9B455FB1DFBE /* StravaAuth.swift */,
 				9CA05CE06DA7D0D8487B6525 /* TrainingMetrics.swift */,
@@ -706,10 +703,10 @@
 			files = (
 				45DFAF50C68DAC998E0265FD /* BodyBatteryCacheTests.swift in Sources */,
 				E597A64714DDFA6DAB75B7C8 /* DailySnapshotStoreTests.swift in Sources */,
+				32CD2F8609515285004E1FE3 /* ExerciseSwapperTests.swift in Sources */,
 				C04D77A817001F87BEDE22A5 /* FitnessAgeTests.swift in Sources */,
 				1FA704E8DE4CBF215A5A2199 /* MetricCalendarTests.swift in Sources */,
 				5B1ABED22F673424F1B48351 /* PromptSafetyTests.swift in Sources */,
-				2AACEAB09944C7EF3CC26515 /* RoutineQuotaTests.swift in Sources */,
 				1756E84C3A0A0157979643F6 /* SessionLoadTests.swift in Sources */,
 				42D6822A661F262B432F3DD6 /* StravaActivityFixture.swift in Sources */,
 				5F66B03ED35EF2F60F49A293 /* TrainingMetricsTests.swift in Sources */,
@@ -776,7 +773,6 @@
 				6503B2038F56FC9AC18C4D8F /* Routine.swift in Sources */,
 				E4600BAE7DC219CEF9DE1354 /* RoutineAISheet.swift in Sources */,
 				B1FCF8BD35AF13D7BD9F02DE /* RoutineProgressStore.swift in Sources */,
-				31DD40256BCCF1BA73ED369D /* RoutineQuota.swift in Sources */,
 				1B57892F4D7C826275265F3A /* RoutineView.swift in Sources */,
 				1FD786A0267CFF8FB9A1C448 /* RoutineViewModel.swift in Sources */,
 				E84BF498D110F931D4F79242 /* RunAIAnalysisCard.swift in Sources */,
