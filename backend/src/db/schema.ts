@@ -21,10 +21,19 @@ export const devices = pgTable(
     tokenHash: text("token_hash").notNull(),
     platform: text("platform").notNull().default("ios"),
     isPro: boolean("is_pro").notNull().default(false),
+    // Cuándo deja de ser Pro. Nulo con isPro=true significa sin caducidad.
+    proUntil: timestamp("pro_until", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     lastSeenAt: timestamp("last_seen_at", { withTimezone: true }).notNull().defaultNow(),
+    // HASH de la IP desde la que se registró, nunca la IP. Sirve para limitar
+    // cuántos dispositivos puede dar de alta un mismo origen; guardarla en claro
+    // sería recoger un dato personal que no hace falta para eso.
+    registrationIpHash: text("registration_ip_hash"),
   },
-  (t) => [index("devices_token_hash_idx").on(t.tokenHash)],
+  (t) => [
+    index("devices_token_hash_idx").on(t.tokenHash),
+    index("devices_reg_ip_idx").on(t.registrationIpHash, t.createdAt),
+  ],
 );
 
 // Consumo diario, para los análisis baratos (alertas, resumen, métricas).
@@ -78,6 +87,27 @@ export const aiCalls = pgTable(
   ],
 );
 
+// Códigos de activación de Apex Pro.
+//
+// La suscripción de verdad exige In-App Purchase de Apple, y eso una cuenta de
+// desarrollador de pago. Mientras tanto, Pro se concede con un código: sirve para
+// usarlo de verdad y para que el tribunal pueda probarlo, sin simular una compra
+// que no existe.
+//
+// Cada código es de un solo uso y queda atado al dispositivo que lo canjeó, así
+// que se sabe quién activó qué y un código filtrado no se reparte.
+export const proCodes = pgTable("pro_codes", {
+  code: text("code").primaryKey(),
+  // Para quién se emitió, en texto libre: "Tribunal TFM", "Diego"…
+  issuedTo: text("issued_to"),
+  redeemedByDeviceId: text("redeemed_by_device_id"),
+  redeemedAt: timestamp("redeemed_at", { withTimezone: true }),
+  // Hasta cuándo dura el Pro que concede. Nulo = sin caducidad.
+  expiresAt: timestamp("expires_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 export type Device = typeof devices.$inferSelect;
+export type ProCode = typeof proCodes.$inferSelect;
 export type NewDevice = typeof devices.$inferInsert;
 export type AICall = typeof aiCalls.$inferInsert;

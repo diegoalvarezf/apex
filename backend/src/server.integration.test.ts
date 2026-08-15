@@ -24,8 +24,14 @@ const DDL = `
   CREATE TABLE IF NOT EXISTS devices (
     id TEXT PRIMARY KEY, token_hash TEXT NOT NULL,
     platform TEXT NOT NULL DEFAULT 'ios', is_pro BOOLEAN NOT NULL DEFAULT false,
+    pro_until TIMESTAMPTZ,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    last_seen_at TIMESTAMPTZ NOT NULL DEFAULT now());
+    last_seen_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    registration_ip_hash TEXT);
+  CREATE TABLE IF NOT EXISTS pro_codes (
+    code TEXT PRIMARY KEY, issued_to TEXT,
+    redeemed_by_device_id TEXT, redeemed_at TIMESTAMPTZ,
+    expires_at TIMESTAMPTZ, created_at TIMESTAMPTZ NOT NULL DEFAULT now());
   CREATE TABLE IF NOT EXISTS usage_daily (
     device_id TEXT, day TEXT, kind TEXT, count INTEGER NOT NULL DEFAULT 0,
     PRIMARY KEY(device_id, day, kind));
@@ -199,6 +205,109 @@ describe("proxy de Strava", () => {
       method: "POST",
       url: "/v1/strava/refresh",
       payload: { refreshToken: "x" },
+    });
+    expect(res.statusCode).toBe(401);
+  });
+});
+
+describe("Apex Pro por código", () => {
+  async function emitir(code: string, expiresAt: Date | null = null) {
+    await (testDb.current as any).insert(schema.proCodes).values({
+      code, issuedTo: "test", expiresAt,
+    });
+  }
+
+  it("un código válido activa Pro y amplía la cuota", async () => {
+    await emitir("ABCD2345EFGH");
+    const token = await registrar();
+    const auth = { authorization: `Bearer ${token}` };
+
+    const antes = await app.inject({ method: "GET", url: "/v1/ai/quota", headers: auth });
+    expect(antes.json().routine.remaining).toBe(1);
+
+    const canje = await app.inject({
+      method: "POST", url: "/v1/pro/redeem", headers: auth,
+      payload: { code: "ABCD-2345-EFGH" },
+    });
+    expect(canje.statusCode).toBe(200);
+    expect(canje.json().isPro).toBe(true);
+
+    // Lo que importa: el plan cambia de verdad lo que puede hacer.
+    const despues = await app.inject({ method: "GET", url: "/v1/ai/quota", headers: auth });
+    expect(despues.json().isPro).toBe(true);
+    expect(despues.json().routine.remaining).toBe(4);
+  });
+
+  // Se teclea a mano: minúsculas y sin guiones tienen que valer igual.
+  it("acepta el código escrito de cualquier forma", async () => {
+    await emitir("WXYZ6789MNPQ");
+    const token = await registrar();
+    const res = await app.inject({
+      method: "POST", url: "/v1/pro/redeem",
+      headers: { authorization: `Bearer ${token}` },
+      payload: { code: "  wxyz6789mnpq " },
+    });
+    expect(res.statusCode).toBe(200);
+  });
+
+  it("un código inventado no vale", async () => {
+    const token = await registrar();
+    const res = await app.inject({
+      method: "POST", url: "/v1/pro/redeem",
+      headers: { authorization: `Bearer ${token}` },
+      payload: { code: "NOEX-ISTE-AQUI" },
+    });
+    expect(res.statusCode).toBe(404);
+  });
+
+  // Es de un solo uso: si no, uno filtrado daría Pro a todo el mundo.
+  it("no se puede canjear dos veces desde dispositivos distintos", async () => {
+    await emitir("SOLO2345UNAV");
+    const primero = await registrar();
+    const segundo = await registrar();
+
+    const a = await app.inject({
+      method: "POST", url: "/v1/pro/redeem",
+      headers: { authorization: `Bearer ${primero}` }, payload: { code: "SOLO2345UNAV" },
+    });
+    expect(a.statusCode).toBe(200);
+
+    const b = await app.inject({
+      method: "POST", url: "/v1/pro/redeem",
+      headers: { authorization: `Bearer ${segundo}` }, payload: { code: "SOLO2345UNAV" },
+    });
+    expect(b.statusCode).toBe(409);
+  });
+
+  // Reinstalar la app o repetir el gesto no debería castigarse.
+  it("el mismo dispositivo puede repetir su canje", async () => {
+    await emitir("REPE2345TIRR");
+    const token = await registrar();
+    const auth = { authorization: `Bearer ${token}` };
+
+    expect((await app.inject({ method: "POST", url: "/v1/pro/redeem", headers: auth, payload: { code: "REPE2345TIRR" } })).statusCode).toBe(200);
+    expect((await app.inject({ method: "POST", url: "/v1/pro/redeem", headers: auth, payload: { code: "REPE2345TIRR" } })).statusCode).toBe(200);
+  });
+
+  // Un código caducado no debe seguir dando cuota ampliada.
+  it("un código ya caducado no concede Pro vigente", async () => {
+    await emitir("CADU2345CADO", new Date(Date.now() - 86_400_000));
+    const token = await registrar();
+    const auth = { authorization: `Bearer ${token}` };
+
+    await app.inject({ method: "POST", url: "/v1/pro/redeem", headers: auth, payload: { code: "CADU2345CADO" } });
+
+    const estado = await app.inject({ method: "GET", url: "/v1/pro/status", headers: auth });
+    expect(estado.json().isPro).toBe(false);
+
+    // Y la cuota sigue siendo la del plan gratis.
+    const cuota = await app.inject({ method: "GET", url: "/v1/ai/quota", headers: auth });
+    expect(cuota.json().routine.remaining).toBe(1);
+  });
+
+  it("canjear exige estar autenticado", async () => {
+    const res = await app.inject({
+      method: "POST", url: "/v1/pro/redeem", payload: { code: "ABCD2345EFGH" },
     });
     expect(res.statusCode).toBe(401);
   });

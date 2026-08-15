@@ -9,6 +9,8 @@ import { checkQuota, consumeQuota } from "../services/quotas.js";
 import {
   CHAT_SYSTEM, CHAT_MODEL, CHAT_MAX_TOKENS, validateTurns,
 } from "../services/chat.js";
+import { wrapAsData, DATA_BOUNDARY_RULE } from "../services/promptSafety.js";
+import { esProVigente } from "../services/pro.js";
 
 const anthropic = new Anthropic({ apiKey: config.anthropicApiKey });
 
@@ -41,7 +43,7 @@ export function registerAIRoutes(app: FastifyInstance): void {
 
     const spec = CATALOG[kind];
 
-    const quota = await checkQuota(device.id, kind, device.isPro);
+    const quota = await checkQuota(device.id, kind, esProVigente(device));
     if (!quota.allowed) {
       return reply.code(429).send({
         error: "quota_exceeded",
@@ -49,7 +51,7 @@ export function registerAIRoutes(app: FastifyInstance): void {
         used: quota.used,
         limit: quota.limit,
         resetsAt: quota.resetsAt,
-        isPro: device.isPro,
+        isPro: esProVigente(device),
       });
     }
 
@@ -58,8 +60,10 @@ export function registerAIRoutes(app: FastifyInstance): void {
       response = await anthropic.messages.create({
         model: spec.model,
         max_tokens: spec.maxTokens,
-        system: spec.system,
-        messages: [{ role: "user", content: input }],
+        // El texto del cliente va como dato delimitado, no como instrucción: desde
+        // que la clave la pone el servidor, quien manda ese texto no es de fiar.
+        system: `${spec.system}\n\n${DATA_BOUNDARY_RULE}`,
+        messages: [{ role: "user", content: wrapAsData(input) }],
       });
     } catch (err) {
       request.log.error({ err, kind }, "fallo al llamar a Anthropic");
@@ -90,12 +94,17 @@ export function registerAIRoutes(app: FastifyInstance): void {
       }),
     ]);
 
-    const after = await checkQuota(device.id, kind, device.isPro);
-
+    // Lo que queda se deduce de lo que había menos esta llamada, en vez de volver
+    // a preguntárselo a la base de datos: es la misma cifra y una consulta menos
+    // en el camino más frecuente de la API.
     return reply.send({
       text,
       usage: { inputTokens, outputTokens },
-      quota: { remaining: after.remaining, limit: after.limit, resetsAt: after.resetsAt },
+      quota: {
+        remaining: Math.max(0, quota.remaining - 1),
+        limit: quota.limit,
+        resetsAt: quota.resetsAt,
+      },
     });
   });
 
@@ -120,14 +129,14 @@ export function registerAIRoutes(app: FastifyInstance): void {
       }
 
       // La cuota del chat se cuenta contra el mismo cupo diario que los análisis.
-      const quota = await checkQuota(device.id, "alerts", device.isPro);
+      const quota = await checkQuota(device.id, "alerts", esProVigente(device));
       if (!quota.allowed) {
         return reply.code(429).send({
           error: "quota_exceeded",
           used: quota.used,
           limit: quota.limit,
           resetsAt: quota.resetsAt,
-          isPro: device.isPro,
+          isPro: esProVigente(device),
         });
       }
 
@@ -138,8 +147,11 @@ export function registerAIRoutes(app: FastifyInstance): void {
           max_tokens: CHAT_MAX_TOKENS,
           // El contexto del usuario se añade al prompt del sistema, no como un
           // turno más: así no puede confundirse con algo que dijo el usuario.
+          // El contexto también es dato del cliente, así que va delimitado. Los
+          // turnos de conversación sí son del usuario por definición y se pasan
+          // tal cual: ahí hablar es lo esperado.
           system: contexto
-            ? `${CHAT_SYSTEM}\n\nCONTEXTO DEL USUARIO (sus datos actuales en Apex):\n${contexto}`
+            ? `${CHAT_SYSTEM}\n\n${DATA_BOUNDARY_RULE}\n\nCONTEXTO DEL USUARIO:\n${wrapAsData(contexto)}`
             : CHAT_SYSTEM,
           messages: turns,
         });
@@ -175,13 +187,13 @@ export function registerAIRoutes(app: FastifyInstance): void {
   app.get("/v1/ai/quota", async (request, reply) => {
     const device = request.device!;
     const [standard, routine, swap] = await Promise.all([
-      checkQuota(device.id, "alerts", device.isPro),
-      checkQuota(device.id, "routineCreate", device.isPro),
-      checkQuota(device.id, "exerciseSwap", device.isPro),
+      checkQuota(device.id, "alerts", esProVigente(device)),
+      checkQuota(device.id, "routineCreate", esProVigente(device)),
+      checkQuota(device.id, "exerciseSwap", esProVigente(device)),
     ]);
 
     return reply.send({
-      isPro: device.isPro,
+      isPro: esProVigente(device),
       standard: { remaining: standard.remaining, limit: standard.limit, resetsAt: standard.resetsAt },
       routine: { remaining: routine.remaining, limit: routine.limit, resetsAt: routine.resetsAt },
       swap: { remaining: swap.remaining, limit: swap.limit, resetsAt: swap.resetsAt },

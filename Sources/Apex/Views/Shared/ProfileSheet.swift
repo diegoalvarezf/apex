@@ -13,6 +13,7 @@ struct ProfileSheet: View {
     // tiene contratado; antes esta fila decía si había puesto su clave, que ya no
     // existe.
     @State private var cuotas: AllQuotas?
+    @State private var showPro = false
 
     private var cuotaTexto: String {
         guard let c = cuotas else { return "Incluida" }
@@ -119,13 +120,16 @@ struct ProfileSheet: View {
                         connected: true
                     )
 
-                    ConnectedAppRow(
-                        icon: "sparkles",
-                        iconColor: .purple,
-                        name: "Apex IA",
-                        status: cuotaTexto,
-                        connected: true
-                    )
+                    Button { showPro = true } label: {
+                        ConnectedAppRow(
+                            icon: "sparkles",
+                            iconColor: .purple,
+                            name: "Apex IA",
+                            status: cuotaTexto,
+                            connected: true
+                        )
+                    }
+                    .buttonStyle(.plain)
                 }
 
                 // ── Strava ───────────────────────────────────────────────────
@@ -169,6 +173,11 @@ struct ProfileSheet: View {
 
             }
             .task { cuotas = try? await BackendClient.shared.quotas() }
+            .sheet(isPresented: $showPro) {
+                ApexProSheet(onChange: {
+                    Task { cuotas = try? await BackendClient.shared.quotas() }
+                })
+            }
             .navigationTitle("Perfil")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -191,17 +200,6 @@ private struct ConnectedAppRow: View {
     let name: String
     let status: String
     let connected: Bool
-
-    // Cuotas del servidor. Se enseñan aquí porque es donde el usuario mira qué
-    // tiene contratado; antes esta fila decía si había puesto su clave, que ya no
-    // existe.
-    @State private var cuotas: AllQuotas?
-
-    private var cuotaTexto: String {
-        guard let c = cuotas else { return "Incluida" }
-        if c.isPro { return "Pro · \(c.routine.remaining) rutinas este mes" }
-        return "Gratis · \(c.standard.remaining) análisis hoy"
-    }
 
     var body: some View {
         HStack(spacing: 14) {

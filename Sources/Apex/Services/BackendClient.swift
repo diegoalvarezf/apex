@@ -21,6 +21,8 @@ enum BackendError: LocalizedError {
     // Strava rechazó el canje o el refresh: el código o el refresh token ya no
     // valen. Se distingue de un fallo de red porque obliga a reconectar.
     case stravaRechazado
+    case codigoNoValido
+    case codigoYaUsado
 
     var errorDescription: String? {
         switch self {
@@ -44,6 +46,10 @@ enum BackendError: LocalizedError {
             return "Respuesta inesperada del servidor."
         case .stravaRechazado:
             return "Strava ha rechazado la conexión. Vuelve a conectarla."
+        case .codigoNoValido:
+            return "Ese código no existe. Revisa que esté bien escrito."
+        case .codigoYaUsado:
+            return "Ese código ya se ha usado en otro dispositivo."
         }
     }
 }
@@ -167,6 +173,38 @@ final class BackendClient {
                     restantes: 0, limite: e?.limit ?? 0,
                     renuevaEn: e?.resetsAt.flatMap(Self.parseFecha))
             default: throw BackendError.servidorCaido
+            }
+        }
+    }
+
+    // MARK: - Apex Pro
+
+    struct ProStatus: Decodable {
+        let isPro: Bool
+        let expiresAt: String?
+    }
+
+    // Canjea un código de activación. Mientras no haya cuenta de desarrollador de
+    // pago no hay compras dentro de la app, así que Pro se concede así.
+    @discardableResult
+    func redeemPro(code: String) async throws -> ProStatus {
+        try await withRetryOnUnauthorized { token in
+            var request = URLRequest(url: BackendConfig.url("/v1/pro/redeem"))
+            request.httpMethod = "POST"
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+            request.httpBody = try JSONSerialization.data(withJSONObject: ["code": code])
+
+            let (data, response) = try await URLSession.shared.data(for: request)
+            guard let http = response as? HTTPURLResponse else { throw BackendError.respuestaIlegible }
+
+            switch http.statusCode {
+            case 200: return try JSONDecoder().decode(ProStatus.self, from: data)
+            case 401: throw BackendError.noAutorizado
+            case 404: throw BackendError.codigoNoValido
+            case 409: throw BackendError.codigoYaUsado
+            case 400: throw BackendError.codigoNoValido
+            default:  throw BackendError.servidorCaido
             }
         }
     }

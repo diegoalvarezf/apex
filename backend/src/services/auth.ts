@@ -1,5 +1,5 @@
 import { randomBytes, createHash, timingSafeEqual } from "node:crypto";
-import { eq } from "drizzle-orm";
+import { eq, and, gte, count } from "drizzle-orm";
 import { db } from "../db/index.js";
 import { devices, type Device } from "../db/schema.js";
 
@@ -16,12 +16,38 @@ import { devices, type Device } from "../db/schema.js";
 
 const TOKEN_BYTES = 32;
 
+// Cuántos dispositivos puede registrar un mismo origen por hora.
+//
+// Sin tope, un bucle contra el registro da cuotas ilimitadas —cada alta estrena
+// las suyas— y de paso llena la base de datos. No cierra el agujero de fondo
+// (para eso hace falta App Attest, que exige cuenta de pago), pero convierte un
+// abuso trivial en uno que hay que trabajarse.
+//
+// Diez es holgado para el uso legítimo: reinstalar la app, un par de dispositivos
+// y varias personas tras el mismo router de casa caben de sobra.
+const MAX_REGISTROS_POR_HORA = 10;
+
 export interface RegisteredDevice {
   deviceId: string;
   token: string; // en claro, se devuelve UNA sola vez
 }
 
-export async function registerDevice(platform = "ios"): Promise<RegisteredDevice> {
+export class DemasiadosRegistros extends Error {
+  constructor() {
+    super("demasiados registros desde este origen");
+  }
+}
+
+export async function registerDevice(
+  platform = "ios",
+  ip?: string,
+): Promise<RegisteredDevice> {
+  const ipHash = ip ? hashToken(ip) : null;
+
+  if (ipHash && (await registrosUltimaHora(ipHash)) >= MAX_REGISTROS_POR_HORA) {
+    throw new DemasiadosRegistros();
+  }
+
   const deviceId = randomBytes(16).toString("hex");
   const token = randomBytes(TOKEN_BYTES).toString("base64url");
 
@@ -29,9 +55,19 @@ export async function registerDevice(platform = "ios"): Promise<RegisteredDevice
     id: deviceId,
     tokenHash: hashToken(token),
     platform,
+    registrationIpHash: ipHash,
   });
 
   return { deviceId, token };
+}
+
+async function registrosUltimaHora(ipHash: string): Promise<number> {
+  const desde = new Date(Date.now() - 60 * 60 * 1000);
+  const [fila] = await db
+    .select({ total: count() })
+    .from(devices)
+    .where(and(eq(devices.registrationIpHash, ipHash), gte(devices.createdAt, desde)));
+  return fila?.total ?? 0;
 }
 
 // Busca por el hash, nunca por el token: la base de datos no guarda el original,

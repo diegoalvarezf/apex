@@ -5,6 +5,7 @@ import type { Device } from "./db/schema.js";
 import { registerDeviceRoutes } from "./routes/devices.js";
 import { registerAIRoutes } from "./routes/ai.js";
 import { registerStravaRoutes } from "./routes/strava.js";
+import { registerProRoutes } from "./routes/pro.js";
 
 declare module "fastify" {
   interface FastifyRequest {
@@ -40,6 +41,7 @@ export function buildServer(): FastifyInstance {
     protectedRoutes.addHook("preHandler", requireDevice);
     registerAIRoutes(protectedRoutes);
     registerStravaRoutes(protectedRoutes);
+    registerProRoutes(protectedRoutes);
   });
 
   return app;

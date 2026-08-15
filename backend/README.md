@@ -34,6 +34,9 @@ publicar una versión nueva de la app.
 | `GET` | `/v1/ai/quota` | Bearer | Cuotas restantes, sin gastar nada |
 | `POST` | `/v1/strava/exchange` | Bearer | Canjea el `code` de OAuth |
 | `POST` | `/v1/strava/refresh` | Bearer | Refresca el token de Strava |
+| `POST` | `/v1/ai/chat` | Bearer | Chat del coach (multi-turno) |
+| `POST` | `/v1/pro/redeem` | Bearer | Canjea un código de Apex Pro |
+| `GET` | `/v1/pro/status` | Bearer | Estado del plan |
 
 ## Cuotas
 
@@ -65,12 +68,47 @@ GROUP BY device_id
 ORDER BY dolares DESC;
 ```
 
+## Apex Pro
+
+La suscripción de verdad exige In-App Purchase, y eso cuenta de desarrollador de
+pago. Mientras no la haya, Pro se concede **canjeando un código**: da exactamente
+el mismo plan que daría la suscripción, así que la funcionalidad es real y se puede
+demostrar. El día que exista IAP, la validación del recibo llamará a la misma
+función y no cambia nada más.
+
+Emitir códigos:
+
+```bash
+npm run pro:issue -- "Tribunal TFM" 5 90    # para quién, cuántos, días de validez
+```
+
+Se imprimen una sola vez. Cada uno es de un solo uso y queda atado al dispositivo
+que lo canjeó, así que un código filtrado no se reparte —aunque el mismo
+dispositivo sí puede repetir el canje, para que reinstalar la app no lo castigue—.
+
+## El texto del cliente se trata como dato, no como instrucción
+
+Con la app hablando directamente con Anthropic, sanear en el cliente bastaba: quien
+lo manipulara solo se saboteaba su propio análisis, y lo pagaba con su clave. Al
+mover la clave al servidor **el cliente pasó a ser no fiable**, y esa defensa dejó
+de servir.
+
+Ahora el servidor envuelve el texto recibido entre marcas y le dice al modelo que
+ahí dentro solo hay datos (`src/services/promptSafety.ts`). Las marcas se limpian
+del propio texto para que no pueda cerrarlas antes de tiempo. No impide toda
+inyección —nada lo hace—, pero cierra la vía obvia de esquivar el catálogo.
+
 ## Límite conocido de la autenticación
 
 No hay cuentas: el dispositivo se registra y guarda un token en el Keychain. Para
 saber a quién cobrarle la cuota es suficiente, pero **nada impide registrar
 dispositivos nuevos en bucle para renovarla**. Lo que acota el gasto son los topes,
 no la identidad.
+
+Se limita a **10 registros por hora desde un mismo origen**, guardando el *hash* de
+la IP y nunca la IP. No cierra el agujero —quien quiera puede cambiar de red— pero
+convierte un abuso trivial en uno que hay que trabajarse, y evita que un bucle
+llene la base de datos.
 
 Cerrarlo de verdad requiere **App Attest**, que exige cuenta de desarrollador de
 pago. Queda como trabajo futuro y está declarado también en la memoria del TFM:
