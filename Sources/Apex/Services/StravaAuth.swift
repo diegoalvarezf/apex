@@ -70,9 +70,22 @@ final class StravaAuthManager: NSObject, ObservableObject, ASWebAuthenticationPr
     }
 
     func handleCallback(url: URL) {
-        guard let components = URLComponents(url: url, resolvingAgainstBaseURL: true),
-              let code = components.queryItems?.first(where: { $0.name == "code" })?.value
-        else { return }
+        let components = URLComponents(url: url, resolvingAgainstBaseURL: true)
+
+        // Strava puede volver sin código: si el usuario deniega el permiso manda
+        // `error=access_denied`. Antes se salía en silencio en ambos casos y la
+        // reconexión fallida no se distinguía de una correcta.
+        if let error = components?.queryItems?.first(where: { $0.name == "error" })?.value {
+            connectError = error == "access_denied"
+                ? "No has autorizado el acceso en Strava."
+                : "Strava devolvió un error: \(error)"
+            return
+        }
+
+        guard let code = components?.queryItems?.first(where: { $0.name == "code" })?.value else {
+            connectError = "Strava volvió sin código de autorización."
+            return
+        }
 
         Task { await exchangeCode(code) }
     }
