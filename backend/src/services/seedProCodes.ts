@@ -1,3 +1,4 @@
+import { isNull, sql } from "drizzle-orm";
 import { db } from "../db/index.js";
 import { proCodes } from "../db/schema.js";
 import { normalizar } from "./pro.js";
@@ -14,8 +15,10 @@ import { normalizar } from "./pro.js";
 // para emitir dos códigos: exponer Postgres de forma permanente para un gesto que
 // se hace una vez es mal negocio.
 //
-// Es idempotente —un código ya existente no se toca— así que un reinicio no
-// devuelve la vida a un código revocado ni reinicia los canjes ya hechos.
+// La variable manda sobre los códigos vivos: cambiarle los usos a uno ya sembrado
+// se aplica al reiniciar, que es la única forma de corregirlo sin acceso a la base
+// de datos. Lo que NO toca es un código rotado —vuelve a sembrarse la fila, pero la
+// marca de revocado se respeta—: si no, rotar duraría hasta el siguiente reinicio.
 export function parsearCodigos(
   crudo: string,
 ): Array<{ code: string; maxRedemptions: number | null }> {
@@ -50,7 +53,11 @@ export async function seedProCodes(log: {
   await db
     .insert(proCodes)
     .values(entradas.map((e) => ({ ...e, issuedTo: "PRO_CODES" })))
-    .onConflictDoNothing();
+    .onConflictDoUpdate({
+      target: proCodes.code,
+      set: { maxRedemptions: sql`excluded.max_redemptions` },
+      setWhere: isNull(proCodes.revokedAt),
+    });
 
   log.info({ codigos: entradas.length }, "códigos de Apex Pro sembrados");
 }

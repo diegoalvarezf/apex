@@ -32,4 +32,13 @@ describe("lectura de PRO_CODES", () => {
   it("una variable vacía no siembra nada", () => {
     expect(parsearCodigos("")).toEqual([]);
   });
+
+  // Sin acceso a la base de datos, cambiar la variable es la única forma de
+  // corregir los usos de un código ya sembrado.
+  it("un código repetido se lee con los usos nuevos", () => {
+    expect(parsearCodigos("APEX-DESARROLLO:0")[0]).toEqual({
+      code: "APEXDESARROLLO",
+      maxRedemptions: null,
+    });
+  });
 });

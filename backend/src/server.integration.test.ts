@@ -30,7 +30,8 @@ const DDL = `
     registration_ip_hash TEXT);
   CREATE TABLE IF NOT EXISTS pro_codes (
     code TEXT PRIMARY KEY, issued_to TEXT, max_redemptions INTEGER,
-    expires_at TIMESTAMPTZ, created_at TIMESTAMPTZ NOT NULL DEFAULT now());
+    expires_at TIMESTAMPTZ, revoked_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now());
   CREATE TABLE IF NOT EXISTS pro_redemptions (
     code TEXT NOT NULL, device_id TEXT NOT NULL,
     redeemed_at TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -419,6 +420,30 @@ describe("Apex Pro por código", () => {
 
       await revocar("COMP6789ARTE");
       expect(await esPro(token)).toBe(true);
+    });
+
+    // El fallo que tenía: revocar borraba la fila, y como los códigos se siembran
+    // al arrancar, el siguiente reinicio devolvía a la vida el código rotado.
+    it("la siembra no resucita un código rotado", async () => {
+      const { revocar } = await import("./services/pro.js");
+      const { seedProCodes } = await import("./services/seedProCodes.js");
+      await emitir("ROTA2345DOOO", null, null);
+      await revocar("ROTA2345DOOO");
+
+      process.env.PRO_CODES = "ROTA2345DOOO:0";
+      await seedProCodes({ info: () => {} });
+      delete process.env.PRO_CODES;
+
+      expect((await canjearCon(await registrar(), "ROTA2345DOOO")).statusCode).toBe(404);
+    });
+
+    it("revocar dos veces no vuelve a quitar nada", async () => {
+      const { revocar } = await import("./services/pro.js");
+      await emitir("DOSV2345ECES", null, null);
+      await canjearCon(await registrar(), "DOSV2345ECES");
+
+      expect((await revocar("DOSV2345ECES")).dispositivos).toBe(1);
+      expect((await revocar("DOSV2345ECES")).existia).toBe(false);
     });
 
     it("revocar algo que no existe se nota", async () => {

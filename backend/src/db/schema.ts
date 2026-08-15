@@ -109,6 +109,10 @@ export const proCodes = pgTable("pro_codes", {
   maxRedemptions: integer("max_redemptions"),
   // Hasta cuándo dura el Pro que concede. Nulo = sin caducidad.
   expiresAt: timestamp("expires_at", { withTimezone: true }),
+  // Cuándo se rotó. La fila se conserva en vez de borrarse porque los códigos se
+  // siembran al arrancar: si desapareciera, el siguiente reinicio la devolvería a
+  // la vida y la rotación no duraría nada.
+  revokedAt: timestamp("revoked_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

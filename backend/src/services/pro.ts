@@ -1,5 +1,5 @@
 import { randomBytes } from "node:crypto";
-import { eq, and, count } from "drizzle-orm";
+import { eq, and, count, isNull } from "drizzle-orm";
 import { db } from "../db/index.js";
 import { devices, proCodes, proRedemptions } from "../db/schema.js";
 
@@ -51,7 +51,9 @@ export async function canjear(code: string, deviceId: string): Promise<Resultado
       .for("update")
       .limit(1);
 
-    if (!encontrado) return { ok: false, motivo: "no_existe" };
+    // Un código rotado sigue en la tabla para que no lo resucite la siembra, pero
+    // ya no vale: se responde igual que si no existiera.
+    if (!encontrado || encontrado.revokedAt) return { ok: false, motivo: "no_existe" };
 
     const [yaCanjeado] = await tx
       .select()
@@ -98,31 +100,36 @@ export async function revocar(code: string): Promise<{ existia: boolean; disposi
       .where(eq(proCodes.code, normalizado))
       .limit(1);
 
-    if (!encontrado) return { existia: false, dispositivos: 0 };
+    if (!encontrado || encontrado.revokedAt) return { existia: false, dispositivos: 0 };
 
     const canjes = await tx
       .select({ deviceId: proRedemptions.deviceId })
       .from(proRedemptions)
       .where(eq(proRedemptions.code, normalizado));
 
+    // Se marca antes de mirar quién más tiene Pro, para que el propio código ya no
+    // cuente como vivo al hacer esa comprobación.
+    await tx
+      .update(proCodes)
+      .set({ revokedAt: new Date() })
+      .where(eq(proCodes.code, normalizado));
+
     for (const { deviceId } of canjes) {
-      // Se comprueba si le queda otro código vivo: quitarle Pro a quien también
-      // canjeó su código personal sería un daño colateral que no se ha pedido.
-      const otros = await tx
+      // Solo pierde Pro quien no tenga otro código vivo: quitárselo a quien también
+      // canjeó el suyo personal sería un daño colateral que nadie ha pedido.
+      const vivos = await tx
         .select({ code: proRedemptions.code })
         .from(proRedemptions)
-        .where(eq(proRedemptions.deviceId, deviceId));
+        .innerJoin(proCodes, eq(proCodes.code, proRedemptions.code))
+        .where(and(eq(proRedemptions.deviceId, deviceId), isNull(proCodes.revokedAt)));
 
-      if (otros.every((o) => o.code === normalizado)) {
+      if (vivos.length === 0) {
         await tx
           .update(devices)
           .set({ isPro: false, proUntil: null })
           .where(eq(devices.id, deviceId));
       }
     }
-
-    await tx.delete(proRedemptions).where(eq(proRedemptions.code, normalizado));
-    await tx.delete(proCodes).where(eq(proCodes.code, normalizado));
 
     return { existia: true, dispositivos: canjes.length };
   });

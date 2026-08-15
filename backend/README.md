@@ -84,8 +84,10 @@ emitir dos códigos no compensa—:
 PRO_CODES=APEX-DESARROLLO:1,APEX-TRIBUNAL:0
 ```
 
-`código:usos`, con 0 = sin límite. Sembrar es idempotente: reiniciar no revive un
-código revocado ni borra los canjes hechos.
+`código:usos`, con 0 = sin límite. La variable manda sobre los códigos vivos, así
+que cambiarle los usos a uno ya sembrado se aplica al reiniciar. Lo que no puede
+hacer es resucitar un código rotado: al revocarlo la fila se conserva marcada, y
+por eso rotar dura.
 
 Con acceso a la base de datos, los scripts hacen lo mismo y algo más:
 
