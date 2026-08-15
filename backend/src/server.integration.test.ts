@@ -72,6 +72,13 @@ describe("salud", () => {
     expect(res.statusCode).toBe(200);
     expect(res.json().status).toBe("ok");
   });
+
+  // Sin esto no se puede saber desde fuera qué versión está desplegada, y un build
+  // fallido deja el anterior en pie sin que se note.
+  it("dice qué commit está corriendo", async () => {
+    const res = await app.inject({ method: "GET", url: "/v1/health" });
+    expect(res.json().commit).toBeTruthy();
+  });
 });
 
 describe("registro de dispositivo", () => {

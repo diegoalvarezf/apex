@@ -28,8 +28,17 @@ export function buildServer(): FastifyInstance {
     bodyLimit: 1_048_576, // 1 MB: el contexto más grande no llega ni de lejos
   });
 
+  // Comprobación de vida, y de QUÉ está vivo.
+  //
+  // El commit va aquí porque sin él no hay forma de saber desde fuera qué versión
+  // está corriendo: dos despliegues seguidos pueden responder igual a todo lo
+  // demás, y un build fallido deja en pie el anterior sin que se note. Es el
+  // commit que Railway inyecta al construir la imagen; en local no hay ninguno.
+  const commit = process.env.RAILWAY_GIT_COMMIT_SHA?.slice(0, 7) ?? "local";
+
   app.get("/v1/health", async () => ({
     status: "ok",
+    commit,
     time: new Date().toISOString(),
   }));
 
