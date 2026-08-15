@@ -132,7 +132,8 @@ más vale un límite reconocido que uno escondido.
 npm install
 cp .env.example .env     # y rellenar
 npm run dev              # tsx watch en :3000
-npm test                 # 43 tests
+npm test                 # 78 tests
+npm run typecheck        # los tests transpilan sin comprobar tipos; el build sí
 ```
 
 Los tests no necesitan Postgres instalado: usan **PGlite**, que es Postgres
