@@ -1,13 +1,5 @@
 import Foundation
 
-enum ClaudeConfig {
-    // Los modelos los elige el servidor según el análisis. Estas constantes se
-    // conservan solo porque alguna vista aún las menciona al explicar qué modelo
-    // hay detrás; no deciden nada.
-    static let model = "claude-sonnet-4-6"
-    static let opusModel = "claude-opus-4-8"
-}
-
 // Fachada de la IA para el resto de la app.
 //
 // Ya no habla con Anthropic: manda al backend el tipo de análisis y los datos, y

@@ -45,10 +45,6 @@ final class StravaAPI {
         try await get("/activities/\(id)/streams?keys=time,heartrate,velocity_smooth,distance,altitude,watts&key_by_type=true", token: token)
     }
 
-    func fetchAthleteZones(token: String) async throws -> AthleteZones {
-        try await get("/athlete/zones", token: token)
-    }
-
     private func get<T: Decodable>(_ path: String, token: String) async throws -> T {
         guard let url = URL(string: base + path) else { throw URLError(.badURL) }
         var request = URLRequest(url: url)
@@ -72,23 +68,6 @@ struct ActivityStreams: Decodable {
     enum CodingKeys: String, CodingKey {
         case time, heartrate, distance, altitude, watts
         case velocitySmooth = "velocity_smooth"
-    }
-}
-
-struct AthleteZones: Codable {
-    let heartRate: ZoneRanges?
-    let power: ZoneRanges?
-    enum CodingKeys: String, CodingKey {
-        case heartRate = "heart_rate"
-        case power
-    }
-}
-
-struct ZoneRanges: Codable {
-    let zones: [Zone]
-    struct Zone: Codable {
-        let min: Int
-        let max: Int
     }
 }
 
