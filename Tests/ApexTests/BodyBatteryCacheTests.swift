@@ -8,6 +8,22 @@ import Foundation
 @MainActor
 struct BodyBatteryCacheTests {
 
+    // Noche que acaba a la hora indicada de hoy, para fijar la hora de despertar
+    // y que la simulación no dependa de a qué hora se ejecute el test.
+    private func despertarA(hora: Int) -> SleepData {
+        let inicioDia = Calendar.current.startOfDay(for: Date())
+        let fin = inicioDia.addingTimeInterval(Double(hora) * 3600)
+        return SleepData(
+            date: inicioDia,
+            sleepStart: fin.addingTimeInterval(-7 * 3600),
+            sleepEnd: fin,
+            totalSleep: 7 * 3600,
+            deepSleep: 5400,
+            remSleep: 5400,
+            coreSleep: 14400,
+            awake: 0)
+    }
+
     private func hourlyHR(hours: Int, value: Double = 70) -> [MetricSample] {
         let inicio = Calendar.current.startOfDay(for: Date())
         return (0..<hours).map { h in
@@ -37,13 +53,20 @@ struct BodyBatteryCacheTests {
     // del día anterior (el encadenado día a día que documenta el store), así que
     // cambiar el recovery de hoy no tiene por qué mover el primer punto.
     @Test func alCambiarLosDatosSeRecalcula() {
+        // Se le da una noche que termina a medianoche para que TODAS las horas
+        // simuladas cuenten como despierto. Sin esto el test dependía del reloj:
+        // el store solo simula hasta la hora actual y, ejecutándolo de madrugada,
+        // todas las horas caían antes de la hora de despertar por defecto (las 7),
+        // donde no hay drenaje por FC y las dos series salían idénticas.
+        let despiertoDesdeMedianoche = [despertarA(hora: 0)]
+
         // Con la FC de fondo muy por encima del reposo se drena bastante más que
         // cuando queda por debajo, así que las dos series no pueden coincidir.
         let activo = BodyBatteryStore.shared.hourlyBattery(
-            recoveryScore: recovery(70), sleepHistory: [],
+            recoveryScore: recovery(70), sleepHistory: despiertoDesdeMedianoche,
             hourlyHR: hourlyHR(hours: 12, value: 130), restingHR: 50)
         let enReposo = BodyBatteryStore.shared.hourlyBattery(
-            recoveryScore: recovery(70), sleepHistory: [],
+            recoveryScore: recovery(70), sleepHistory: despiertoDesdeMedianoche,
             hourlyHR: hourlyHR(hours: 12, value: 55), restingHR: 50)
 
         // Si la caché no se invalidara, la segunda llamada devolvería la primera serie.

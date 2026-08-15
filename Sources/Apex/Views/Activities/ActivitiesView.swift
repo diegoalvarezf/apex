@@ -68,7 +68,12 @@ struct ActivitiesView: View {
                 $0.sportType.localizedCaseInsensitiveContains(searchText)
             }
         }
-        return list
+
+        // Más reciente primero. La convención interna de la app es cronológica
+        // (la más antigua primero), que es lo que necesitan las gráficas y los
+        // cálculos; pero una lista para leer se espera al revés. Se ordena por
+        // fecha en vez de invertir, para no depender de cómo venga la fuente.
+        return list.sorted { $0.startDate > $1.startDate }
     }
 
     // MARK: - Week helpers
