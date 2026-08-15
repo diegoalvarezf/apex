@@ -29,9 +29,12 @@ const DDL = `
     last_seen_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     registration_ip_hash TEXT);
   CREATE TABLE IF NOT EXISTS pro_codes (
-    code TEXT PRIMARY KEY, issued_to TEXT,
-    redeemed_by_device_id TEXT, redeemed_at TIMESTAMPTZ,
+    code TEXT PRIMARY KEY, issued_to TEXT, max_redemptions INTEGER,
     expires_at TIMESTAMPTZ, created_at TIMESTAMPTZ NOT NULL DEFAULT now());
+  CREATE TABLE IF NOT EXISTS pro_redemptions (
+    code TEXT NOT NULL, device_id TEXT NOT NULL,
+    redeemed_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    PRIMARY KEY(code, device_id));
   CREATE TABLE IF NOT EXISTS usage_daily (
     device_id TEXT, day TEXT, kind TEXT, count INTEGER NOT NULL DEFAULT 0,
     PRIMARY KEY(device_id, day, kind));
@@ -211,9 +214,9 @@ describe("proxy de Strava", () => {
 });
 
 describe("Apex Pro por código", () => {
-  async function emitir(code: string, expiresAt: Date | null = null) {
+  async function emitir(code: string, expiresAt: Date | null = null, maxRedemptions: number | null = 1) {
     await (testDb.current as any).insert(schema.proCodes).values({
-      code, issuedTo: "test", expiresAt,
+      code, issuedTo: "test", expiresAt, maxRedemptions,
     });
   }
 
@@ -305,10 +308,115 @@ describe("Apex Pro por código", () => {
     expect(cuota.json().routine.remaining).toBe(1);
   });
 
+  // Un código para el tribunal: se reparte entre varios y todos tienen Pro.
+  it("un código de varios usos vale para varios dispositivos", async () => {
+    await emitir("TRIB2345UNAL", null, 3);
+    for (const _ of [1, 2, 3]) {
+      const token = await registrar();
+      const res = await app.inject({
+        method: "POST", url: "/v1/pro/redeem",
+        headers: { authorization: `Bearer ${token}` }, payload: { code: "TRIB2345UNAL" },
+      });
+      expect(res.statusCode).toBe(200);
+    }
+
+    // Pero no para uno más: el tope se respeta.
+    const cuarto = await registrar();
+    const res = await app.inject({
+      method: "POST", url: "/v1/pro/redeem",
+      headers: { authorization: `Bearer ${cuarto}` }, payload: { code: "TRIB2345UNAL" },
+    });
+    expect(res.statusCode).toBe(409);
+  });
+
+  // Repetir no debe gastar un uso ajeno: si lo gastara, reinstalar la app dejaría
+  // sin sitio a otra persona del tribunal.
+  it("repetir el canje no consume otro uso", async () => {
+    await emitir("REUS2345ARLO", null, 2);
+    const primero = await registrar();
+    const auth = { authorization: `Bearer ${primero}` };
+
+    for (const _ of [1, 2, 3]) {
+      await app.inject({ method: "POST", url: "/v1/pro/redeem", headers: auth, payload: { code: "REUS2345ARLO" } });
+    }
+
+    const segundo = await registrar();
+    const res = await app.inject({
+      method: "POST", url: "/v1/pro/redeem",
+      headers: { authorization: `Bearer ${segundo}` }, payload: { code: "REUS2345ARLO" },
+    });
+    expect(res.statusCode).toBe(200);
+  });
+
+  it("sin tope, un código vale para todos los que hagan falta", async () => {
+    await emitir("SINT2345OPES", null, null);
+    for (const _ of [1, 2, 3, 4, 5]) {
+      const token = await registrar();
+      const res = await app.inject({
+        method: "POST", url: "/v1/pro/redeem",
+        headers: { authorization: `Bearer ${token}` }, payload: { code: "SINT2345OPES" },
+      });
+      expect(res.statusCode).toBe(200);
+    }
+  });
+
   it("canjear exige estar autenticado", async () => {
     const res = await app.inject({
       method: "POST", url: "/v1/pro/redeem", payload: { code: "ABCD2345EFGH" },
     });
     expect(res.statusCode).toBe(401);
+  });
+
+  // Rotar el código compartido es la vuelta atrás que permite repartirlo: si acaba
+  // donde no debía, se corta sin dañar a quien tiene Pro por su propio código.
+  describe("rotación de un código", () => {
+    async function canjearCon(token: string, code: string) {
+      return app.inject({
+        method: "POST", url: "/v1/pro/redeem",
+        headers: { authorization: `Bearer ${token}` }, payload: { code },
+      });
+    }
+
+    async function esPro(token: string) {
+      const res = await app.inject({
+        method: "GET", url: "/v1/pro/status", headers: { authorization: `Bearer ${token}` },
+      });
+      return res.json().isPro as boolean;
+    }
+
+    it("quien entró por él pierde Pro y el código deja de servir", async () => {
+      const { revocar } = await import("./services/pro.js");
+      await emitir("COMP2345ARTE", null, null);
+      const token = await registrar();
+      await canjearCon(token, "COMP2345ARTE");
+      expect(await esPro(token)).toBe(true);
+
+      const resultado = await revocar("COMP2345ARTE");
+      expect(resultado.existia).toBe(true);
+      expect(resultado.dispositivos).toBe(1);
+
+      expect(await esPro(token)).toBe(false);
+      expect((await canjearCon(await registrar(), "COMP2345ARTE")).statusCode).toBe(404);
+    });
+
+    // El caso que justifica tener dos códigos: rotar el compartido no puede
+    // costarle el Pro a quien además tiene el suyo.
+    it("no toca a quien tiene otro código propio", async () => {
+      const { revocar } = await import("./services/pro.js");
+      await emitir("MIOP2345ROPI", null, 1);
+      await emitir("COMP6789ARTE", null, null);
+
+      const token = await registrar();
+      await canjearCon(token, "MIOP2345ROPI");
+      await canjearCon(token, "COMP6789ARTE");
+
+      await revocar("COMP6789ARTE");
+      expect(await esPro(token)).toBe(true);
+    });
+
+    it("revocar algo que no existe se nota", async () => {
+      const { revocar } = await import("./services/pro.js");
+      expect((await revocar("NOEX2345ISTE")).existia).toBe(false);
+    });
   });
 });

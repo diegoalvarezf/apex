@@ -94,18 +94,36 @@ export const aiCalls = pgTable(
 // usarlo de verdad y para que el tribunal pueda probarlo, sin simular una compra
 // que no existe.
 //
-// Cada código es de un solo uso y queda atado al dispositivo que lo canjeó, así
-// que se sabe quién activó qué y un código filtrado no se reparte.
+// Un código puede admitir uno o varios canjes: uno solo para entregarle Pro a una
+// persona, varios para repartirlo entre gente de confianza. Quién lo canjeó vive
+// en `pro_redemptions`, lo que permite retirarlo después.
 export const proCodes = pgTable("pro_codes", {
   code: text("code").primaryKey(),
   // Para quién se emitió, en texto libre: "Tribunal TFM", "Diego"…
   issuedTo: text("issued_to"),
-  redeemedByDeviceId: text("redeemed_by_device_id"),
-  redeemedAt: timestamp("redeemed_at", { withTimezone: true }),
+  // Cuántos dispositivos distintos pueden canjearlo. Nulo = sin límite.
+  //
+  // Un código de un solo uso sirve para entregar Pro a una persona; uno de varios
+  // usos, para repartirlo entre gente de la que uno se fía —el tribunal— sin tener
+  // que emitir y llevar la cuenta de un código por cabeza.
+  maxRedemptions: integer("max_redemptions"),
   // Hasta cuándo dura el Pro que concede. Nulo = sin caducidad.
   expiresAt: timestamp("expires_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+// Quién ha canjeado qué. Es una tabla y no un contador porque hace falta saber
+// los dispositivos concretos: para que repetir el canje no gaste otro uso, y para
+// poder retirar Pro justo a quienes entraron por un código al rotarlo.
+export const proRedemptions = pgTable(
+  "pro_redemptions",
+  {
+    code: text("code").notNull(),
+    deviceId: text("device_id").notNull(),
+    redeemedAt: timestamp("redeemed_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.code, t.deviceId] })],
+);
 
 export type Device = typeof devices.$inferSelect;
 export type ProCode = typeof proCodes.$inferSelect;

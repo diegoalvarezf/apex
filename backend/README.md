@@ -76,15 +76,27 @@ el mismo plan que daría la suscripción, así que la funcionalidad es real y se
 demostrar. El día que exista IAP, la validación del recibo llamará a la misma
 función y no cambia nada más.
 
-Emitir códigos:
+Un código puede admitir uno o varios canjes:
 
 ```bash
-npm run pro:issue -- "Tribunal TFM" 5 90    # para quién, cuántos, días de validez
+npm run pro:issue -- --para "Diego" --code APEX-PRO-DIEGO      # personal, un uso, sin caducidad
+npm run pro:issue -- --para "Tribunal TFM" --usos 0            # compartido, sin límite de usos
+npm run pro:issue -- --para "Beta" --cuantos 5 --dias 90       # cinco aleatorios que caducan
 ```
 
-Se imprimen una sola vez. Cada uno es de un solo uso y queda atado al dispositivo
-que lo canjeó, así que un código filtrado no se reparte —aunque el mismo
-dispositivo sí puede repetir el canje, para que reinstalar la app no lo castigue—.
+Se imprimen una sola vez. Repetir el canje desde el mismo dispositivo no gasta otro
+uso: reinstalar la app no debería quitarle el sitio a nadie.
+
+El código compartido es repartible porque tiene vuelta atrás:
+
+```bash
+npm run pro:revoke -- APEX-PRO-TRIBUNAL
+```
+
+Deja de poder canjearse y quienes entraron por él pierden Pro —pero solo ellos: a
+quien además tenga un código propio no se le toca, porque el Pro se retira mirando
+dispositivo por dispositivo. Por eso conviene tener el personal separado del
+compartido, y no un único código para todo.
 
 ## El texto del cliente se trata como dato, no como instrucción
 

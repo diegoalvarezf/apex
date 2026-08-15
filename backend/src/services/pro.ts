@@ -1,7 +1,7 @@
 import { randomBytes } from "node:crypto";
-import { eq, and, isNull } from "drizzle-orm";
+import { eq, and, count } from "drizzle-orm";
 import { db } from "../db/index.js";
-import { devices, proCodes } from "../db/schema.js";
+import { devices, proCodes, proRedemptions } from "../db/schema.js";
 
 // Apex Pro.
 //
@@ -39,34 +39,92 @@ export type ResultadoCanje =
 export async function canjear(code: string, deviceId: string): Promise<ResultadoCanje> {
   const normalizado = normalizar(code);
 
-  const [encontrado] = await db
-    .select()
-    .from(proCodes)
-    .where(eq(proCodes.code, normalizado))
-    .limit(1);
+  // Todo va en una transacción con el código bloqueado (`for update`): entre
+  // contar los canjes y apuntar el nuevo cabe otro canje simultáneo, y sin el
+  // bloqueo un código de N usos podría gastarse N+1 veces. Que lo resuelva la
+  // base de datos y no un `if` optimista.
+  return await db.transaction(async (tx) => {
+    const [encontrado] = await tx
+      .select()
+      .from(proCodes)
+      .where(eq(proCodes.code, normalizado))
+      .for("update")
+      .limit(1);
 
-  if (!encontrado) return { ok: false, motivo: "no_existe" };
+    if (!encontrado) return { ok: false, motivo: "no_existe" };
 
-  // Si ya lo canjeó ESTE mismo dispositivo, se deja pasar: reinstalar la app o
-  // repetir el gesto no debería castigarse con un error.
-  if (encontrado.redeemedByDeviceId && encontrado.redeemedByDeviceId !== deviceId) {
-    return { ok: false, motivo: "ya_usado" };
-  }
+    const [yaCanjeado] = await tx
+      .select()
+      .from(proRedemptions)
+      .where(and(eq(proRedemptions.code, normalizado), eq(proRedemptions.deviceId, deviceId)))
+      .limit(1);
 
-  // Marcar el código solo si sigue libre (o es de este dispositivo). La condición
-  // va en el UPDATE y no en un `if` previo: entre la lectura y la escritura cabe
-  // otro canje, y así lo resuelve la base de datos en vez de una carrera.
-  await db
-    .update(proCodes)
-    .set({ redeemedByDeviceId: deviceId, redeemedAt: new Date() })
-    .where(and(eq(proCodes.code, normalizado), isNull(proCodes.redeemedByDeviceId)));
+    // Si ya lo canjeó ESTE mismo dispositivo, se deja pasar sin gastar otro uso:
+    // reinstalar la app o repetir el gesto no debería castigarse con un error.
+    if (!yaCanjeado) {
+      const [{ usados }] = await tx
+        .select({ usados: count() })
+        .from(proRedemptions)
+        .where(eq(proRedemptions.code, normalizado));
 
-  await db
-    .update(devices)
-    .set({ isPro: true, proUntil: encontrado.expiresAt })
-    .where(eq(devices.id, deviceId));
+      const tope = encontrado.maxRedemptions;
+      if (tope !== null && usados >= tope) return { ok: false, motivo: "ya_usado" };
 
-  return { ok: true, expiresAt: encontrado.expiresAt };
+      await tx.insert(proRedemptions).values({ code: normalizado, deviceId });
+    }
+
+    await tx
+      .update(devices)
+      .set({ isPro: true, proUntil: encontrado.expiresAt })
+      .where(eq(devices.id, deviceId));
+
+    return { ok: true, expiresAt: encontrado.expiresAt };
+  });
+}
+
+// Rotar un código: deja de poder canjearse y quienes entraron por él pierden Pro.
+//
+// Es lo que convierte un código compartido en algo reversible: si acaba donde no
+// debía, se retira sin tocar a quien tenga Pro por otra vía —un código personal
+// sigue intacto, porque el Pro se retira por dispositivo y no en bloque—.
+export async function revocar(code: string): Promise<{ existia: boolean; dispositivos: number }> {
+  const normalizado = normalizar(code);
+
+  return await db.transaction(async (tx) => {
+    const [encontrado] = await tx
+      .select()
+      .from(proCodes)
+      .where(eq(proCodes.code, normalizado))
+      .limit(1);
+
+    if (!encontrado) return { existia: false, dispositivos: 0 };
+
+    const canjes = await tx
+      .select({ deviceId: proRedemptions.deviceId })
+      .from(proRedemptions)
+      .where(eq(proRedemptions.code, normalizado));
+
+    for (const { deviceId } of canjes) {
+      // Se comprueba si le queda otro código vivo: quitarle Pro a quien también
+      // canjeó su código personal sería un daño colateral que no se ha pedido.
+      const otros = await tx
+        .select({ code: proRedemptions.code })
+        .from(proRedemptions)
+        .where(eq(proRedemptions.deviceId, deviceId));
+
+      if (otros.every((o) => o.code === normalizado)) {
+        await tx
+          .update(devices)
+          .set({ isPro: false, proUntil: null })
+          .where(eq(devices.id, deviceId));
+      }
+    }
+
+    await tx.delete(proRedemptions).where(eq(proRedemptions.code, normalizado));
+    await tx.delete(proCodes).where(eq(proCodes.code, normalizado));
+
+    return { existia: true, dispositivos: canjes.length };
+  });
 }
 
 // Pro con caducidad ya pasada deja de ser Pro. Se comprueba al vuelo en vez de con
