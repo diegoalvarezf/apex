@@ -132,7 +132,10 @@ struct DashboardView: View {
                 ProfileSheet()
             }
             .onAppear { refreshWidget() }
-            .task { await dashVM.loadAlertsIfStale(health: healthKit) }
+            // Con `id:` la tarea se repite cuando Strava termina de cargar: al abrir
+            // la app llega antes aquí que las actividades, y sin repetirla las
+            // alertas del día no se escribirían hasta el siguiente arranque.
+            .task(id: dashVM.activitiesSettled) { await dashVM.loadAlertsIfStale(health: healthKit) }
         }
     }
 

@@ -100,6 +100,7 @@
 		E84BF498D110F931D4F79242 /* RunAIAnalysisCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E99751B63AB5AAE7641F8FD /* RunAIAnalysisCard.swift */; };
 		EBA9C57B2E029BAB9B79E2FF /* DailyMetricsRecorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0770FF0039B1EC493AC273B /* DailyMetricsRecorder.swift */; };
 		EBC85D912F711961F75E32CA /* HealthDayDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70D1E5096476CDF79CF1D14F /* HealthDayDetailView.swift */; };
+		EBE0000FDA3CE47DFFFA5590 /* DailyAnalysisGatingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = ECB414A56B53AB050720950D /* DailyAnalysisGatingTests.swift */; };
 		F1460305CC88C6AB5326DBEB /* ActivityTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2325B077EAC479002B9505EA /* ActivityTracker.swift */; };
 		F1CB9CB37D89103771258830 /* VO2MaxEstimatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C8CD34D2CFDC45EB32C055B /* VO2MaxEstimatorTests.swift */; };
 		F34E969E41CB652EDA9B3B9B /* WatchBatteryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A00622900A0532E9DDD6448 /* WatchBatteryView.swift */; };
@@ -268,6 +269,7 @@
 		E12622C664CC2B3EF7150C91 /* WatchDashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchDashboardView.swift; sourceTree = "<group>"; };
 		E34E9B77B5A6EED2A7D75D18 /* SessionLoadTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionLoadTests.swift; sourceTree = "<group>"; };
 		EB567180C187EF78A5DBE686 /* ProfileSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileSheet.swift; sourceTree = "<group>"; };
+		ECB414A56B53AB050720950D /* DailyAnalysisGatingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyAnalysisGatingTests.swift; sourceTree = "<group>"; };
 		F39C9FFFB8CAF1B8E75A3ECD /* WeightTrainingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeightTrainingView.swift; sourceTree = "<group>"; };
 		F417BA50CB365A1774F285F6 /* HealthView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthView.swift; sourceTree = "<group>"; };
 		F96D25617D324C362F8E34FC /* TrainingMetricsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrainingMetricsTests.swift; sourceTree = "<group>"; };
@@ -331,6 +333,7 @@
 			isa = PBXGroup;
 			children = (
 				7B432670E2ACFA40943CB349 /* BodyBatteryCacheTests.swift */,
+				ECB414A56B53AB050720950D /* DailyAnalysisGatingTests.swift */,
 				B2DDF406A5C0537227EF9EC5 /* DailySnapshotStoreTests.swift */,
 				0EB428E2B586B1CF6CB605A8 /* ExerciseSwapperTests.swift */,
 				BF1743C0689451AD5241E5A4 /* FitnessAgeTests.swift */,
@@ -705,6 +708,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				45DFAF50C68DAC998E0265FD /* BodyBatteryCacheTests.swift in Sources */,
+				EBE0000FDA3CE47DFFFA5590 /* DailyAnalysisGatingTests.swift in Sources */,
 				E597A64714DDFA6DAB75B7C8 /* DailySnapshotStoreTests.swift in Sources */,
 				32CD2F8609515285004E1FE3 /* ExerciseSwapperTests.swift in Sources */,
 				C04D77A817001F87BEDE22A5 /* FitnessAgeTests.swift in Sources */,

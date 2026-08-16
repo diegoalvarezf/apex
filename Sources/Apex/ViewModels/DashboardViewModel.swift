@@ -20,6 +20,20 @@ final class DashboardViewModel: ObservableObject {
     @Published var aiAlertsAt: Date?
     @Published var isLoadingAlerts = false
 
+    // ¿Ha terminado ya el primer intento de traer actividades?
+    //
+    // Al abrir la app, cargar Strava y pedir los análisis del día arrancan a la vez,
+    // y Strava tarda más: pasa por renovar el token y por la red, mientras que
+    // HealthKit responde al instante desde el dispositivo. Sin esperar, el análisis
+    // se escribía sobre una lista de actividades todavía vacía —y como es de 1×/día,
+    // esa foto equivocada se quedaba cacheada hasta el día siguiente—.
+    //
+    // Se marca también cuando no hay Strava conectado: entonces la lista vacía es la
+    // respuesta correcta y no hay nada que esperar.
+    @Published private(set) var activitiesSettled = false
+
+    func markActivitiesSettled() { activitiesSettled = true }
+
     private let insightsKey = "apex_ai_insights_v1"
     private let insightsDateKey = "apex_ai_insights_date_v1"
     private let alertsKey = "apex_ai_alerts_v5"
@@ -27,7 +41,14 @@ final class DashboardViewModel: ObservableObject {
     private let weeklyKey = "apex_ai_weekly_v1"
     private let weeklyDateKey = "apex_ai_weekly_date_v1"
 
-    init() { loadCachedInsights() }
+    // El almacén se inyecta para que los tests no compartan el del dispositivo: si
+    // no, un análisis cacheado por una prueba anterior contamina a la siguiente.
+    private let defaults: UserDefaults
+
+    init(defaults: UserDefaults = .standard) {
+        self.defaults = defaults
+        loadCachedInsights()
+    }
 
     struct LoadSample: Identifiable {
         let id = UUID()
@@ -40,18 +61,18 @@ final class DashboardViewModel: ObservableObject {
     // MARK: - Caché de insights (evita re-llamar a la IA en cada visita)
 
     private func loadCachedInsights() {
-        if let data = UserDefaults.standard.data(forKey: insightsKey),
+        if let data = defaults.data(forKey: insightsKey),
            let decoded = try? JSONDecoder().decode([AIInsight].self, from: data) {
             insights = decoded
         }
-        insightsGeneratedAt = UserDefaults.standard.object(forKey: insightsDateKey) as? Date
-        weeklySummary = UserDefaults.standard.string(forKey: weeklyKey)
-        weeklySummaryAt = UserDefaults.standard.object(forKey: weeklyDateKey) as? Date
-        if let data = UserDefaults.standard.data(forKey: alertsKey),
+        insightsGeneratedAt = defaults.object(forKey: insightsDateKey) as? Date
+        weeklySummary = defaults.string(forKey: weeklyKey)
+        weeklySummaryAt = defaults.object(forKey: weeklyDateKey) as? Date
+        if let data = defaults.data(forKey: alertsKey),
            let decoded = try? JSONDecoder().decode([AIAlert].self, from: data) {
             aiAlerts = decoded
         }
-        aiAlertsAt = UserDefaults.standard.object(forKey: alertsDateKey) as? Date
+        aiAlertsAt = defaults.object(forKey: alertsDateKey) as? Date
     }
 
     // MARK: - Alertas del día escritas por la IA (1×/día, cacheadas)
@@ -66,6 +87,10 @@ final class DashboardViewModel: ObservableObject {
     func loadAlertsIfStale(health: HealthKitManager, strengthSummary: String? = nil, force: Bool = false) async {
         // Solo una vez al día (salvo forzado): el resto se sirve de caché
         if !force, let at = aiAlertsAt, Calendar.current.isDateInToday(at), !aiAlerts.isEmpty { return }
+        // Esperar a que Strava haya contestado: escribir las alertas del día sobre
+        // una lista de actividades a medio cargar deja "sin entrenar" a quien sí
+        // entrenó, y cacheado hasta mañana.
+        guard activitiesSettled else { return }
         guard !activities.isEmpty || health.recoveryScore != nil else { return }
         guard !isLoadingAlerts else { return }
         isLoadingAlerts = true
@@ -82,9 +107,9 @@ final class DashboardViewModel: ObservableObject {
             aiAlerts = parsed.alerts
             aiAlertsAt = Date()
             if let enc = try? JSONEncoder().encode(aiAlerts) {
-                UserDefaults.standard.set(enc, forKey: alertsKey)
+                defaults.set(enc, forKey: alertsKey)
             }
-            UserDefaults.standard.set(aiAlertsAt, forKey: alertsDateKey)
+            defaults.set(aiAlertsAt, forKey: alertsDateKey)
         } catch {
             // Sin red o fallo de la API: se mantienen las reglas locales
         }
@@ -97,9 +122,9 @@ final class DashboardViewModel: ObservableObject {
 
     private func saveCachedInsights() {
         if let data = try? JSONEncoder().encode(insights) {
-            UserDefaults.standard.set(data, forKey: insightsKey)
+            defaults.set(data, forKey: insightsKey)
         }
-        UserDefaults.standard.set(insightsGeneratedAt, forKey: insightsDateKey)
+        defaults.set(insightsGeneratedAt, forKey: insightsDateKey)
     }
 
     // MARK: - Resumen semanal IA (1×/semana, cacheado)
@@ -135,6 +160,7 @@ final class DashboardViewModel: ObservableObject {
             cal.isDate($0, equalTo: Date(), toGranularity: .weekOfYear)
         } ?? false
         if !force, sameWeek, weeklySummary != nil { return }
+        guard activitiesSettled else { return }
         guard !activities.isEmpty || health.recoveryScore != nil else { return }
         guard !isLoadingWeekly else { return }
         isLoadingWeekly = true
@@ -150,8 +176,8 @@ final class DashboardViewModel: ObservableObject {
             guard !clean.isEmpty else { return }
             weeklySummary = clean
             weeklySummaryAt = Date()
-            UserDefaults.standard.set(clean, forKey: weeklyKey)
-            UserDefaults.standard.set(weeklySummaryAt, forKey: weeklyDateKey)
+            defaults.set(clean, forKey: weeklyKey)
+            defaults.set(weeklySummaryAt, forKey: weeklyDateKey)
         } catch {
             // silencioso: el resumen semanal es secundario, no molesta al usuario con errores
         }
@@ -209,6 +235,7 @@ final class DashboardViewModel: ObservableObject {
     func loadInsightsIfStale(health: HealthKitManager, strengthSummary: String? = nil, localAlerts: String? = nil) async {
         let hasToday = insightsGeneratedAt.map { Calendar.current.isDateInToday($0) } ?? false
         if hasToday && !insights.isEmpty { return }
+        guard activitiesSettled else { return }
         // No gastar en la IA si aún no hay datos que analizar
         guard !activities.isEmpty || health.recoveryScore != nil else { return }
         await loadInsights(health: health, strengthSummary: strengthSummary, localAlerts: localAlerts)

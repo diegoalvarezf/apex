@@ -195,6 +195,9 @@ struct InsightsView: View {
                 analyzeIfStale()
             }
             .onAppear { analyzeIfStale() }
+            // Y otra vez cuando Strava contesta: al arrancar, esto aparece antes de
+            // que haya actividades que analizar.
+            .onChange(of: dashVM.activitiesSettled) { _, _ in analyzeIfStale() }
         }
     }
 }

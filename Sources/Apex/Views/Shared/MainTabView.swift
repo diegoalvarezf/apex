@@ -32,6 +32,9 @@ struct MainTabView: View {
             if let token = stravaAuth.accessToken {
                 await dashVM.loadActivities(token: token)
             }
+            // Aunque no haya token o la carga falle: los análisis del día esperan a
+            // esta marca, y sin ella no llegarían a hacerse nunca.
+            dashVM.markActivitiesSettled()
             if !healthKit.isAuthorized {
                 _ = await healthKit.requestAuthorization()
             }
