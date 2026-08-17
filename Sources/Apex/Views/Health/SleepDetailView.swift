@@ -126,7 +126,10 @@ struct SleepDetailView: View {
         ]
         if history.count > 1 {
             lines.append("Últimas noches (horas · score · profundo%):")
-            for s in history.prefix(7) {
+            // `suffix`: el historial es cronológico, así que las últimas noches están
+            // al final. Con `prefix` se le mandaban las SIETE MÁS VIEJAS del mes y el
+            // análisis comparaba anoche contra semanas atrás.
+            for s in history.suffix(7) {
                 lines.append("  \(f(s.totalSleep)) · \(s.score) · \(pct(s.deepSleep, s.totalSleep))%")
             }
         }

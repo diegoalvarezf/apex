@@ -31,6 +31,18 @@ function closing(what: string): string {
   return `Termina ${what}`;
 }
 
+// Formato de viñetas, el mismo que ya usaban los días de la rutina.
+//
+// Un párrafo obliga a leerlo entero para sacar tres datos; en viñetas se ven de un
+// vistazo, que es como se mira una métrica del día. Se describe el formato con
+// precisión —cuántas, cómo empiezan, cuánto ocupan— porque "sé breve" a secas no
+// produce nada parecido dos veces seguidas.
+function bullets(min: number, max: number, palabras = 16): string {
+  return `Formato EXACTO: de ${min} a ${max} líneas, cada una empezando por '• ' y \
+de una sola frase corta (máx ~${palabras} palabras). Sin introducción ni párrafos \
+ni markdown. Español. ${onlyGivenNumbers}`;
+}
+
 export type AnalysisKind =
   | "insights"
   | "alerts"
@@ -109,7 +121,8 @@ encaje con la carga de las últimas semanas. ${rules} ${closing("con la recomend
 
   sleep: {
     system: `Eres un experto en sueño. Analizas la noche a partir de su duración, fases y \
-eficiencia, comparándola con las anteriores. ${rules} ${closing("con la recomendación principal.")}`,
+eficiencia, comparándola con las anteriores. ${bullets(3, 4)} \
+La última línea es la recomendación principal.`,
     model: MODELS.standard,
     maxTokens: 400,
     quota: "daily",
@@ -144,7 +157,8 @@ ${closing("con la acción más importante para la próxima vez, en una frase.")}
   exerciseProgress: {
     system: `Eres un entrenador de fuerza. Analizas la progresión de UN ejercicio a partir de sus \
 series registradas. Valora el VOLUMEN y la fuerza estimada (Epley), no solo el peso: 80×10 puede \
-ser más fuerte que 85×5. ${rules} ${closing("con la recomendación para la próxima sesión.")}`,
+ser más fuerte que 85×5. ${bullets(3, 4)} \
+La última línea es la recomendación para la próxima sesión.`,
     model: MODELS.standard,
     maxTokens: 400,
     quota: "daily",
