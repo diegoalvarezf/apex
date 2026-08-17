@@ -102,6 +102,7 @@
 		EBA9C57B2E029BAB9B79E2FF /* DailyMetricsRecorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0770FF0039B1EC493AC273B /* DailyMetricsRecorder.swift */; };
 		EBC85D912F711961F75E32CA /* HealthDayDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70D1E5096476CDF79CF1D14F /* HealthDayDetailView.swift */; };
 		EBE0000FDA3CE47DFFFA5590 /* DailyAnalysisGatingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = ECB414A56B53AB050720950D /* DailyAnalysisGatingTests.swift */; };
+		ED07C5B3D748673883BA7990 /* SleepSessionMergeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6082614E2B52F824E67814DA /* SleepSessionMergeTests.swift */; };
 		F1460305CC88C6AB5326DBEB /* ActivityTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2325B077EAC479002B9505EA /* ActivityTracker.swift */; };
 		F1CB9CB37D89103771258830 /* VO2MaxEstimatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C8CD34D2CFDC45EB32C055B /* VO2MaxEstimatorTests.swift */; };
 		F34E969E41CB652EDA9B3B9B /* WatchBatteryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A00622900A0532E9DDD6448 /* WatchBatteryView.swift */; };
@@ -210,6 +211,7 @@
 		5B29A7E2D63C7414E34B5E82 /* InsightsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InsightsView.swift; sourceTree = "<group>"; };
 		5E755A8A669E92EB89A93F2A /* WorkoutHistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutHistoryView.swift; sourceTree = "<group>"; };
 		5F76B9B06D62C837E5C1647D /* DailySnapshotStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailySnapshotStore.swift; sourceTree = "<group>"; };
+		6082614E2B52F824E67814DA /* SleepSessionMergeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepSessionMergeTests.swift; sourceTree = "<group>"; };
 		617E891BEB613EFBDF031303 /* ApexApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApexApp.swift; sourceTree = "<group>"; };
 		694E71D7521E44FBE01566E7 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		6B6EF1B7EFB932C65DA7EA71 /* HealthKitManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthKitManager.swift; sourceTree = "<group>"; };
@@ -343,6 +345,7 @@
 				04659271F9806B8400DF0F55 /* PromptSafetyTests.swift */,
 				5B1DD76B3E53B371950A0D69 /* SeriesOrderTests.swift */,
 				E34E9B77B5A6EED2A7D75D18 /* SessionLoadTests.swift */,
+				6082614E2B52F824E67814DA /* SleepSessionMergeTests.swift */,
 				937343D1AD328D38F1AEA9C7 /* StravaActivityFixture.swift */,
 				F96D25617D324C362F8E34FC /* TrainingMetricsTests.swift */,
 				2C8CD34D2CFDC45EB32C055B /* VO2MaxEstimatorTests.swift */,
@@ -719,6 +722,7 @@
 				5B1ABED22F673424F1B48351 /* PromptSafetyTests.swift in Sources */,
 				47A425DBDBA6094144BC9328 /* SeriesOrderTests.swift in Sources */,
 				1756E84C3A0A0157979643F6 /* SessionLoadTests.swift in Sources */,
+				ED07C5B3D748673883BA7990 /* SleepSessionMergeTests.swift in Sources */,
 				42D6822A661F262B432F3DD6 /* StravaActivityFixture.swift in Sources */,
 				5F66B03ED35EF2F60F49A293 /* TrainingMetricsTests.swift in Sources */,
 				F1CB9CB37D89103771258830 /* VO2MaxEstimatorTests.swift in Sources */,

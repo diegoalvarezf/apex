@@ -285,7 +285,10 @@ final class HealthKitManager: ObservableObject {
         }
     }
 
-    nonisolated private static func processSleepSamples(_ samples: [HKCategorySample]) -> [SleepData] {
+    // No-private para que el test de la fusión por día pueda llamarla directamente
+    // en vez de tener que inventarse una noche entera de HKCategorySample vía la
+    // query real, que no funciona en tests sin autorización de HealthKit.
+    nonisolated static func processSleepSamples(_ samples: [HKCategorySample]) -> [SleepData] {
         let calendar = Calendar.current
 
         // Filtrar solo muestras de sueño reales (excluir inBed que no cuenta como dormido)
@@ -310,6 +313,18 @@ final class HealthKitManager: ObservableObject {
             }
         }
         if !current.isEmpty { sessions.append(current) }
+
+        // Si dos sesiones "amanecen" el mismo día —una interrupción de más de 4h
+        // partió la noche en dos, o Health Sync la escribió en más de una tanda—
+        // Salud las suma todas bajo ese día. Quedarse solo con la última (que es lo
+        // que hacía `history.last` más abajo) descarta la otra en silencio: así es
+        // como Apex enseñaba 6h34 mientras Salud enseñaba 8h23 para la MISMA noche,
+        // con la MISMA fuente detrás. Se fusionan antes de calcular nada, para que
+        // solo exista una noche por día como en Salud.
+        let sessionsByDay = Dictionary(grouping: sessions) { session in
+            calendar.startOfDay(for: session.map(\.endDate).max() ?? Date())
+        }
+        sessions = sessionsByDay.values.map { $0.flatMap { $0 } }
 
         typealias Iv = (start: Date, end: Date)
         func mergedDuration(_ ivs: [Iv]) -> TimeInterval {
