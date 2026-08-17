@@ -41,6 +41,10 @@ settings:
     SWIFT_VERSION: "5.10"
     IPHONEOS_DEPLOYMENT_TARGET: "17.0"
     CODE_SIGN_STYLE: Automatic
+    # Sin esto, cada `xcodegen generate` (se ejecuta tras añadir ficheros) regenera
+    # el proyecto desde este YAML y borra el equipo elegido a mano en Xcode: de ahí
+    # que "Signing requires a development team" volviera a aparecer en cada Run.
+    DEVELOPMENT_TEAM: ZBL544FP3Q
     MARKETING_VERSION: "1.0.0"
     CURRENT_PROJECT_VERSION: "1"
 targets:

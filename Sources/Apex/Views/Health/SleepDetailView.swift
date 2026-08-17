@@ -21,10 +21,18 @@ struct SleepDetailView: View {
                         HStack(alignment: .firstTextBaseline, spacing: 8) {
                             Text(latest.formattedTotal)
                                 .font(.system(size: 48, weight: .bold, design: .rounded))
-                            Text("anoche")
+                            Text(latest.etiqueta())
                                 .font(.subheadline).foregroundColor(.secondary).offset(y: -8)
                             Spacer()
                             CircleScore(value: latest.score, color: .indigo)
+                        }
+
+                        if !Calendar.current.isDateInToday(latest.date) {
+                            // No es de verdad la noche más reciente: el reloj no ha
+                            // sincronizado hoy. Decirlo aquí es mejor que dejar que
+                            // parezca que sí, que es justo lo que pasaba antes.
+                            Label("Puede que falte sincronizar tu reloj", systemImage: "exclamationmark.arrow.triangle.2.circlepath")
+                                .font(.caption).foregroundColor(.orange)
                         }
 
                         SleepPhasesBar(sleep: latest).frame(height: 14)

@@ -47,6 +47,7 @@
 		47A425DBDBA6094144BC9328 /* SeriesOrderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B1DD76B3E53B371950A0D69 /* SeriesOrderTests.swift */; };
 		4BFC6582CF5CA43D50875BED /* WorkoutLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 262EBE101B99D02A59837B70 /* WorkoutLog.swift */; };
 		4D42D978472249EA99ABDEAD /* MetricCalendarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80B935AD169367DDA6AAC122 /* MetricCalendarView.swift */; };
+		4F84DB32E71DB08394C9FD70 /* SleepFreshnessTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B9FA00BD841944779103E37 /* SleepFreshnessTests.swift */; };
 		4F9DC5AE63D9EC8EAA9C3D58 /* NotificationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84F95477213FB0DE9EB839EF /* NotificationManager.swift */; };
 		527BF03B0C7872C190CB549E /* MetricCalendarData.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3DF486B29307AC2B3E66B95 /* MetricCalendarData.swift */; };
 		537BAD86BCB2ADF2DB7AC53F /* EditHealthPageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0C2D135889BA724867BEBEB /* EditHealthPageView.swift */; };
@@ -242,6 +243,7 @@
 		90337467BDC4143EB9231C9B /* BodyCompositionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BodyCompositionView.swift; sourceTree = "<group>"; };
 		937343D1AD328D38F1AEA9C7 /* StravaActivityFixture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StravaActivityFixture.swift; sourceTree = "<group>"; };
 		99ECE6F7F284B1CC63A82394 /* ActivitiesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivitiesView.swift; sourceTree = "<group>"; };
+		9B9FA00BD841944779103E37 /* SleepFreshnessTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepFreshnessTests.swift; sourceTree = "<group>"; };
 		9C8F99C86532776D9A595C37 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		9CA05CE06DA7D0D8487B6525 /* TrainingMetrics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrainingMetrics.swift; sourceTree = "<group>"; };
 		9E501BD5E0A0BECBF744DA80 /* TrainingLoadDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrainingLoadDetailView.swift; sourceTree = "<group>"; };
@@ -345,6 +347,7 @@
 				04659271F9806B8400DF0F55 /* PromptSafetyTests.swift */,
 				5B1DD76B3E53B371950A0D69 /* SeriesOrderTests.swift */,
 				E34E9B77B5A6EED2A7D75D18 /* SessionLoadTests.swift */,
+				9B9FA00BD841944779103E37 /* SleepFreshnessTests.swift */,
 				6082614E2B52F824E67814DA /* SleepSessionMergeTests.swift */,
 				937343D1AD328D38F1AEA9C7 /* StravaActivityFixture.swift */,
 				F96D25617D324C362F8E34FC /* TrainingMetricsTests.swift */,
@@ -661,15 +664,19 @@
 				LastUpgradeCheck = 1430;
 				TargetAttributes = {
 					C3A61A3316FF0E5FFDB48BC5 = {
+						DevelopmentTeam = ZBL544FP3Q;
 						ProvisioningStyle = Automatic;
 					};
 					D69AC4B940303B8A36805893 = {
+						DevelopmentTeam = ZBL544FP3Q;
 						ProvisioningStyle = Automatic;
 					};
 					ECD6F718E8BC9DCBA4799414 = {
+						DevelopmentTeam = ZBL544FP3Q;
 						ProvisioningStyle = Automatic;
 					};
 					F008144B32C10A8B5058C9C6 = {
+						DevelopmentTeam = ZBL544FP3Q;
 						ProvisioningStyle = Automatic;
 					};
 				};
@@ -722,6 +729,7 @@
 				5B1ABED22F673424F1B48351 /* PromptSafetyTests.swift in Sources */,
 				47A425DBDBA6094144BC9328 /* SeriesOrderTests.swift in Sources */,
 				1756E84C3A0A0157979643F6 /* SessionLoadTests.swift in Sources */,
+				4F84DB32E71DB08394C9FD70 /* SleepFreshnessTests.swift in Sources */,
 				ED07C5B3D748673883BA7990 /* SleepSessionMergeTests.swift in Sources */,
 				42D6822A661F262B432F3DD6 /* StravaActivityFixture.swift in Sources */,
 				5F66B03ED35EF2F60F49A293 /* TrainingMetricsTests.swift in Sources */,
@@ -986,6 +994,7 @@
 				COPY_PHASE_STRIP = NO;
 				CURRENT_PROJECT_VERSION = 1;
 				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = ZBL544FP3Q;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
@@ -1071,6 +1080,7 @@
 				COPY_PHASE_STRIP = NO;
 				CURRENT_PROJECT_VERSION = 1;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = ZBL544FP3Q;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;

@@ -85,6 +85,24 @@ struct SleepData: Identifiable {
         return "\(hours)h \(minutes)m"
     }
 
+    // Cómo llamar a esta noche al mostrarla, en función de si es de verdad la más
+    // reciente o no.
+    //
+    // Antes ponía "anoche" siempre, viniera de cuando viniera. Cuando el reloj
+    // sincroniza tarde —o no sincroniza—, la última noche que Apex tiene puede ser
+    // de hace dos días, y llamarla "anoche" es enseñar un dato viejo como si fuera
+    // fresco: exactamente el tipo de cosa que no se puede hacer con métricas de
+    // salud. `referencia` es el "ahora" desde el que se juzga "hoy"; por defecto la
+    // fecha real, e inyectable para que el test no dependa del reloj del sistema.
+    func etiqueta(referencia: Date = Date()) -> String {
+        let cal = Calendar.current
+        if cal.isDate(date, inSameDayAs: referencia) { return "anoche" }
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "es_ES")
+        f.dateFormat = "d 'de' MMMM"
+        return "noche del \(f.string(from: date))"
+    }
+
     // Score de calidad del sueño 0-100 anclado a las normas de arquitectura del
     // sueño de la AASM y la National Sleep Foundation:
     //   Duración 40% — óptimo 7-9h (NSF)

@@ -15,6 +15,10 @@ struct SleepCard: View {
 
     private var subtitle: String {
         guard let s = sleep else { return "Sin datos de anoche" }
+        // Si lo último que hay no es de esta noche, decirlo priva sobre cualquier
+        // otro mensaje: mostrar un análisis de una noche vieja sin avisar es peor
+        // que no mostrar nada.
+        if !Calendar.current.isDateInToday(s.date) { return "Sin sincronizar hoy" }
         if hours < 6   { return "Te faltaron \(fmt(7 - hours)) para el mínimo" }
         if hours < 7   { return "Te faltaron \(fmt(7 - hours)) del rango ideal" }
         if hours > 9   { return "Dormiste \(fmt(hours - 9)) más de lo recomendado" }
