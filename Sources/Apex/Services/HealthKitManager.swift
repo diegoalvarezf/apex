@@ -57,6 +57,15 @@ final class HealthKitManager: ObservableObject {
     private var stravaTrainingScore: Int? = nil
 
     // Últimas entradas guardadas para poder recomputar cuando llega el TSB de Strava
+    // La noche y la medida más recientes.
+    //
+    // Todas las series van en orden cronológico —la más reciente al final—, así que
+    // pedir `.first` devuelve la más VIEJA. No falla ni avisa: enseña un dato de
+    // hace semanas como si fuera de anoche. Con un nombre en vez de un índice, el
+    // error deja de estar a un carácter de distancia.
+    var latestSleep: SleepData? { sleepHistory.last }
+    var latestHRV: HRVData? { hrvHistory.last }
+
     private var lastSleep: SleepData? = nil
     private var lastHRV: HRVData? = nil
     private var lastRHR: Double? = nil
@@ -160,10 +169,10 @@ final class HealthKitManager: ObservableObject {
         bloodOxygen = spo2Val.map { $0 * 100 }  // HealthKit devuelve 0-1, convertir a %
 
         // Guardar inputs para poder recomputar cuando llegue el TSB de Strava
-        lastSleep = sleepData.first; lastHRV = hrvData.first
+        lastSleep = sleepData.last; lastHRV = hrvData.last
         lastRHR = rhrVal; lastWorkoutCals = workoutCals
 
-        let recovery = computeRecovery(sleep: sleepData.first, hrv: hrvData.first, rhr: rhrVal, recentWorkoutCalories: workoutCals)
+        let recovery = computeRecovery(sleep: sleepData.last, hrv: hrvData.last, rhr: rhrVal, recentWorkoutCalories: workoutCals)
         recoveryScore = recovery
 
         // Historial de recovery score (último dato por día)
@@ -184,8 +193,8 @@ final class HealthKitManager: ObservableObject {
 
         todaySummary = DailyHealthSummary(
             date: Date(),
-            sleep: sleepData.first,
-            hrv: hrvData.first,
+            sleep: sleepData.last,
+            hrv: hrvData.last,
             restingHR: rhrVal,
             vo2Max: vo2Data?.current,
             steps: stepsVal,
@@ -202,7 +211,7 @@ final class HealthKitManager: ObservableObject {
         if let dobComps = try? store.dateOfBirthComponents(),
            let dob = Calendar.current.date(from: dobComps) {
             let age = Calendar.current.dateComponents([.year], from: dob, to: Date()).year ?? 0
-            sleepAge = SleepAgeResult.compute(chronologicalAge: age, sleep: sleepData.first)
+            sleepAge = SleepAgeResult.compute(chronologicalAge: age, sleep: sleepData.last)
         }
 
         // Edad de fitness y VO2max. Ya tenemos lo de HealthKit; si Strava cargó antes,

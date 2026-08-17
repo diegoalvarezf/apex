@@ -7,7 +7,8 @@ struct SleepDetailView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 16) {
-                if let latest = history.first {
+                // `.last`: el historial es cronológico y la noche de anoche va al final.
+                if let latest = history.last {
                     // Hero noche pasada
                     VStack(spacing: 16) {
                         HStack(alignment: .firstTextBaseline, spacing: 8) {

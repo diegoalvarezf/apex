@@ -44,6 +44,7 @@
 		4353D4F6B5F1F6B98E2C4C38 /* SleepCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DDB8DDED711F995D4DA916C /* SleepCard.swift */; };
 		452C0E7B8F69EC72175A393B /* WatchDashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E12622C664CC2B3EF7150C91 /* WatchDashboardView.swift */; };
 		45DFAF50C68DAC998E0265FD /* BodyBatteryCacheTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B432670E2ACFA40943CB349 /* BodyBatteryCacheTests.swift */; };
+		47A425DBDBA6094144BC9328 /* SeriesOrderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B1DD76B3E53B371950A0D69 /* SeriesOrderTests.swift */; };
 		4BFC6582CF5CA43D50875BED /* WorkoutLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 262EBE101B99D02A59837B70 /* WorkoutLog.swift */; };
 		4D42D978472249EA99ABDEAD /* MetricCalendarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80B935AD169367DDA6AAC122 /* MetricCalendarView.swift */; };
 		4F9DC5AE63D9EC8EAA9C3D58 /* NotificationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84F95477213FB0DE9EB839EF /* NotificationManager.swift */; };
@@ -205,6 +206,7 @@
 		4D98E51CB174C34F4540BEF9 /* AIInsight.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIInsight.swift; sourceTree = "<group>"; };
 		55DAD81B00BA688F089A40F3 /* Apex.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Apex.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		588F608DCC40E95DD8647E18 /* RoutineView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoutineView.swift; sourceTree = "<group>"; };
+		5B1DD76B3E53B371950A0D69 /* SeriesOrderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SeriesOrderTests.swift; sourceTree = "<group>"; };
 		5B29A7E2D63C7414E34B5E82 /* InsightsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InsightsView.swift; sourceTree = "<group>"; };
 		5E755A8A669E92EB89A93F2A /* WorkoutHistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutHistoryView.swift; sourceTree = "<group>"; };
 		5F76B9B06D62C837E5C1647D /* DailySnapshotStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailySnapshotStore.swift; sourceTree = "<group>"; };
@@ -339,6 +341,7 @@
 				BF1743C0689451AD5241E5A4 /* FitnessAgeTests.swift */,
 				AF2A5B1EE522BBB3AD980C17 /* MetricCalendarTests.swift */,
 				04659271F9806B8400DF0F55 /* PromptSafetyTests.swift */,
+				5B1DD76B3E53B371950A0D69 /* SeriesOrderTests.swift */,
 				E34E9B77B5A6EED2A7D75D18 /* SessionLoadTests.swift */,
 				937343D1AD328D38F1AEA9C7 /* StravaActivityFixture.swift */,
 				F96D25617D324C362F8E34FC /* TrainingMetricsTests.swift */,
@@ -714,6 +717,7 @@
 				C04D77A817001F87BEDE22A5 /* FitnessAgeTests.swift in Sources */,
 				1FA704E8DE4CBF215A5A2199 /* MetricCalendarTests.swift in Sources */,
 				5B1ABED22F673424F1B48351 /* PromptSafetyTests.swift in Sources */,
+				47A425DBDBA6094144BC9328 /* SeriesOrderTests.swift in Sources */,
 				1756E84C3A0A0157979643F6 /* SessionLoadTests.swift in Sources */,
 				42D6822A661F262B432F3DD6 /* StravaActivityFixture.swift in Sources */,
 				5F66B03ED35EF2F60F49A293 /* TrainingMetricsTests.swift in Sources */,

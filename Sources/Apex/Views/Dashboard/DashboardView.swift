@@ -233,7 +233,7 @@ struct DashboardView: View {
     private func sleepLink() -> some View {
         let h = healthKit.sleepHistory
         NavigationLink(destination: SleepDetailView(history: h)) {
-            SleepCard(sleep: h.first).padding(.horizontal)
+            SleepCard(sleep: healthKit.latestSleep).padding(.horizontal)
         }
         .buttonStyle(.plain)
     }
