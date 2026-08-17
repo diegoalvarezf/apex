@@ -61,6 +61,11 @@ struct SleepData: Identifiable {
     // con límites distintos, el total que ve Apex puede no coincidir con el que
     // enseña Salud, y esto es lo que permite verlo en vez de suponerlo.
     var sources: [String] = []
+    // Cada muestra cruda que compone esta noche, "HH:mm–HH:mm ESTADO (Xm)".
+    // Diagnóstico temporal: el intento anterior de explicar el desajuste con Salud
+    // fue una suposición sin ver el dato real, y falló. Esto enseña exactamente lo
+    // que Apex tiene delante, para no volver a adivinar.
+    var rawSamples: [String] = []
 
     // Tiempo en cama = ventana completa de la sesión (de dormirse a despertar)
     var timeInBed: TimeInterval {

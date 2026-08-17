@@ -4,6 +4,8 @@ import Charts
 struct SleepDetailView: View {
     let history: [SleepData]
 
+    @State private var mostrarMuestrasCrudas = false
+
     // Las siete últimas noches, que es lo que anuncia la tarjeta. El historial trae
     // treinta, y pintarlas todas bajo ese título mezclaba dos cosas: la media salía
     // del mes entero y el gráfico apretaba un mes en el ancho de una semana.
@@ -31,10 +33,34 @@ struct SleepDetailView: View {
                             // Diagnóstico temporal: si aparece más de una fuente, es
                             // la pista de por qué este total puede no coincidir con
                             // el que enseña Salud.
-                            Text(latest.sources.count > 1
-                                 ? "Fuentes: \(latest.sources.joined(separator: ", "))"
-                                 : "Fuente: \(latest.sources[0])")
+                            Button {
+                                withAnimation { mostrarMuestrasCrudas.toggle() }
+                            } label: {
+                                HStack(spacing: 4) {
+                                    Text(latest.sources.count > 1
+                                         ? "Fuentes: \(latest.sources.joined(separator: ", "))"
+                                         : "Fuente: \(latest.sources[0])")
+                                    Image(systemName: mostrarMuestrasCrudas ? "chevron.up" : "chevron.down")
+                                }
                                 .font(.caption2).foregroundColor(.secondary)
+                            }
+
+                            if mostrarMuestrasCrudas {
+                                // Diagnóstico temporal: la explicación anterior de
+                                // este desajuste fue una suposición sin ver esto, y
+                                // no cuadraba. Esto es lo que HealthKit tiene
+                                // literalmente registrado para esta noche.
+                                VStack(alignment: .leading, spacing: 2) {
+                                    ForEach(latest.rawSamples, id: \.self) { linea in
+                                        Text(linea)
+                                    }
+                                }
+                                .font(.caption2.monospaced())
+                                .foregroundColor(.secondary)
+                                .padding(8)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .background(.black.opacity(0.15), in: RoundedRectangle(cornerRadius: 8))
+                            }
                         }
 
                         HStack {

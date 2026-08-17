@@ -371,9 +371,29 @@ final class HealthKitManager: ObservableObject {
             guard total > 3600 else { return nil }
 
             let sources = Set(sess.map { $0.sourceRevision.source.name }).sorted()
+
+            let hhmm: (Date) -> String = {
+                let c = calendar.dateComponents([.hour, .minute], from: $0)
+                return String(format: "%02d:%02d", c.hour ?? 0, c.minute ?? 0)
+            }
+            let etiqueta: (HKCategorySample) -> String = { s in
+                switch HKCategoryValueSleepAnalysis(rawValue: s.value) {
+                case .asleepDeep: return "PROFUNDO"
+                case .asleepREM: return "REM"
+                case .asleepCore: return "LIGERO"
+                case .asleepUnspecified: return "LIGERO?"
+                case .awake: return "DESPIERTO"
+                default: return "?"
+                }
+            }
+            let rawSamples = sess.sorted { $0.startDate < $1.startDate }.map { s -> String in
+                let mins = Int(s.endDate.timeIntervalSince(s.startDate) / 60)
+                return "\(hhmm(s.startDate))–\(hhmm(s.endDate)) \(etiqueta(s)) (\(mins)m)"
+            }
+
             return SleepData(date: date, sleepStart: sleepStart, sleepEnd: wakeDate,
                              totalSleep: total, deepSleep: deep, remSleep: rem,
-                             coreSleep: core, awake: awake, sources: sources)
+                             coreSleep: core, awake: awake, sources: sources, rawSamples: rawSamples)
         }
         .sorted { $0.date < $1.date }   // cronológico: la más reciente al final
     }
