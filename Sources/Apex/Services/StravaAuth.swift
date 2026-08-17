@@ -102,7 +102,31 @@ final class StravaAuthManager: NSObject, ObservableObject, ASWebAuthenticationPr
         }
     }
 
+    // Refresco en curso, para no lanzar dos a la vez.
+    //
+    // Al abrir la app hay dos llamadas casi simultáneas: la que dispara el propio
+    // arranque de StravaAuthManager (loadStoredToken) y la del `.task` de
+    // MainTabView. Sin coalescer, las dos leen del Keychain el MISMO refresh
+    // token —ninguna ha terminado todavía de renovarlo— y las dos se lo mandan a
+    // Strava. Strava rota el refresh token en cada uso: la segunda petición llega
+    // con uno que la primera ya dejó caducado, Strava la rechaza con un 400, y ese
+    // rechazo se trataba como "hay que reconectar" —borrando del Keychain el par
+    // que la primera petición ACABABA de guardar bien—. Así es como una mañana
+    // cualquiera Apex parecía desconectado sin haberlo estado nunca. Mismo
+    // problema, mismo remedio que ya tiene DeviceAuth para el registro.
+    private var refreshEnCurso: Task<Void, Never>?
+
     func refreshTokenIfNeeded() async {
+        if let enCurso = refreshEnCurso {
+            return await enCurso.value
+        }
+        let tarea = Task { await self.doRefreshTokenIfNeeded() }
+        refreshEnCurso = tarea
+        await tarea.value
+        refreshEnCurso = nil
+    }
+
+    private func doRefreshTokenIfNeeded() async {
         // Refrescar si el token expira en menos de 5 minutos o ya caducó
         let expires = UserDefaults.standard.object(forKey: expiresKey) as? Date ?? .distantPast
         guard expires < Date().addingTimeInterval(300),
