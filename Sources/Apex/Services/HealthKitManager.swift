@@ -355,9 +355,10 @@ final class HealthKitManager: ObservableObject {
             let total = mergedDuration(sleepIvs)
             guard total > 3600 else { return nil }
 
+            let sources = Set(sess.map { $0.sourceRevision.source.name }).sorted()
             return SleepData(date: date, sleepStart: sleepStart, sleepEnd: wakeDate,
                              totalSleep: total, deepSleep: deep, remSleep: rem,
-                             coreSleep: core, awake: awake)
+                             coreSleep: core, awake: awake, sources: sources)
         }
         .sorted { $0.date < $1.date }   // cronológico: la más reciente al final
     }

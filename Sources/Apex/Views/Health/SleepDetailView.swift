@@ -27,6 +27,16 @@ struct SleepDetailView: View {
 
                         SleepPhasesBar(sleep: latest).frame(height: 14)
 
+                        if !latest.sources.isEmpty {
+                            // Diagnóstico temporal: si aparece más de una fuente, es
+                            // la pista de por qué este total puede no coincidir con
+                            // el que enseña Salud.
+                            Text(latest.sources.count > 1
+                                 ? "Fuentes: \(latest.sources.joined(separator: ", "))"
+                                 : "Fuente: \(latest.sources[0])")
+                                .font(.caption2).foregroundColor(.secondary)
+                        }
+
                         HStack {
                             PhaseLegend(color: .indigo, label: "Profundo",
                                         value: formatDuration(latest.deepSleep))

@@ -56,6 +56,11 @@ struct SleepData: Identifiable {
     let remSleep: TimeInterval
     let coreSleep: TimeInterval
     let awake: TimeInterval
+    // Apps/dispositivos que aportaron muestras a esta noche (p.ej. "Suunto",
+    // "Reloj"). Diagnóstico temporal: cuando dos fuentes escriben la misma noche
+    // con límites distintos, el total que ve Apex puede no coincidir con el que
+    // enseña Salud, y esto es lo que permite verlo en vez de suponerlo.
+    var sources: [String] = []
 
     // Tiempo en cama = ventana completa de la sesión (de dormirse a despertar)
     var timeInBed: TimeInterval {
