@@ -4,6 +4,11 @@ import Charts
 struct SleepDetailView: View {
     let history: [SleepData]
 
+    // Las siete últimas noches, que es lo que anuncia la tarjeta. El historial trae
+    // treinta, y pintarlas todas bajo ese título mezclaba dos cosas: la media salía
+    // del mes entero y el gráfico apretaba un mes en el ancho de una semana.
+    private var ultimaSemana: [SleepData] { Array(history.suffix(7)) }
+
     var body: some View {
         ScrollView {
             VStack(spacing: 16) {
@@ -52,7 +57,7 @@ struct SleepDetailView: View {
                     VStack(alignment: .leading, spacing: 12) {
                         Text("Últimos 7 días").font(.headline)
 
-                        Chart(history.reversed()) { sleep in
+                        Chart(ultimaSemana) { sleep in
                             BarMark(
                                 x: .value("Día", sleep.date, unit: .day),
                                 y: .value("Horas", sleep.totalSleep / 3600)
@@ -76,12 +81,12 @@ struct SleepDetailView: View {
                         .frame(height: 140)
 
                         // Stats medias
-                        let avgTotal = history.map(\.totalSleep).reduce(0, +) / Double(history.count) / 3600
-                        let avgScore = history.map(\.score).reduce(0, +) / history.count
+                        let avgTotal = ultimaSemana.map(\.totalSleep).reduce(0, +) / Double(ultimaSemana.count) / 3600
+                        let avgScore = ultimaSemana.map(\.score).reduce(0, +) / ultimaSemana.count
                         HStack {
                             StatBadge(label: "Media", value: String(format: "%.1fh", avgTotal), color: .indigo)
                             StatBadge(label: "Score medio", value: "\(avgScore)", color: .indigo)
-                            StatBadge(label: "Noches", value: "\(history.count)", color: .indigo)
+                            StatBadge(label: "Noches", value: "\(ultimaSemana.count)", color: .indigo)
                         }
                     }
                     .padding(16)

@@ -53,3 +53,36 @@ struct SeriesOrderTests {
         #expect(HealthKitManager().latestSleep == nil)
     }
 }
+
+// La tarjeta "Últimos 7 días" del detalle de sueño anunciaba una semana y pintaba
+// el mes entero: la media salía de 30 noches y el gráfico apretaba un mes en el
+// ancho de una semana. Como el corte es `suffix`, se prueba el extremo que coge.
+@MainActor
+struct UltimaSemanaTests {
+
+    private func noches(_ cuantas: Int) -> [SleepData] {
+        (0..<cuantas).reversed().map { diasAtras in
+            let fecha = Calendar.current.date(byAdding: .day, value: -diasAtras, to: Date())!
+            // Horas distintas por noche para distinguir cuáles se han cogido.
+            let horas = Double(30 - diasAtras)
+            return SleepData(
+                date: fecha, sleepStart: fecha.addingTimeInterval(-horas * 3600), sleepEnd: fecha,
+                totalSleep: horas * 3600, deepSleep: 3600, remSleep: 3600,
+                coreSleep: (horas - 2) * 3600, awake: 300
+            )
+        }
+    }
+
+    @Test func cogeLasSieteUltimasYNoLasSieteViejas() {
+        let semana = Array(noches(30).suffix(7))
+        #expect(semana.count == 7)
+        // La última es la de hoy: 30 h en la escala del fixture.
+        #expect(semana.last?.totalSleep == 108000.0)
+        // Y la primera de las siete es la de hace 6 días, no la de hace 29.
+        #expect(semana.first?.totalSleep == 86400.0)
+    }
+
+    @Test func conMenosDeSieteNochesLasCogeTodas() {
+        #expect(Array(noches(3).suffix(7)).count == 3)
+    }
+}
