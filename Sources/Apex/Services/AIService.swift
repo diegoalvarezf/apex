@@ -20,8 +20,9 @@ final class AIService {
 
     // El análisis que abre la pantalla de Apex IA.
     func generateInsights(context: AICoachContext) async throws -> [AIInsight] {
+        // Solo datos: la tarea y el esquema JSON los pone el servidor.
         let text = try await BackendClient.shared.analyze(
-            kind: .insights, input: context.buildPrompt())
+            kind: .insights, input: context.contextText())
 
         guard let json = Self.extractJSON(from: text),
               let data = json.data(using: .utf8),

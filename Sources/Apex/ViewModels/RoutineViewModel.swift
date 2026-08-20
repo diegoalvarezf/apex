@@ -98,48 +98,10 @@ final class RoutineViewModel: ObservableObject {
         aiError = nil
         defer { isParsingAI = false }
 
-        let userPrompt = """
-        Convierte esta rutina de gimnasio en JSON con la siguiente estructura exacta:
-
-        {
-          "name": "Nombre corto de la rutina",
-          "aiSummary": "Resumen de 1-2 frases",
-          "updatedAt": "2024-01-01T00:00:00Z",
-          "days": [
-            {
-              "name": "Día A – Pecho y Tríceps",
-              "shortName": "Pecho",
-              "notes": "",
-              "exercises": [
-                {
-                  "name": "Press banca",
-                  "sets": 4,
-                  "reps": "8-10",
-                  "weight": "70kg",
-                  "notes": "",
-                  "muscleGroup": "Pecho",
-                  "supersetGroup": null
-                }
-              ]
-            }
-          ]
-        }
-
-        Reglas:
-        - sets SIEMPRE como número entero (ej: 4, no "4")
-        - reps como texto (ej: "8-10", "al fallo", "30s")
-        - weight: el peso si se menciona, si no ""
-        - muscleGroup: Pecho, Espalda, Hombros, Bíceps, Tríceps, Piernas, Core, Glúteos, Cardio
-        - shortName: 1-2 palabras para la pestaña de navegación
-        - Si el usuario no diferencia días, pon todo en un único día
-        - supersetGroup: si dos o más ejercicios se hacen en superserie juntos, asígnales la misma letra ("A", "B", "C"…). Si no hay superserie, usa null. Cada grupo distinto de superserie lleva una letra diferente.
-
-        Rutina a parsear:
-        \(description)
-        """
-
+        // Solo el texto que ha escrito el usuario: el esquema JSON y las reglas de
+        // conversión los pone el servidor (catálogo cerrado), no el cliente.
         do {
-            let raw = try await AIService.shared.analyze(.routineParse, input: userPrompt)
+            let raw = try await AIService.shared.analyze(.routineParse, input: description)
 
             // Extrae el bloque JSON aunque Claude añada texto extra
             guard let jsonString = AIService.extractJSON(from: raw) else {
@@ -187,49 +149,18 @@ final class RoutineViewModel: ObservableObject {
         aiError = nil
         defer { isParsingAI = false }
 
-        let userPrompt = """
-        Diseña una rutina de gimnasio personalizada y devuélvela en este esquema EXACTO:
-
-        {
-          "name": "Nombre corto de la rutina",
-          "aiSummary": "Resumen de 1-2 frases: objetivo, estructura y progresión",
-          "updatedAt": "2024-01-01T00:00:00Z",
-          "days": [
-            {
-              "name": "Día A – Pecho y Tríceps",
-              "shortName": "Pecho",
-              "notes": "Nota opcional del día",
-              "exercises": [
-                {
-                  "name": "Press banca",
-                  "sets": 4,
-                  "reps": "6-8",
-                  "weight": "",
-                  "notes": "Técnica/tempo/descanso si aplica",
-                  "muscleGroup": "Pecho",
-                  "supersetGroup": null
-                }
-              ]
-            }
-          ]
-        }
-
-        Reglas del JSON:
-        - sets SIEMPRE número entero. reps como texto ("6-8", "al fallo", "30s").
-        - weight: "" salvo que el historial permita sugerir un peso concreto de partida.
-        - muscleGroup: Pecho, Espalda, Hombros, Bíceps, Tríceps, Piernas, Core, Glúteos, Cardio.
-        - supersetGroup: misma letra ("A","B"…) para ejercicios en superserie; null si no.
-        - shortName: 1-2 palabras para la pestaña.
-
-        Perfil y preferencias del usuario:
+        // Solo los datos —perfil/preferencias y contexto de salud—: el esquema JSON
+        // y las reglas de diseño los pone el servidor, no el cliente.
+        let datos = """
+        PERFIL Y PREFERENCIAS DEL USUARIO:
         \(brief)
 
-        Contexto de salud, actividad e historial de entrenamiento:
+        CONTEXTO DE SALUD, ACTIVIDAD E HISTORIAL DE ENTRENAMIENTO:
         \(context)
         """
 
         do {
-            let raw = try await AIService.shared.analyze(.routineCreate, input: userPrompt)
+            let raw = try await AIService.shared.analyze(.routineCreate, input: datos)
 
             guard let jsonString = AIService.extractJSON(from: raw) else {
                 aiError = "La IA no devolvió un JSON válido. Inténtalo de nuevo."

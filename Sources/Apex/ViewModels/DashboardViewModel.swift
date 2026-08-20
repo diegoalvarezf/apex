@@ -98,8 +98,8 @@ final class DashboardViewModel: ObservableObject {
 
         let context = buildContext(health: health, strengthSummary: strengthSummary, localAlerts: nil)
         do {
-            let text = try await AIService.shared.analyze(
-                .alerts, input: context.buildAlertsPrompt())
+            // Solo datos: el prompt (tarea, esquema JSON) lo pone el servidor.
+            let text = try await AIService.shared.analyze(.alerts, input: context.contextText())
             guard let json = AIService.extractJSON(from: text),
                   let data = json.data(using: .utf8),
                   let parsed = try? JSONDecoder().decode(AlertsWrapper.self, from: data),

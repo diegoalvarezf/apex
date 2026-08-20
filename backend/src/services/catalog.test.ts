@@ -92,6 +92,27 @@ describe("catálogo de análisis", () => {
       expect(CATALOG[kind].system, `${kind} sin "Conclusión: "`).toContain('"Conclusión: "');
     }
   });
+
+  // Los que devuelven JSON llevan su esquema completo en el propio prompt de
+  // sistema: es "el servidor es dueño de los prompts" tomado en serio. Antes,
+  // insights/alerts/routineParse/routineCreate solo decían "responde con el
+  // esquema que se te indica" y el esquema de verdad vivía en el texto que
+  // montaba el cliente —viajaba como DATO, no como instrucción, desde que el
+  // texto del cliente se envuelve con wrapAsData()—. Corregir un campo exigía
+  // publicar una versión nueva de la app, justo lo que este catálogo dice evitar.
+  const kindsJSON: AnalysisKind[] = ["insights", "alerts", "routineParse", "routineCreate"];
+
+  it("los análisis en JSON llevan su propio esquema en el prompt de sistema", () => {
+    for (const kind of kindsJSON) {
+      const system = CATALOG[kind].system;
+      expect(system, `${kind} sin llaves de esquema`).toContain("{");
+      // Nada de "el esquema que se te indica": eso delega en un esquema que no
+      // está aquí.
+      expect(system, `${kind} delega el esquema en otro sitio`).not.toContain(
+        "esquema que se te indica",
+      );
+    }
+  });
 });
 
 // El coste se calcula en enteros para poder sumarlo sin arrastrar errores. Los
