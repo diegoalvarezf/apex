@@ -138,12 +138,15 @@ struct HealthView: View {
                     NavigationLink(destination: MetricDetailView(config: MetricConfig(
                         title: "Oxígeno en sangre", icon: "drop.fill", color: .pink,
                         unit: "%", value: String(format: "%.0f", spo2),
-                        samples: [], higherIsBetter: true, normalRange: 95...100,
+                        // El histórico de 30 días ya existe en HealthKitManager; antes se
+                        // mandaba vacío a mano y la gráfica no tenía nada que pintar en
+                        // ningún periodo (7/30/90 días).
+                        samples: healthKit.bloodOxygenHistory, higherIsBetter: true, normalRange: 95...100,
                         explanation: "La saturación de oxígeno en sangre (SpO2) indica cuánto oxígeno transportan tus glóbulos rojos. Un valor ≥95% es normal en adultos sanos."
                     ))) {
                         PWMetricCard(icon: "drop.fill", color: .pink,
                                      title: "Oxígeno en sangre", value: String(format: "%.0f", spo2), unit: "%",
-                                     status: spo2Status(spo2), samples: [])
+                                     status: spo2Status(spo2), samples: healthKit.bloodOxygenHistory)
                     }.buttonStyle(.plain)
                 }
 
