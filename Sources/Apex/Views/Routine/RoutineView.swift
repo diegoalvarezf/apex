@@ -247,8 +247,6 @@ struct RoutineDetailView: View {
 private struct DayDetailView: View {
     let day: GymDay
 
-    @State private var showWorkout = false
-    @State private var workoutSession = WorkoutLogSession()
 
     var body: some View {
         VStack(spacing: 0) {
@@ -309,45 +307,6 @@ private struct DayDetailView: View {
                 }
                 .padding(.horizontal).padding(.top, 8).padding(.bottom, 16)
             }
-
-            // — Botón sticky "Entrenar este día"
-            VStack(spacing: 0) {
-                Button {
-                    workoutSession = WorkoutLogSession()
-                    for ex in day.exercises {
-                        let exercise = Exercise(name: ex.name, category: categoryFor(ex.muscleGroup))
-                        workoutSession.addExercise(exercise)
-                    }
-                    showWorkout = true
-                } label: {
-                    Label("Entrenar este día", systemImage: "play.fill")
-                        .font(.body.weight(.semibold))
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 16)
-                        .background(Color.purple)
-                        .foregroundStyle(.white)
-                        .clipShape(RoundedRectangle(cornerRadius: 14))
-                }
-                .padding(.horizontal)
-                .padding(.top, 12)
-                .padding(.bottom, 24)
-            }
-            .background(Color(.systemGroupedBackground))
-        }
-        .fullScreenCover(isPresented: $showWorkout) {
-            LiveActivityView(sport: .weightTraining, preloadedSession: workoutSession)
-        }
-    }
-
-    private func categoryFor(_ muscleGroup: String) -> ExerciseCategory {
-        switch muscleGroup.lowercased() {
-        case "pecho":                                        return .chest
-        case "espalda":                                      return .back
-        case "hombros":                                      return .shoulders
-        case "bíceps", "biceps", "tríceps", "triceps", "brazos": return .arms
-        case "piernas", "glúteos", "gluteos":               return .legs
-        case "core", "abdominales":                          return .core
-        default:                                             return .other
         }
     }
 

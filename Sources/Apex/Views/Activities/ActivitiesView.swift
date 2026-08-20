@@ -34,13 +34,9 @@ private struct SportFilter: Identifiable, Equatable {
 struct ActivitiesView: View {
     @EnvironmentObject var dashVM: DashboardViewModel
     @EnvironmentObject var stravaAuth: StravaAuthManager
-    @EnvironmentObject var workoutStore: WorkoutLogStore
 
     @State private var searchText = ""
     @State private var selectedFilter: SportFilter = .all
-    @State private var showStartSheet = false
-    @State private var showLiveActivity = false
-    @State private var activeSport: WorkoutSportType = .run
     @State private var showWeeklyStats = true
 
     private let columns = [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)]
@@ -195,12 +191,6 @@ struct ActivitiesView: View {
                             }
                             .buttonStyle(.plain)
 
-                            if !workoutStore.logs.isEmpty {
-                                NavigationLink(destination: WorkoutHistoryView()) {
-                                    ActivityNavCard(icon: "dumbbell.fill", label: "Pesas", color: .purple)
-                                }
-                                .buttonStyle(.plain)
-                            }
                         }
                         .padding(.horizontal, 16)
                         .padding(.top, 10)
@@ -251,33 +241,6 @@ struct ActivitiesView: View {
                 if let token = stravaAuth.accessToken {
                     await dashVM.loadActivities(token: token)
                 }
-            }
-            .toolbar {
-                ToolbarItem(placement: .primaryAction) {
-                    Button {
-                        showStartSheet = true
-                    } label: {
-                        HStack(spacing: 4) {
-                            Image(systemName: "play.fill").font(.caption)
-                            Text("Empezar")
-                        }
-                        .fontWeight(.semibold)
-                        .padding(.horizontal, 12).padding(.vertical, 6)
-                        .background(Color.primary, in: Capsule())
-                        .foregroundStyle(Color(.systemBackground))
-                    }
-                    .buttonStyle(.plain)
-                }
-
-            }
-            .sheet(isPresented: $showStartSheet) {
-                StartActivitySheet { sport in
-                    activeSport = sport
-                    showLiveActivity = true
-                }
-            }
-            .fullScreenCover(isPresented: $showLiveActivity) {
-                LiveActivityView(sport: activeSport)
             }
         }
     }
