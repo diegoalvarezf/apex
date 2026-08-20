@@ -10,8 +10,8 @@ App iOS nativa de seguimiento de rendimiento deportivo. Integra Strava, Apple He
 ## Características
 
 ### Dashboard
-- **Body Battery** — energía acumulada day-over-day siguiendo la metodología de PeakWatch: el sueño carga por encima del recovery score, el ejercicio intenso depleciona, el reposo apenas consume.
-- **Recuperación** — score 0–100 calculado con z-score de HRV (70%) y FC en reposo (30%) contra tu baseline de 60 días. Calibrado para que "en tu media" = ~75 pts, no 50.
+- **Body Battery** — energía acumulada día a día al estilo Garmin/Firstbeat: solo recarga durmiendo (aditiva sobre la batería con la que te acostaste, no anclada al Recovery); el ejercicio drena según su carga; despierto, nunca sube.
+- **Recuperación** — score 0–100 tipo *readiness* (Whoop/Oura/Garmin): 45% HRV + 15% FC en reposo + 25% sueño + 15% carga (ACWR), con HRV y FC como z-score contra tu baseline de 60 días.
 - **Esfuerzo** — TRIMP de Banister continuo acumulado en el día (actividades + FC de fondo elevada), con curva saturante a 0–100.
 - **Estrés** — media diaria del estrés fisiológico horario: (FC − FC reposo) / reserva cardíaca.
 - **Carga de entrenamiento (ACWR)** — ATL/CTL con 180 días de historial. Barra de 4 colores: azul (<0.8), verde (0.8–1.3), amarillo (1.3–1.5), rojo (>1.5).
@@ -39,8 +39,20 @@ App iOS nativa de seguimiento de rendimiento deportivo. Integra Strava, Apple He
 - Análisis personalizado que procesa recuperación, sueño, HRV, carga y actividades recientes para dar recomendaciones accionables.
 - Alertas diarias, resumen semanal y análisis por métrica, cacheados para no repetir llamadas.
 - Chat con el coach usando tus datos como contexto.
-- Sonnet para los análisis y Opus para diseñar rutinas, que es la tarea que más razonamiento exige.
+- Sonnet para los análisis del día a día; Opus para diseñar una rutina y para cambiar
+  un ejercicio suelto, que son las tareas que más razonamiento exigen.
 - Notificaciones diarias a las 8:30 con tu estado de recuperación.
+- Catálogo cerrado en el servidor: el cliente pide un análisis por nombre y manda los
+  datos ya calculados, nunca un prompt. El servidor decide qué se le pregunta al
+  modelo y con qué formato — así se corrige sin publicar versión nueva de la app.
+
+### Apex Pro
+Cuotas ampliadas (100 análisis/día en vez de 20, 4 rutinas/mes en vez de 1, 30
+cambios de ejercicio en vez de 5) tras canjear un código. La suscripción real por
+compra dentro de la app exige cuenta de desarrollador de pago, así que mientras
+tanto Pro se activa por código: da el mismo plan que daría la suscripción, no una
+simulación. Emisión, canje y revocación de códigos, documentados en
+[`backend/README.md`](backend/README.md#apex-pro).
 
 ### Widget
 - **Body Battery** (small) — anillo con valor actual.
@@ -60,7 +72,7 @@ App iOS nativa de seguimiento de rendimiento deportivo. Integra Strava, Apple He
 | UI | SwiftUI |
 | Datos de salud | HealthKit |
 | Actividades | Strava API v3 |
-| IA | Anthropic Claude (Sonnet para análisis, Opus para rutinas) |
+| IA | Anthropic Claude (Sonnet para análisis, Opus para rutinas y cambios de ejercicio) |
 | Widget | WidgetKit + App Groups |
 | Watch | watchOS + WatchConnectivity |
 | Autenticación | ASWebAuthenticationSession (OAuth 2.0) |
@@ -158,7 +170,8 @@ Sources/
 │       ├── Routine/
 │       └── Shared/             # Componentes reutilizables
 ├── ApexWidget/                 # Widget de iOS (WidgetKit)
-└── ApexWatch/                  # App de Apple Watch
+├── ApexWatch/                  # App de Apple Watch
+└── Shared/                     # Colores de métricas: los usan app, widget y reloj
 ```
 
 ---
@@ -170,20 +183,29 @@ Sources/
 > calibraciones de producto (sin fuente pública).
 
 ### Body Battery
-Modelo acumulativo day-over-day. Principio de Garmin/Firstbeat: el ejercicio drena según su
-**carga (EPOC/TRIMP)**, no según el promedio de FC (que se diluye en el gimnasio). Arranca
-del recovery del día (+ bonus de sueño) y solo recarga durmiendo:
-- **Entreno (Strava)**: drena `65·(1−e^(−TRIMP/45))` pts repartidos en sus horas
-- **Vida diaria (HRR <0.25, sin actividad)**: -0.6 a -1.2 pts/hora
-- **Sueño**: carga hasta `recovery + (horas - 6) × 4`
+Modelo acumulativo día-a-día. Principio de Garmin/Firstbeat: el ejercicio drena según su
+**carga (EPOC/TRIMP)**, no según el promedio de FC (que se diluye en el gimnasio). Solo
+recarga durmiendo; despierto, la batería solo baja:
+- **Entreno (Strava)**: drena `65·(1−e^(−TRIMP/45))` pts repartidos en sus horas.
+- **Vida diaria** (sin actividad): reposo ~1 pt/h, vida normal ~1.8 pt/h, esfuerzo sin
+  registrar como actividad hasta `HRr²·38`.
+- **Sueño**: aditiva sobre la batería con la que te acostaste —no anclada al Recovery—,
+  `calidad × factor autonómico (HRV de esa noche) × horas × 6.5`, repartida **por hora**
+  para que una noche que cruza medianoche se reparta bien entre los dos días naturales.
+
+Detalle completo, con las constantes y por qué cambiaron, en
+[`docs/METRICS_SOURCES.md`](docs/METRICS_SOURCES.md) §8.
 
 ### Recovery Score
-`HRV (70%) + FC_reposo (30%)`
+Modelo tipo *readiness* (Whoop/Oura/Garmin), no HRV+RHR puro: el HRV manda, pero
+dormir poco o la carga aguda templan el score aunque el HRV esté alto.
 
-Z-score contra baseline de 60 días (calibrado vs PeakWatch con datos reales):
-- z = 0 (en tu media) → 50 pts
-- z = +1 (HRV elevada) → 70 pts
-- z = -1 (HRV baja) → 30 pts
+```
+score = 0.45 · HRV_score + 0.15 · RHR_score + 0.25 · sueño + 0.15 · carga (ACWR)
+```
+
+HRV y RHR son z-scores contra el baseline de 60 días (calibrado vs PeakWatch con
+datos reales): z = 0 (en tu media) → 50 pts, ±1 SD ≈ ±17.
 
 ### ACWR (Carga de entrenamiento)
 - ATL: EMA 7 días (k ≈ 0.134)
@@ -251,9 +273,16 @@ nuevos en bucle** para renovarla. Lo que acota el gasto son los topes por
 dispositivo, no la identidad.
 
 Cerrarlo de verdad requiere **App Attest**, que exige cuenta de desarrollador de
-pago (99 $/año). Es el mismo motivo por el que la suscripción queda escrita pero
-inactiva: sin esa cuenta no hay productos en App Store Connect ni recibos reales
-que validar.
+pago (99 $/año) — la misma que falta para la suscripción real por compra dentro
+de la app: sin ella no hay productos en App Store Connect ni recibos que validar.
+Mientras tanto, Apex Pro funciona igual pero se activa **por código** en vez de
+por compra (ver arriba); el día que haya cuenta de pago, validar el recibo llama
+a la misma función que ya concede Pro y no cambia nada más.
+
+Como techo aparte —no depende de identificar a nadie—, el servidor tiene un
+**límite de gasto diario** para toda la instalación: se mira antes de cada
+llamada y corta si se supera, así que un abuso de este agujero tiene tope aunque
+no se pueda cerrar del todo.
 
 ### 3. Salir al mercado es un proyecto distinto
 

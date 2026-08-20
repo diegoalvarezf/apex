@@ -344,7 +344,7 @@ ajustar si los números no encajan con la percepción real:
 
 1. **`EFFORT_K = 90`** (`TrainingMetrics.swift`) — curva saturante del TRIMP diario a 0–100.
 2. **Recovery z=0 → 50 pts, ±17/SD** (`HealthKitManager.swift`) — anclaje del z-score de HRV/RHR.
-3. **Constantes de Body Battery** (`BodyBatteryStore.swift`) — carga de sueño aditiva `calidad·horas·6.5`; reposo despierto +3.5/h, vida normal −2/h, ejercicio sin registrar ∝ −HRr²·40; entreno registrado por TRIMP.
+3. **Constantes de Body Battery** (`BodyBatteryStore.swift`) — carga de sueño aditiva `calidad·factor autonómico·horas·6.5`; reposo despierto −1/h, vida normal −1.8/h, ejercicio sin registrar ∝ −HRr²·38; entreno registrado por TRIMP.
 
 ---
 
