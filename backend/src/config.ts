@@ -49,6 +49,15 @@ export const config = {
     clientSecret: required("STRAVA_CLIENT_SECRET"),
   },
 
+  // Techo de gasto diario de la clave del servidor, en dólares.
+  //
+  // Las cuotas por dispositivo no acotan el total: quien registre dispositivos
+  // nuevos multiplica su cupo. Esto corta por arriba pase lo que pase, incluido
+  // lo que no hayamos previsto. Cinco dólares dejan mucho margen sobre el uso
+  // real —una defensa de TFM entera no llega ni de lejos— y ponen el peor mes en
+  // 150 en vez de en sin límite.
+  dailySpendLimitUsd: optionalNumber("DAILY_SPEND_LIMIT_USD", 5),
+
   // Apagado mientras no haya cuenta de desarrollador de pago: sin ella no hay
   // productos en App Store Connect ni recibos reales que validar.
   subscriptionsEnabled: process.env.SUBSCRIPTIONS_ENABLED === "true",

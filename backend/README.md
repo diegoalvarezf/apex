@@ -129,6 +129,29 @@ Sin estas dos variables el servicio sigue funcionando exactamente igual: el canj
 no depende de que el correo se pueda enviar, y su ausencia solo se nota en el log
 (`aviso de canje omitido: falta RESEND_API_KEY o NOTIFY_EMAIL`).
 
+## Techo de gasto
+
+Las cuotas por dispositivo acotan lo que gasta CADA UNO, no el total: sin App
+Attest cualquiera puede registrar dispositivos nuevos y multiplicar su cupo. Solo
+con las altas que permite el límite por IP salen unos 1.700 $/mes desde una sola
+conexión.
+
+Por eso hay un techo diario para toda la instalación, que se comprueba antes de
+llamar a la API y se apoya en el coste REAL que ya registra `ai_calls`:
+
+```
+DAILY_SPEND_LIMIT_USD=5      # por defecto 5
+```
+
+Es un límite de otra naturaleza que los demás: no pregunta quién eres ni qué pides,
+mira lo que se lleva gastado hoy y corta. Eso lo hace el único que también protege
+de lo que no hemos previsto —un fallo nuestro, un bucle en el cliente, un abuso que
+no se parezca a los que imaginamos—, porque no depende de reconocer el ataque.
+
+Conviene además poner un límite de gasto en la propia consola de Anthropic: este
+vive dentro del servicio, y un techo que depende del código que protege no cubre el
+caso de que el fallo esté en ese código.
+
 ## El texto del cliente se trata como dato, no como instrucción
 
 Con la app hablando directamente con Anthropic, sanear en el cliente bastaba: quien

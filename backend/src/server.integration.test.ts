@@ -220,6 +220,72 @@ describe("validación de la petición", () => {
   });
 });
 
+// Las cuotas por dispositivo acotan lo que gasta cada uno, no el total: sin App
+// Attest —que exige cuenta de pago— cualquiera puede registrar dispositivos nuevos
+// y multiplicar su cupo. Solo con las altas que permite el límite por IP salen unos
+// 1.700 $/mes desde una sola conexión. El techo diario corta por arriba pase lo que
+// pase, incluido lo que no hayamos previsto.
+describe("techo de gasto diario", () => {
+  async function gastar(dolares: number) {
+    await (testDb.current as any).insert(schema.aiCalls).values({
+      id: `gasto-${Math.random()}`,
+      deviceId: "cualquiera",
+      kind: "alerts",
+      model: "claude-sonnet-4-6",
+      inputTokens: 0,
+      outputTokens: 0,
+      costMicros: Math.round(dolares * 1_000_000),
+    });
+  }
+
+  it("con el techo alcanzado no se llama a la API", async () => {
+    await gastar(5);   // el límite por defecto
+    const token = await registrar();
+
+    const res = await app.inject({
+      method: "POST", url: "/v1/ai/analyze",
+      headers: { authorization: `Bearer ${token}` },
+      payload: { kind: "alerts", input: "hola" },
+    });
+
+    expect(res.statusCode).toBe(503);
+    expect(res.json().error).toBe("daily_budget_reached");
+  });
+
+  it("el chat también respeta el techo", async () => {
+    await gastar(5);
+    const token = await registrar();
+
+    const res = await app.inject({
+      method: "POST", url: "/v1/ai/chat",
+      headers: { authorization: `Bearer ${token}` },
+      payload: { messages: [{ role: "user", content: "hola" }] },
+    });
+
+    expect(res.statusCode).toBe(503);
+  });
+
+  // Por debajo del techo no estorba: el gasto normal no puede quedar bloqueado por
+  // un límite pensado para el abuso.
+  it("por debajo del techo no corta", async () => {
+    await gastar(0.5);
+    const { comprobarPresupuesto } = await import("./services/spend.js");
+    expect((await comprobarPresupuesto()).dentro).toBe(true);
+  });
+
+  // El corte es por DÍA: lo gastado ayer no puede dejar la app inservible hoy.
+  it("solo cuenta el gasto de hoy", async () => {
+    const ayer = new Date(Date.now() - 26 * 60 * 60 * 1000);
+    await (testDb.current as any).insert(schema.aiCalls).values({
+      id: "gasto-de-ayer", deviceId: "x", kind: "alerts", model: "claude-sonnet-4-6",
+      inputTokens: 0, outputTokens: 0, costMicros: 99_000_000, createdAt: ayer,
+    });
+
+    const { comprobarPresupuesto } = await import("./services/spend.js");
+    expect((await comprobarPresupuesto()).dentro).toBe(true);
+  });
+});
+
 describe("consulta de cuota", () => {
   it("un dispositivo nuevo empieza en el plan gratis", async () => {
     const token = await registrar();

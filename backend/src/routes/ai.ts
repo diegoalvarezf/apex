@@ -11,6 +11,7 @@ import {
 } from "../services/chat.js";
 import { wrapAsData, DATA_BOUNDARY_RULE } from "../services/promptSafety.js";
 import { esProVigente } from "../services/pro.js";
+import { comprobarPresupuesto } from "../services/spend.js";
 
 // El cliente trae por defecto 10 minutos de espera y 2 reintentos: hasta media hora
 // colgado de una petición que Fastify ya cortó a los 120 s (`requestTimeout`).
@@ -62,6 +63,17 @@ export function registerAIRoutes(app: FastifyInstance): void {
         resetsAt: quota.resetsAt,
         isPro: esProVigente(device),
       });
+    }
+
+    // Techo global, además del cupo del dispositivo: las cuotas por dispositivo no
+    // acotan el total, porque registrar dispositivos nuevos multiplica el cupo.
+    const presupuesto = await comprobarPresupuesto();
+    if (!presupuesto.dentro) {
+      request.log.error(
+        { gastadoMicros: presupuesto.gastadoMicros, limiteMicros: presupuesto.limiteMicros },
+        "techo de gasto diario alcanzado: no se llama a la API",
+      );
+      return reply.code(503).send({ error: "daily_budget_reached" });
     }
 
     let response;
@@ -154,6 +166,15 @@ export function registerAIRoutes(app: FastifyInstance): void {
           resetsAt: quota.resetsAt,
           isPro: esProVigente(device),
         });
+      }
+
+      const presupuesto = await comprobarPresupuesto();
+      if (!presupuesto.dentro) {
+        request.log.error(
+          { gastadoMicros: presupuesto.gastadoMicros, limiteMicros: presupuesto.limiteMicros },
+          "techo de gasto diario alcanzado: no se llama a la API (chat)",
+        );
+        return reply.code(503).send({ error: "daily_budget_reached" });
       }
 
       let response;
