@@ -7,12 +7,21 @@ import { aiCalls } from "../db/schema.js";
 import { CATALOG, isKnownKind, costMicros } from "../services/catalog.js";
 import { checkQuota, consumeQuota } from "../services/quotas.js";
 import {
-  CHAT_SYSTEM, CHAT_MODEL, CHAT_MAX_TOKENS, validateTurns,
+  CHAT_SYSTEM, CHAT_MODEL, CHAT_MAX_TOKENS, CHAT_MAX_CHARS, validateTurns, recortarPorTamano,
 } from "../services/chat.js";
 import { wrapAsData, DATA_BOUNDARY_RULE } from "../services/promptSafety.js";
 import { esProVigente } from "../services/pro.js";
 
-const anthropic = new Anthropic({ apiKey: config.anthropicApiKey });
+// El cliente trae por defecto 10 minutos de espera y 2 reintentos: hasta media hora
+// colgado de una petición que Fastify ya cortó a los 120 s (`requestTimeout`).
+// Nadie recibiría esa respuesta y sus tokens se pagarían igual, así que la espera
+// se ajusta para no sobrevivir a la petición que la originó. Un reintento se queda
+// —los errores transitorios de la API fallan rápido, no agotando el tiempo—.
+const anthropic = new Anthropic({
+  apiKey: config.anthropicApiKey,
+  timeout: 115_000,
+  maxRetries: 1,
+});
 
 // Tope del texto que manda el cliente. El contexto más grande —una rutina con su
 // historial— se queda muy por debajo; el límite existe para que nadie pueda
@@ -118,9 +127,16 @@ export function registerAIRoutes(app: FastifyInstance): void {
     async (request, reply) => {
       const device = request.device!;
 
-      const turns = validateTurns(request.body?.messages);
-      if (!turns) {
+      const validos = validateTurns(request.body?.messages);
+      if (!validos) {
         return reply.code(400).send({ error: "invalid_conversation" });
+      }
+
+      // Contar turnos no acota el coste: veinte mensajes enormes pasan igual. Se
+      // recorta por tamaño antes de gastar un token.
+      const turns = recortarPorTamano(validos);
+      if (!turns) {
+        return reply.code(413).send({ error: "input_too_large", maxChars: CHAT_MAX_CHARS });
       }
 
       const contexto = typeof request.body?.context === "string" ? request.body.context : "";
