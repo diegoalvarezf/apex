@@ -115,6 +115,33 @@ export async function consumeQuota(
   }
 }
 
+// Contador diario de propósito general, sobre la misma tabla que las cuotas de
+// IA. La tabla es (dispositivo, día, clave): sirve para contar cualquier cosa que
+// se limite por día, no solo análisis. Lo usa el freno de intentos de canje, que
+// necesita exactamente esto —contar por dispositivo y olvidarlo cada día— y no
+// justifica una tabla ni una migración propias.
+export async function contadorDiario(
+  deviceId: string,
+  clave: string,
+  now = new Date(),
+): Promise<number> {
+  return readDaily(deviceId, clave, todayKey(now));
+}
+
+export async function incrementarDiario(
+  deviceId: string,
+  clave: string,
+  now = new Date(),
+): Promise<void> {
+  await db
+    .insert(usageDaily)
+    .values({ deviceId, day: todayKey(now), kind: clave, count: 1 })
+    .onConflictDoUpdate({
+      target: [usageDaily.deviceId, usageDaily.day, usageDaily.kind],
+      set: { count: sql`${usageDaily.count} + 1` },
+    });
+}
+
 async function readDaily(deviceId: string, kind: string, day: string): Promise<number> {
   const [row] = await db
     .select({ count: usageDaily.count })

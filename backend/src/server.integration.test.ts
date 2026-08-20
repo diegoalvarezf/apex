@@ -384,6 +384,51 @@ describe("Apex Pro por código", () => {
     }
   });
 
+  // Los códigos son palabras adivinables a propósito ("APEX-TRIBUNAL"), y acertar
+  // uno vale unos 38 $/mes de la clave del servidor. Sin freno, un solo
+  // dispositivo registrado podía recorrer un diccionario entero.
+  describe("freno a la adivinación de códigos", () => {
+    async function intentar(token: string, code: string) {
+      return app.inject({
+        method: "POST", url: "/v1/pro/redeem",
+        headers: { authorization: `Bearer ${token}` }, payload: { code },
+      });
+    }
+
+    it("corta tras diez intentos fallidos en el mismo día", async () => {
+      const token = await registrar();
+      for (let i = 0; i < 10; i++) {
+        expect((await intentar(token, `NOEXISTE${i}AA`)).statusCode).toBe(404);
+      }
+      // El undécimo ya no llega ni a mirar el código.
+      expect((await intentar(token, "NOEXISTE10AA")).statusCode).toBe(429);
+    });
+
+    // Lo que evita castigar a quien simplemente se equivoca al teclear: si un
+    // acierto contara, alguien con mala suerte podría quedarse fuera de su Pro.
+    it("un canje correcto no gasta intentos", async () => {
+      await emitir("BUEN2345CODE", null, null);
+      const token = await registrar();
+
+      for (let i = 0; i < 9; i++) await intentar(token, `FALLO${i}AAAAA`);
+      expect((await intentar(token, "BUEN2345CODE")).statusCode).toBe(200);
+      // Sigue quedando el décimo intento: el acierto no lo consumió.
+      expect((await intentar(token, "OTROFALLOAAA")).statusCode).toBe(404);
+    });
+
+    // El freno es por dispositivo, no global: agotar los intentos de uno no puede
+    // dejar sin canjear a los demás miembros del tribunal.
+    it("agotar los intentos no afecta a otro dispositivo", async () => {
+      await emitir("COMP2345ARTI", null, null);
+      const quemado = await registrar();
+      for (let i = 0; i < 11; i++) await intentar(quemado, `FALLO${i}AAAAA`);
+      expect((await intentar(quemado, "COMP2345ARTI")).statusCode).toBe(429);
+
+      const limpio = await registrar();
+      expect((await intentar(limpio, "COMP2345ARTI")).statusCode).toBe(200);
+    });
+  });
+
   it("canjear exige estar autenticado", async () => {
     const res = await app.inject({
       method: "POST", url: "/v1/pro/redeem", payload: { code: "ABCD2345EFGH" },

@@ -2,6 +2,7 @@ import { randomBytes } from "node:crypto";
 import { eq, and, count, isNull } from "drizzle-orm";
 import { db } from "../db/index.js";
 import { devices, proCodes, proRedemptions } from "../db/schema.js";
+import { contadorDiario, incrementarDiario } from "./quotas.js";
 
 // Apex Pro.
 //
@@ -34,11 +35,41 @@ export function normalizar(code: string): string {
 
 export type ResultadoCanje =
   | { ok: true; expiresAt: Date | null; issuedTo: string | null; nuevo: boolean }
-  | { ok: false; motivo: "no_existe" | "ya_usado" };
+  | { ok: false; motivo: "no_existe" | "ya_usado" | "demasiados_intentos" };
+
+// Freno a la adivinación de códigos.
+//
+// Los códigos son palabras que una persona teclea y dicta ("APEX-TRIBUNAL"), no
+// cadenas aleatorias: se eligieron así a propósito, y eso los hace adivinables. Sin
+// freno, un solo dispositivo registrado podía probar códigos indefinidamente, y
+// acertar sale rentable: un Pro a tope gasta unos 38 $/mes de la clave del
+// servidor.
+//
+// Diez intentos FALLIDOS al día por dispositivo. Un canje que sale bien no cuenta,
+// así que quien teclea su código —incluso mal un par de veces— no lo nota nunca.
+// No hace imposible acertar a la primera; sí impide recorrer un diccionario.
+const CLAVE_INTENTOS = "proRedeemFail";
+const MAX_INTENTOS_FALLIDOS_POR_DIA = 10;
 
 export async function canjear(code: string, deviceId: string): Promise<ResultadoCanje> {
   const normalizado = normalizar(code);
 
+  // El freno va aquí y no en la ruta para que no se pueda esquivar añadiendo otro
+  // punto de entrada al canje más adelante.
+  if ((await contadorDiario(deviceId, CLAVE_INTENTOS)) >= MAX_INTENTOS_FALLIDOS_POR_DIA) {
+    return { ok: false, motivo: "demasiados_intentos" };
+  }
+
+  const resultado = await intentarCanje(normalizado, deviceId);
+
+  // Solo se apunta lo fallido: acertar no debe acercarte al tope, y así quien
+  // teclea su propio código nunca se topa con esto.
+  if (!resultado.ok) await incrementarDiario(deviceId, CLAVE_INTENTOS);
+
+  return resultado;
+}
+
+async function intentarCanje(normalizado: string, deviceId: string): Promise<ResultadoCanje> {
   // Todo va en una transacción con el código bloqueado (`for update`): entre
   // contar los canjes y apuntar el nuevo cabe otro canje simultáneo, y sin el
   // bloqueo un código de N usos podría gastarse N+1 veces. Que lo resuelva la

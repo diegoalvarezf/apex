@@ -15,6 +15,10 @@ export function registerProRoutes(app: FastifyInstance): void {
     const resultado = await canjear(code, device.id);
 
     if (!resultado.ok) {
+      if (resultado.motivo === "demasiados_intentos") {
+        request.log.warn({ deviceId: device.id }, "canje bloqueado por exceso de intentos");
+        return reply.code(429).send({ error: "too_many_attempts" });
+      }
       // 404 y 409 se distinguen a propósito: "ese código no existe" y "ese código
       // ya lo usó otro" son problemas distintos para quien lo teclea.
       return resultado.motivo === "no_existe"

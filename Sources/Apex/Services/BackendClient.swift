@@ -23,6 +23,9 @@ enum BackendError: LocalizedError {
     case stravaRechazado
     case codigoNoValido
     case codigoYaUsado
+    // El servidor frena los intentos fallidos de canje para que nadie pueda ir
+    // probando códigos: son palabras adivinables, no cadenas aleatorias.
+    case demasiadosIntentos
 
     var errorDescription: String? {
         switch self {
@@ -50,6 +53,8 @@ enum BackendError: LocalizedError {
             return "Ese código no existe. Revisa que esté bien escrito."
         case .codigoYaUsado:
             return "Ese código ya se ha usado en otro dispositivo."
+        case .demasiadosIntentos:
+            return "Demasiados intentos fallidos. Inténtalo mañana."
         }
     }
 }
@@ -203,6 +208,7 @@ final class BackendClient {
             case 401: throw BackendError.noAutorizado
             case 404: throw BackendError.codigoNoValido
             case 409: throw BackendError.codigoYaUsado
+            case 429: throw BackendError.demasiadosIntentos
             case 400: throw BackendError.codigoNoValido
             default:  throw BackendError.servidorCaido
             }
