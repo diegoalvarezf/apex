@@ -95,7 +95,7 @@ struct DashboardView: View {
             .navigationBarTitleDisplayMode(.inline)
             .sheet(isPresented: $showCalendar) { MetricCalendarView() }
             .onChange(of: dashVM.trainingLoad) { _, load in
-                if let load = load { healthKit.updateStravaTrainingLoad(load) }
+                if let load = load { healthKit.updateStravaTrainingLoad(load, history: dashVM.loadHistory) }
                 sendToWatch()
             }
             .onChange(of: dashVM.activities.count) { _, _ in

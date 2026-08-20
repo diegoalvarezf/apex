@@ -748,7 +748,14 @@ final class HealthKitManager: ObservableObject {
         )
     }
 
-    func updateStravaTrainingLoad(_ load: TrainingLoad) {
+    // `history` es el historial diario de ATL/CTL (DashboardViewModel.loadHistory,
+    // cronológico, hoy al final): de ahí sale la racha real de días con ACWR alto
+    // para la notificación. Antes esa racha era un 3 fijo en cuanto el ACWR de HOY
+    // superaba 1.3 —el primer día de carga alta ya decía "3 días seguidos", y el
+    // décimo seguía diciendo "3"—. Un número concreto en una notificación tiene que
+    // ser el que de verdad se puede contar, no una aproximación con apariencia de
+    // medida.
+    func updateStravaTrainingLoad(_ load: TrainingLoad, history: [DashboardViewModel.LoadSample] = []) {
         stravaTrainingScore = acwrToScore(load.acwr)
         let score = computeRecovery(
             sleep: lastSleep, hrv: lastHRV,
@@ -760,14 +767,25 @@ final class HealthKitManager: ObservableObject {
         Task { @MainActor in
             await NotificationManager.shared.checkStatus()
             if let s = recoveryScore {
-                // ACWR > 1.3 durante varios días consecutivos = racha de carga elevada
-                let highLoadStreak = load.acwr > 1.3 ? 3 : 0
                 NotificationManager.shared.scheduleDailyRecovery(
                     recovery: s.value,
-                    highLoadDaysStreak: highLoadStreak
+                    highLoadDaysStreak: Self.highLoadStreak(history: history)
                 )
             }
         }
+    }
+
+    // Días SEGUIDOS con ACWR > 1.3, contando hacia atrás desde el más reciente.
+    // `nonisolated static` y solo con `Double`/`Date`: no toca HealthKit ni estado
+    // de la instancia, así que se puede probar sin arrancar el manager entero.
+    nonisolated static func highLoadStreak(history: [DashboardViewModel.LoadSample]) -> Int {
+        var racha = 0
+        for muestra in history.sorted(by: { $0.date > $1.date }) {
+            let acwr = muestra.ctl > 0 ? muestra.atl / muestra.ctl : 1.0
+            guard acwr > 1.3 else { break }
+            racha += 1
+        }
+        return racha
     }
 
     // ACWR zones: <0.8 undertrained, 0.8-1.3 optimal, 1.3-1.5 elevated, >1.5 overreached
