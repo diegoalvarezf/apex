@@ -33,7 +33,7 @@ export function normalizar(code: string): string {
 }
 
 export type ResultadoCanje =
-  | { ok: true; expiresAt: Date | null }
+  | { ok: true; expiresAt: Date | null; issuedTo: string | null; nuevo: boolean }
   | { ok: false; motivo: "no_existe" | "ya_usado" };
 
 export async function canjear(code: string, deviceId: string): Promise<ResultadoCanje> {
@@ -61,9 +61,11 @@ export async function canjear(code: string, deviceId: string): Promise<Resultado
       .where(and(eq(proRedemptions.code, normalizado), eq(proRedemptions.deviceId, deviceId)))
       .limit(1);
 
+    const esNuevo = !yaCanjeado;
+
     // Si ya lo canjeó ESTE mismo dispositivo, se deja pasar sin gastar otro uso:
     // reinstalar la app o repetir el gesto no debería castigarse con un error.
-    if (!yaCanjeado) {
+    if (esNuevo) {
       const [recuento] = await tx
         .select({ usados: count() })
         .from(proRedemptions)
@@ -81,7 +83,7 @@ export async function canjear(code: string, deviceId: string): Promise<Resultado
       .set({ isPro: true, proUntil: encontrado.expiresAt })
       .where(eq(devices.id, deviceId));
 
-    return { ok: true, expiresAt: encontrado.expiresAt };
+    return { ok: true, expiresAt: encontrado.expiresAt, issuedTo: encontrado.issuedTo, nuevo: esNuevo };
   });
 }
 

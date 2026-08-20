@@ -1,5 +1,6 @@
 import type { FastifyInstance } from "fastify";
-import { canjear, esProVigente } from "../services/pro.js";
+import { canjear, esProVigente, normalizar } from "../services/pro.js";
+import { notificarCanje } from "../services/notify.js";
 
 export function registerProRoutes(app: FastifyInstance): void {
   // Canjear un código de Apex Pro.
@@ -22,6 +23,17 @@ export function registerProRoutes(app: FastifyInstance): void {
     }
 
     request.log.info({ deviceId: device.id }, "Apex Pro activado con código");
+
+    // Solo en el canje NUEVO: reinstalar la app o repetir el gesto no debe
+    // mandar un correo cada vez. No se espera (`await`) porque un aviso lento o
+    // caído no puede retrasar ni tumbar la respuesta al usuario.
+    if (resultado.nuevo) {
+      void notificarCanje(
+        { code: normalizar(code), issuedTo: resultado.issuedTo, deviceId: device.id, platform: device.platform },
+        request.log,
+      );
+    }
+
     return reply.send({ isPro: true, expiresAt: resultado.expiresAt });
   });
 

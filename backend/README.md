@@ -111,6 +111,24 @@ quien además tenga un código propio no se le toca, porque el Pro se retira mir
 dispositivo por dispositivo. Por eso conviene tener el personal separado del
 compartido, y no un único código para todo.
 
+### Aviso por correo al canjear
+
+Cada canje **nuevo** (no repetir desde el mismo dispositivo) manda un correo con
+qué código, para quién se emitió y desde qué dispositivo. Usa
+[Resend](https://resend.com) porque su remitente de pruebas
+(`onboarding@resend.dev`) entrega sin verificar un dominio propio —eso sí, solo a
+la dirección con la que se creó la cuenta de Resend—, que es justo lo que hace
+falta para avisarse a uno mismo:
+
+```
+RESEND_API_KEY=re_...
+NOTIFY_EMAIL=tu@correo.com
+```
+
+Sin estas dos variables el servicio sigue funcionando exactamente igual: el canje
+no depende de que el correo se pueda enviar, y su ausencia solo se nota en el log
+(`aviso de canje omitido: falta RESEND_API_KEY o NOTIFY_EMAIL`).
+
 ## El texto del cliente se trata como dato, no como instrucción
 
 Con la app hablando directamente con Anthropic, sanear en el cliente bastaba: quien

@@ -23,6 +23,14 @@ function optionalNumber(name: string, fallback: number): number {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
+// A diferencia de `required`, su ausencia no impide arrancar: el aviso por correo
+// es una comodidad, no algo de lo que dependa el servicio. Sin la clave, se
+// registra en el log y se sigue sin enviar nada.
+function optionalString(name: string): string | undefined {
+  const value = process.env[name];
+  return value && value.trim() !== "" ? value.trim() : undefined;
+}
+
 export const config = {
   port: optionalNumber("PORT", 3000),
   // Railway inyecta NODE_ENV=production en el despliegue.
@@ -44,6 +52,14 @@ export const config = {
   // Apagado mientras no haya cuenta de desarrollador de pago: sin ella no hay
   // productos en App Store Connect ni recibos reales que validar.
   subscriptionsEnabled: process.env.SUBSCRIPTIONS_ENABLED === "true",
+
+  // Aviso por correo cuando alguien canjea un código de Apex Pro por primera vez.
+  // Sin `resendApiKey` o `notifyEmail`, el servicio sigue funcionando igual: el
+  // canje no depende de que el correo se pueda enviar.
+  email: {
+    resendApiKey: optionalString("RESEND_API_KEY"),
+    notifyEmail: optionalString("NOTIFY_EMAIL"),
+  },
 } as const;
 
 export type Config = typeof config;

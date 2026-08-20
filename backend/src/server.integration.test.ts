@@ -300,6 +300,22 @@ describe("Apex Pro por código", () => {
     expect((await app.inject({ method: "POST", url: "/v1/pro/redeem", headers: auth, payload: { code: "REPE2345TIRR" } })).statusCode).toBe(200);
   });
 
+  // El aviso por correo solo debe dispararse en el canje NUEVO. Se comprueba
+  // llamando al servicio directamente porque `nuevo` no viaja en la respuesta
+  // HTTP: es una decisión interna, no algo que le importe a quien canjea.
+  it("distingue un canje nuevo de repetir el mismo", async () => {
+    const { canjear } = await import("./services/pro.js");
+    await emitir("AVIS2345OMAI");
+    const res = await app.inject({ method: "POST", url: "/v1/devices/register", payload: {} });
+    const deviceId = res.json().deviceId as string;
+
+    const primero = await canjear("AVIS2345OMAI", deviceId);
+    expect(primero.ok && primero.nuevo).toBe(true);
+
+    const segundo = await canjear("AVIS2345OMAI", deviceId);
+    expect(segundo.ok && segundo.nuevo).toBe(false);
+  });
+
   // Un código caducado no debe seguir dando cuota ampliada.
   it("un código ya caducado no concede Pro vigente", async () => {
     await emitir("CADU2345CADO", new Date(Date.now() - 86_400_000));
