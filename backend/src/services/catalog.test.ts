@@ -69,6 +69,29 @@ describe("catálogo de análisis", () => {
       }
     }
   });
+
+  // Los que el cliente pinta como un bloque de texto (AITextCard/AIAnalysisBody)
+  // tienen que venir en viñetas y terminar en una línea "Conclusión: " literal:
+  // es lo que separa la caja destacada del resto. Los demás devuelven JSON que la
+  // app ya trocea en tarjetas por su cuenta, así que no aplica.
+  const kindsEnProsa: AnalysisKind[] = [
+    "weekly", "recovery", "stress", "effort", "run", "sleep", "exerciseProgress", "routineDay",
+  ];
+
+  it("todo lo que se enseña como texto pide viñetas", () => {
+    for (const kind of kindsEnProsa) {
+      expect(CATALOG[kind].system, `${kind} sin viñetas`).toContain("empezando por '• '");
+    }
+  });
+
+  // La cadena exacta que el cliente busca para separar la conclusión del resto
+  // (`AIAnalysisBody` en Swift). Si el prompt la pide con otras palabras, la app
+  // no encuentra la caja y el texto entero se ve como un párrafo suelto.
+  it("todo lo que se enseña como texto pide la conclusión con el marcador exacto", () => {
+    for (const kind of kindsEnProsa) {
+      expect(CATALOG[kind].system, `${kind} sin "Conclusión: "`).toContain('"Conclusión: "');
+    }
+  });
 });
 
 // El coste se calcula en enteros para poder sumarlo sin arrastrar errores. Los

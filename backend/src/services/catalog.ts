@@ -23,24 +23,21 @@ export const MODELS = {
 
 // Reglas comunes a los análisis en prosa. Están aquí, y no repetidas en cada
 // prompt, para que cambiar el estilo sea un solo cambio.
-const plainProse = "2-3 frases. Español, TEXTO PLANO (sin markdown ni listas).";
 const onlyGivenNumbers = "Usa solo las cifras dadas; nunca inventes valores.";
-const rules = `${plainProse} ${onlyGivenNumbers}`;
 
-function closing(what: string): string {
-  return `Termina ${what}`;
-}
-
-// Formato de viñetas, el mismo que ya usaban los días de la rutina.
+// Formato de todos los análisis en prosa: viñetas y, al final, una conclusión
+// destacada.
 //
 // Un párrafo obliga a leerlo entero para sacar tres datos; en viñetas se ven de un
-// vistazo, que es como se mira una métrica del día. Se describe el formato con
-// precisión —cuántas, cómo empiezan, cuánto ocupan— porque "sé breve" a secas no
-// produce nada parecido dos veces seguidas.
-function bullets(min: number, max: number, palabras = 16): string {
+// vistazo, que es como se mira una métrica del día. La app ya sabe pintar aparte
+// cualquier línea que empiece literalmente por "Conclusión: " —en su propia caja,
+// con icono— así que el marcador va aquí, en el prompt, no como una convención que
+// cada análisis tenga que acordarse de seguir por su cuenta.
+function bullets(min: number, max: number, conclusion: string, palabras = 16): string {
   return `Formato EXACTO: de ${min} a ${max} líneas, cada una empezando por '• ' y \
 de una sola frase corta (máx ~${palabras} palabras). Sin introducción ni párrafos \
-ni markdown. Español. ${onlyGivenNumbers}`;
+ni markdown. Después de las viñetas, una última línea que empiece literalmente por \
+"Conclusión: " seguida de ${conclusion} en una frase. Español. ${onlyGivenNumbers}`;
 }
 
 export type AnalysisKind =
@@ -81,7 +78,7 @@ ${onlyGivenNumbers}`,
   alerts: {
     system: `Eres un entrenador deportivo. A partir de las métricas del día, escribe las alertas \
 más importantes: qué hacer hoy y por qué. Prioriza lo accionable (descansar, entrenar \
-en Z1, sueño, mover o suavizar el entreno). ${rules} ${closing("con la acción más importante de hoy.")}`,
+en Z1, sueño, mover o suavizar el entreno). ${bullets(2, 4, "la acción más importante de hoy")}`,
     model: MODELS.standard,
     maxTokens: 700,
     quota: "daily",
@@ -89,7 +86,7 @@ en Z1, sueño, mover o suavizar el entreno). ${rules} ${closing("con la acción 
 
   weekly: {
     system: `Eres un entrenador deportivo. Resume la semana a partir de las métricas dadas, \
-mirando la TENDENCIA, no solo el valor de hoy. ${rules} ${closing("con el siguiente paso concreto.")}`,
+mirando la TENDENCIA, no solo el valor de hoy. ${bullets(3, 4, "el siguiente paso concreto")}`,
     model: MODELS.standard,
     maxTokens: 400,
     quota: "daily",
@@ -97,7 +94,7 @@ mirando la TENDENCIA, no solo el valor de hoy. ${rules} ${closing("con el siguie
 
   recovery: {
     system: `Eres un entrenador deportivo. Analizas el estado de recuperación a partir del HRV, \
-la FC en reposo y el sueño frente al baseline personal. ${rules} ${closing("con la recomendación principal.")}`,
+la FC en reposo y el sueño frente al baseline personal. ${bullets(3, 4, "la recomendación principal")}`,
     model: MODELS.standard,
     maxTokens: 400,
     quota: "daily",
@@ -105,7 +102,7 @@ la FC en reposo y el sueño frente al baseline personal. ${rules} ${closing("con
 
   stress: {
     system: `Eres un entrenador deportivo. Analizas el estrés fisiológico del día a partir de la \
-frecuencia cardíaca por horas frente a la reserva cardíaca. ${rules} ${closing("con la recomendación principal.")}`,
+frecuencia cardíaca por horas frente a la reserva cardíaca. ${bullets(3, 4, "la recomendación principal")}`,
     model: MODELS.standard,
     maxTokens: 400,
     quota: "daily",
@@ -113,7 +110,7 @@ frecuencia cardíaca por horas frente a la reserva cardíaca. ${rules} ${closing
 
   effort: {
     system: `Eres un entrenador deportivo. Analizas el esfuerzo acumulado del día (TRIMP) y su \
-encaje con la carga de las últimas semanas. ${rules} ${closing("con la recomendación principal.")}`,
+encaje con la carga de las últimas semanas. ${bullets(3, 4, "la recomendación principal")}`,
     model: MODELS.standard,
     maxTokens: 400,
     quota: "daily",
@@ -121,8 +118,7 @@ encaje con la carga de las últimas semanas. ${rules} ${closing("con la recomend
 
   sleep: {
     system: `Eres un experto en sueño. Analizas la noche a partir de su duración, fases y \
-eficiencia, comparándola con las anteriores. ${bullets(3, 4)} \
-La última línea es la recomendación principal.`,
+eficiencia, comparándola con las anteriores. ${bullets(3, 4, "la recomendación principal")}`,
     model: MODELS.standard,
     maxTokens: 400,
     quota: "daily",
@@ -130,25 +126,20 @@ La última línea es la recomendación principal.`,
 
   run: {
     system: `Eres un entrenador de resistencia (carrera y ciclismo). Analizas una sesión a partir \
-de su curva de FC, ritmo o potencia por tramos. SÉ BREVE: directo, sin preámbulos ni relleno. Di \
-la ESTRUCTURA real (continuo/progresivo/tempo/series con nº y duración aprox./cuestas) y lo más \
-relevante del control del esfuerzo o de la deriva. ${rules} \
-${closing("y resume en una frase la idea clave y la acción a tomar.")}`,
+de su curva de FC, ritmo o potencia por tramos. Di la ESTRUCTURA real \
+(continuo/progresivo/tempo/series con nº y duración aprox./cuestas) y lo más relevante del \
+control del esfuerzo o de la deriva. ${bullets(3, 4, "la idea clave y la acción a tomar")}`,
     model: MODELS.standard,
     maxTokens: 500,
     quota: "daily",
   },
 
-  // El único que usa viñetas: la regla de "sin listas" lo contradiría, así que
-  // define su propio formato y conserva solo la de las cifras.
   routineDay: {
     system: `Eres un entrenador de fuerza. Te paso los ejercicios de un DÍA de una rutina y la \
-progresión registrada de cada uno. Devuelve SOLO conclusiones breves, sin párrafos ni \
-introducción. LEE EL NOMBRE de cada ejercicio para entender su TIPO y cómo progresa: por peso \
-(con carga), por reps a peso corporal, o por segundos (isometrías como plancha). Formato EXACTO: \
-de 2 a 4 líneas, cada una empezando por '• ' y de una sola frase corta (máx ~14 palabras), \
-destacando lo que progresa y lo que se estanca. Español. ${onlyGivenNumbers} \
-${closing("con la acción más importante para la próxima vez, en una frase.")}`,
+progresión registrada de cada uno. LEE EL NOMBRE de cada ejercicio para entender su TIPO y cómo \
+progresa: por peso (con carga), por reps a peso corporal, o por segundos (isometrías como \
+plancha). Destaca lo que progresa y lo que se estanca. \
+${bullets(2, 4, "la acción más importante para la próxima vez", 14)}`,
     model: MODELS.standard,
     maxTokens: 350,
     quota: "daily",
@@ -157,8 +148,7 @@ ${closing("con la acción más importante para la próxima vez, en una frase.")}
   exerciseProgress: {
     system: `Eres un entrenador de fuerza. Analizas la progresión de UN ejercicio a partir de sus \
 series registradas. Valora el VOLUMEN y la fuerza estimada (Epley), no solo el peso: 80×10 puede \
-ser más fuerte que 85×5. ${bullets(3, 4)} \
-La última línea es la recomendación para la próxima sesión.`,
+ser más fuerte que 85×5. ${bullets(3, 4, "la recomendación para la próxima sesión")}`,
     model: MODELS.standard,
     maxTokens: 400,
     quota: "daily",
