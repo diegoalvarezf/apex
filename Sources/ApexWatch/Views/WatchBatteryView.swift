@@ -7,22 +7,12 @@ struct WatchBatteryView: View {
     // un valor crítico, cuando lo que pasa es que aún no ha llegado nada del iPhone.
     private var batteryColor: Color {
         guard data.hasData else { return .secondary }
-        switch data.battery {
-        case 75...: return .green
-        case 50..<75: return .cyan
-        case 25..<50: return .yellow
-        default: return .red
-        }
+        return MetricColors.bodyBattery(data.battery)
     }
 
     private var recoveryColor: Color {
         guard data.hasData else { return .secondary }
-        switch data.recovery {
-        case 80...: return .green
-        case 60..<80: return .cyan
-        case 40..<60: return .yellow
-        default: return .red
-        }
+        return MetricColors.recovery(data.recovery)
     }
 
     var body: some View {

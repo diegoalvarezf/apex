@@ -127,6 +127,9 @@ targets:
     extensionType: widgetkit-extension
     sources:
       - path: Sources/ApexWidget
+      # Los colores de las métricas los comparten app, widget y reloj: si cada uno
+      # tuviera los suyos volverían a separarse, que es lo que ya pasó.
+      - path: Sources/Shared
     info:
       path: Sources/ApexWidget/Info.plist
       properties:

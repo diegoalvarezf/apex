@@ -135,7 +135,7 @@ private struct DayBatteryPage: View {
     }
 
     private func scoreColor(_ v: Int) -> Color {
-        v >= 80 ? .green : v >= 60 ? .cyan : v >= 40 ? .orange : .red
+        MetricColors.bodyBattery(v)
     }
 
     private var hourlyBattery: [MetricSample] {

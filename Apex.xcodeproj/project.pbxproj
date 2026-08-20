@@ -12,6 +12,7 @@
 		0903375899CFBB5DA472E924 /* ApexWatchApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29A428C3DFC4F73E20ED3421 /* ApexWatchApp.swift */; };
 		09BFAB66E82950A9E7E2BB78 /* BodyCompositionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 90337467BDC4143EB9231C9B /* BodyCompositionView.swift */; };
 		0AB5FF0B2A07C193347DE094 /* BackendClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4E66AE3A42892E8E4153907 /* BackendClient.swift */; };
+		0C6C062D385DB17815448331 /* MetricColors.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6DDFC1FE93588C19A87A79C3 /* MetricColors.swift */; };
 		0D9E95D61B8731FE54F7C260 /* ApexWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 81AAEDC457D97B1EFF7576CA /* ApexWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		0E98F02BED72F92AD37DBFF9 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 754A60D104BB37520752F315 /* OnboardingView.swift */; };
 		0ECE3E1166703807D161E527 /* ApexWatch.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = BDB4907A302A7EB9BC3AE081 /* ApexWatch.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -36,6 +37,7 @@
 		37FBA2E6D5E00ACF0448054C /* TrainingLoadDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E501BD5E0A0BECBF744DA80 /* TrainingLoadDetailView.swift */; };
 		3C01FA445D20523548A46364 /* ApexProSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F6F4DFE032D2AA4A034C2FF /* ApexProSheet.swift */; };
 		3CDE3E09328728D2664CC01E /* ActivityDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E047B9005F665F6A81A99766 /* ActivityDetailView.swift */; };
+		3E7E4352AD9F50A7E24C5861 /* MetricColorsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88B408E960980ABB2B4C3628 /* MetricColorsTests.swift */; };
 		3ED2669B442CE287EDF18AE6 /* StravaAuth.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41370B6763ED9B455FB1DFBE /* StravaAuth.swift */; };
 		4052010EDC7E1448525EC9DE /* LiveActivityView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B470F268FED90132B9811D6 /* LiveActivityView.swift */; };
 		410EBDBCBF1E33B2B5DB21C4 /* WatchConnectivityManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75E33342C3C5F94F4BF061BB /* WatchConnectivityManager.swift */; };
@@ -55,6 +57,7 @@
 		58AC9066B969DD4521E73CFD /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 116DEF7F3E2E27AADEA835B4 /* Assets.xcassets */; };
 		5959F0CE51CF3DF938600C5A /* TrainingMetrics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9CA05CE06DA7D0D8487B6525 /* TrainingMetrics.swift */; };
 		5995891A086AEAE25FE2E1B2 /* BiologicalAgeDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 772C231E1EF6F463B0630868 /* BiologicalAgeDetailView.swift */; };
+		5A367450B82B9B33950806A1 /* WatchDashboardData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 420D0988C7E57354663C75AD /* WatchDashboardData.swift */; };
 		5B1ABED22F673424F1B48351 /* PromptSafetyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04659271F9806B8400DF0F55 /* PromptSafetyTests.swift */; };
 		5BEBD4D9DDD2C0F31F65DB10 /* DeviceAuth.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E8C95A547E083280FBF8C24 /* DeviceAuth.swift */; };
 		5F66B03ED35EF2F60F49A293 /* TrainingMetricsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F96D25617D324C362F8E34FC /* TrainingMetricsTests.swift */; };
@@ -97,6 +100,7 @@
 		D3360CD651D3D2C4755F9E12 /* ExerciseSwapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 39BFB30ED4A303F935A2446E /* ExerciseSwapper.swift */; };
 		DE0F638D99C058F5AF1952D6 /* ExerciseProgressionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D8AE1EFA5B2391EA1947753 /* ExerciseProgressionView.swift */; };
 		E0916FF9B9A23C1A1B655DA2 /* StressRecoveryEffortRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C305AC858A30B735C9D6518 /* StressRecoveryEffortRow.swift */; };
+		E284426F05ED82746B9C70FF /* MetricColors.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6DDFC1FE93588C19A87A79C3 /* MetricColors.swift */; };
 		E4600BAE7DC219CEF9DE1354 /* RoutineAISheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A38CD8F940C1CBCF0C97148 /* RoutineAISheet.swift */; };
 		E597A64714DDFA6DAB75B7C8 /* DailySnapshotStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2DDF406A5C0537227EF9EC5 /* DailySnapshotStoreTests.swift */; };
 		E84BF498D110F931D4F79242 /* RunAIAnalysisCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E99751B63AB5AAE7641F8FD /* RunAIAnalysisCard.swift */; };
@@ -104,6 +108,7 @@
 		EBC85D912F711961F75E32CA /* HealthDayDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70D1E5096476CDF79CF1D14F /* HealthDayDetailView.swift */; };
 		EBE0000FDA3CE47DFFFA5590 /* DailyAnalysisGatingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = ECB414A56B53AB050720950D /* DailyAnalysisGatingTests.swift */; };
 		ED07C5B3D748673883BA7990 /* SleepSessionMergeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6082614E2B52F824E67814DA /* SleepSessionMergeTests.swift */; };
+		F0A2D0A415454811EF70EDA2 /* MetricColors.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6DDFC1FE93588C19A87A79C3 /* MetricColors.swift */; };
 		F1460305CC88C6AB5326DBEB /* ActivityTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2325B077EAC479002B9505EA /* ActivityTracker.swift */; };
 		F1CB9CB37D89103771258830 /* VO2MaxEstimatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C8CD34D2CFDC45EB32C055B /* VO2MaxEstimatorTests.swift */; };
 		F34E969E41CB652EDA9B3B9B /* WatchBatteryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A00622900A0532E9DDD6448 /* WatchBatteryView.swift */; };
@@ -217,6 +222,7 @@
 		694E71D7521E44FBE01566E7 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		6B6EF1B7EFB932C65DA7EA71 /* HealthKitManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthKitManager.swift; sourceTree = "<group>"; };
 		6D6B47C4A6F4B5FC7DF83EE5 /* RoutineProgressStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoutineProgressStore.swift; sourceTree = "<group>"; };
+		6DDFC1FE93588C19A87A79C3 /* MetricColors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetricColors.swift; sourceTree = "<group>"; };
 		6F6F4DFE032D2AA4A034C2FF /* ApexProSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApexProSheet.swift; sourceTree = "<group>"; };
 		7085B67C96F3791C8445CD73 /* AIService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIService.swift; sourceTree = "<group>"; };
 		70D1E5096476CDF79CF1D14F /* HealthDayDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthDayDetailView.swift; sourceTree = "<group>"; };
@@ -237,6 +243,7 @@
 		84A1A2830024B58E9E9D7197 /* SwapExerciseSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwapExerciseSheet.swift; sourceTree = "<group>"; };
 		84F95477213FB0DE9EB839EF /* NotificationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationManager.swift; sourceTree = "<group>"; };
 		87B3B74F5EFB6A9969BAF19C /* StressDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StressDetailView.swift; sourceTree = "<group>"; };
+		88B408E960980ABB2B4C3628 /* MetricColorsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetricColorsTests.swift; sourceTree = "<group>"; };
 		88E4488AD8E9837A8F50CF0F /* MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabView.swift; sourceTree = "<group>"; };
 		8C305AC858A30B735C9D6518 /* StressRecoveryEffortRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StressRecoveryEffortRow.swift; sourceTree = "<group>"; };
 		8E1CB8BADCFD84F2359D60A2 /* HealthData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthData.swift; sourceTree = "<group>"; };
@@ -344,6 +351,7 @@
 				0EB428E2B586B1CF6CB605A8 /* ExerciseSwapperTests.swift */,
 				BF1743C0689451AD5241E5A4 /* FitnessAgeTests.swift */,
 				AF2A5B1EE522BBB3AD980C17 /* MetricCalendarTests.swift */,
+				88B408E960980ABB2B4C3628 /* MetricColorsTests.swift */,
 				04659271F9806B8400DF0F55 /* PromptSafetyTests.swift */,
 				5B1DD76B3E53B371950A0D69 /* SeriesOrderTests.swift */,
 				E34E9B77B5A6EED2A7D75D18 /* SessionLoadTests.swift */,
@@ -499,6 +507,7 @@
 		BCA6CD7F6F023E9235D835F2 /* Shared */ = {
 			isa = PBXGroup;
 			children = (
+				6DDFC1FE93588C19A87A79C3 /* MetricColors.swift */,
 				420D0988C7E57354663C75AD /* WatchDashboardData.swift */,
 			);
 			path = Shared;
@@ -726,6 +735,7 @@
 				32CD2F8609515285004E1FE3 /* ExerciseSwapperTests.swift in Sources */,
 				C04D77A817001F87BEDE22A5 /* FitnessAgeTests.swift in Sources */,
 				1FA704E8DE4CBF215A5A2199 /* MetricCalendarTests.swift in Sources */,
+				3E7E4352AD9F50A7E24C5861 /* MetricColorsTests.swift in Sources */,
 				5B1ABED22F673424F1B48351 /* PromptSafetyTests.swift in Sources */,
 				47A425DBDBA6094144BC9328 /* SeriesOrderTests.swift in Sources */,
 				1756E84C3A0A0157979643F6 /* SessionLoadTests.swift in Sources */,
@@ -783,6 +793,7 @@
 				7F26173322E50A83975C2405 /* MainTabView.swift in Sources */,
 				527BF03B0C7872C190CB549E /* MetricCalendarData.swift in Sources */,
 				4D42D978472249EA99ABDEAD /* MetricCalendarView.swift in Sources */,
+				0C6C062D385DB17815448331 /* MetricColors.swift in Sources */,
 				F489847B015CA5AF4449CEE2 /* MetricDetailComponents.swift in Sources */,
 				F6A4FA85D01C7CFACA0B0460 /* MetricDetailView.swift in Sources */,
 				171FF970FDD875ED01FA03D7 /* MetricStyledTiles.swift in Sources */,
@@ -830,6 +841,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				A8C4F334F571D893C7C9B96F /* ApexWidget.swift in Sources */,
+				F0A2D0A415454811EF70EDA2 /* MetricColors.swift in Sources */,
+				5A367450B82B9B33950806A1 /* WatchDashboardData.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -838,6 +851,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				0903375899CFBB5DA472E924 /* ApexWatchApp.swift in Sources */,
+				E284426F05ED82746B9C70FF /* MetricColors.swift in Sources */,
 				CDD3798E6007E7922E760E15 /* WatchActivitiesView.swift in Sources */,
 				F34E969E41CB652EDA9B3B9B /* WatchBatteryView.swift in Sources */,
 				410EBDBCBF1E33B2B5DB21C4 /* WatchConnectivityManager.swift in Sources */,

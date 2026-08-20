@@ -98,18 +98,10 @@ private struct MetricBar: View {
 struct QuadMediumView: View {
     let entry: ApexEntry
 
-    private var recoveryColor: Color {
-        entry.recovery >= 80 ? .green : entry.recovery >= 60 ? .cyan : entry.recovery >= 40 ? .yellow : .red
-    }
-    private var batteryColor: Color {
-        entry.battery >= 80 ? .green : entry.battery >= 60 ? .cyan : entry.battery >= 40 ? .yellow : .red
-    }
-    private var effortColor: Color {
-        entry.effort < 40 ? .blue : entry.effort < 70 ? .orange : .red
-    }
-    private var sleepColor: Color {
-        entry.sleep >= 80 ? .indigo : entry.sleep >= 60 ? .purple : entry.sleep >= 40 ? .purple.opacity(0.7) : .red
-    }
+    private var recoveryColor: Color { MetricColors.recovery(entry.recovery) }
+    private var batteryColor: Color { MetricColors.bodyBattery(entry.battery) }
+    private var effortColor: Color { MetricColors.effort(entry.effort) }
+    private var sleepColor: Color { MetricColors.sleep(entry.sleep) }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -137,9 +129,13 @@ struct QuadMediumView: View {
             }
         }
         .padding(14)
-        .containerBackground(for: .widget) {
-            Color.black
-        }
+        .containerBackground(for: .widget) { Color.black }
+        // El fondo es negro fijo, pero `.primary`/`.secondary` se resuelven según
+        // la apariencia del sistema: en modo CLARO `.primary` es negro puro, así que
+        // el título "APEX" desaparecía sobre el fondo y las etiquetas quedaban casi
+        // ilegibles. Fijar el esquema hace que resuelvan contra el fondo que de
+        // verdad tienen debajo.
+        .environment(\.colorScheme, .dark)
     }
 }
 
@@ -148,18 +144,10 @@ struct QuadMediumView: View {
 struct QuadLargeView: View {
     let entry: ApexEntry
 
-    private var recoveryColor: Color {
-        entry.recovery >= 80 ? .green : entry.recovery >= 60 ? .cyan : entry.recovery >= 40 ? .yellow : .red
-    }
-    private var batteryColor: Color {
-        entry.battery >= 80 ? .green : entry.battery >= 60 ? .cyan : entry.battery >= 40 ? .yellow : .red
-    }
-    private var effortColor: Color {
-        entry.effort < 40 ? .blue : entry.effort < 70 ? .orange : .red
-    }
-    private var sleepColor: Color {
-        entry.sleep >= 80 ? .indigo : entry.sleep >= 60 ? .purple : entry.sleep >= 40 ? .purple.opacity(0.7) : .red
-    }
+    private var recoveryColor: Color { MetricColors.recovery(entry.recovery) }
+    private var batteryColor: Color { MetricColors.bodyBattery(entry.battery) }
+    private var effortColor: Color { MetricColors.effort(entry.effort) }
+    private var sleepColor: Color { MetricColors.sleep(entry.sleep) }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
@@ -186,9 +174,13 @@ struct QuadLargeView: View {
             largebar(icon: "moon.stars.fill",       label: "Sueño",        value: entry.sleep,    color: sleepColor)
         }
         .padding(18)
-        .containerBackground(for: .widget) {
-            Color.black
-        }
+        .containerBackground(for: .widget) { Color.black }
+        // El fondo es negro fijo, pero `.primary`/`.secondary` se resuelven según
+        // la apariencia del sistema: en modo CLARO `.primary` es negro puro, así que
+        // el título "APEX" desaparecía sobre el fondo y las etiquetas quedaban casi
+        // ilegibles. Fijar el esquema hace que resuelvan contra el fondo que de
+        // verdad tienen debajo.
+        .environment(\.colorScheme, .dark)
     }
 
     @ViewBuilder
@@ -277,12 +269,7 @@ private struct SmallBatteryView: View {
         // Sin datos, gris: el caso por defecto del switch es el rojo crítico, y
         // pintaba el anillo de rojo junto a un "--" que solo significa "aún no se sabe".
         guard entry.hasData else { return .secondary }
-        switch entry.battery {
-        case 75...: return .green
-        case 50..<75: return .cyan
-        case 25..<50: return .yellow
-        default: return .red
-        }
+        return MetricColors.bodyBattery(entry.battery)
     }
     var body: some View {
         VStack(spacing: 6) {
@@ -310,6 +297,7 @@ private struct SmallBatteryView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .containerBackground(for: .widget) { Color.black }
+        .environment(\.colorScheme, .dark)
     }
 }
 
