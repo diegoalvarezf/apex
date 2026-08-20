@@ -20,8 +20,6 @@ struct HealthDayDetailView: View {
     // no ser los de entonces y el número saldría distinto al que se vio.
     private var snapshot: DailySnapshot? { DailySnapshotStore.shared.snapshot(for: day) }
 
-    private var esHoy: Bool { cal.isDateInToday(day) }
-
     var body: some View {
         ScrollView {
             VStack(spacing: 16) {
@@ -41,10 +39,6 @@ struct HealthDayDetailView: View {
     }
 
     // MARK: - Datos de ese día
-
-    private var hourlyHRDelDia: [MetricSample] {
-        healthKit.recentHourlyHR.filter { cal.isDate($0.date, inSameDayAs: day) }
-    }
 
     private var actividadesDelDia: [StravaActivity] {
         dashVM.activities.filter { cal.isDate($0.startDate, inSameDayAs: day) }

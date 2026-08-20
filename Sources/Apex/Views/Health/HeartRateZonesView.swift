@@ -97,10 +97,6 @@ struct HeartRateZonesView: View {
         }
         return hr >= maxHR * 0.9 ? 4 : 0
     }
-
-    private func defaultZones(maxHR: Int) -> [HeartRateZone] {
-        computeZones(maxHR: Double(maxHR), activities: [])
-    }
 }
 
 private struct ZoneBar: View {

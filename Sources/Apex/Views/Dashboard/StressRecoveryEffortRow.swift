@@ -58,7 +58,6 @@ struct StressRecoveryEffortRow: View {
             return MetricSample(date: day, value: daySamples.map(\.value).reduce(0, +) / Double(daySamples.count))
         }.sorted { $0.date < $1.date }
     }
-    private var stressTrend: MetricTrend { computeTrend(samples: stressTrendHistory) }
 
     private var recoveryValue: Int { recoveryScore?.value ?? 0 }
     // HRV de las últimas 2 semanas — la métrica principal que muestra el interior
@@ -66,7 +65,6 @@ struct StressRecoveryEffortRow: View {
         hrvHistory.map { MetricSample(date: $0.date, value: $0.sdnn) }
             .sorted { $0.date < $1.date }.suffix(14).map { $0 }
     }
-    private var recoveryTrend: MetricTrend { computeTrend(samples: recoveryHistory) }
 
     // Esfuerzo diario — TRIMP de Edwards (tiempo en zonas de FC), la misma
     // metodología que documenta PeakWatch para su Exertion Score: FCmáx = máxima
@@ -101,7 +99,6 @@ struct StressRecoveryEffortRow: View {
             return strain > 0 ? MetricSample(date: day, value: strain) : nil
         }.sorted { $0.date < $1.date }
     }
-    private var effortTrend: MetricTrend { computeTrend(samples: effortHistory) }
 
     private var stressColor: Color {
         stressValue < 30 ? .green : stressValue < 60 ? .orange : .red
@@ -127,7 +124,6 @@ struct StressRecoveryEffortRow: View {
     private var batteryColor: Color {
         currentBattery >= 80 ? .green : currentBattery >= 60 ? .cyan : currentBattery >= 40 ? .yellow : .red
     }
-    private var batteryTrend: MetricTrend { computeTrend(samples: batteryHourlySamples) }
 
     // Sin FC horaria ni recuperación, la simulación arranca de un valor por defecto:
     // el número que sale no describe nada y no debe presentarse como medida.
