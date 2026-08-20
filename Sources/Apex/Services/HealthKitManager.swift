@@ -792,27 +792,39 @@ final class HealthKitManager: ObservableObject {
         let start = cal.date(byAdding: .day, value: -30, to: cal.startOfDay(for: Date()))!
         let predicate = HKQuery.predicateForSamples(withStart: start, end: Date())
         let unit = HKUnit.count().unitDivided(by: .minute())
-        let rawSamples: [MetricSample] = await withCheckedContinuation { continuation in
+        // La agrupación va DENTRO del callback de la consulta, que corre en la cola
+        // de HealthKit, y no después de la continuación.
+        //
+        // Esta clase es @MainActor, así que todo lo que hay tras un `await` vuelve
+        // al hilo principal. Aquí eso significaba agrupar treinta días de frecuencia
+        // cardíaca EN BRUTO —decenas de miles de muestras, con un
+        // `Calendar.dateComponents` por cada una— mientras la interfaz espera. Se
+        // nota justo al abrir la app, que es cuando se carga todo.
+        //
+        // Las demás series no tienen este problema porque son pequeñas: el HRV son
+        // unas 8-10 muestras por noche, no una cada pocos segundos.
+        return await withCheckedContinuation { continuation in
             let sort = NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: true)
             let q = HKSampleQuery(sampleType: type, predicate: predicate,
                                   limit: HKObjectQueryNoLimit, sortDescriptors: [sort]) { _, results, _ in
                 let samples = (results as? [HKQuantitySample]) ?? []
-                let mapped = samples.map { MetricSample(date: $0.startDate, value: $0.quantity.doubleValue(for: unit)) }
-                continuation.resume(returning: mapped)
+
+                var byHour = [Date: [Double]]()
+                for s in samples {
+                    let comps = cal.dateComponents([.year, .month, .day, .hour], from: s.startDate)
+                    if let hourDate = cal.date(from: comps) {
+                        byHour[hourDate, default: []].append(s.quantity.doubleValue(for: unit))
+                    }
+                }
+
+                let porHora = byHour.map { date, vals in
+                    MetricSample(date: date, value: vals.reduce(0, +) / Double(vals.count))
+                }.sorted { $0.date < $1.date }
+
+                continuation.resume(returning: porHora)
             }
             self.store.execute(q)
         }
-        // Agrupar por hora exacta del día
-        var byHour = [Date: [Double]]()
-        for s in rawSamples {
-            let comps = cal.dateComponents([.year, .month, .day, .hour], from: s.date)
-            if let hourDate = cal.date(from: comps) {
-                byHour[hourDate, default: []].append(s.value)
-            }
-        }
-        return byHour.map { date, vals in
-            MetricSample(date: date, value: vals.reduce(0, +) / Double(vals.count))
-        }.sorted { $0.date < $1.date }
     }
 
     // FC en reposo derivada de la FC real cuando HealthKit no expone

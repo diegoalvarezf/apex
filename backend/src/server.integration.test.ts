@@ -100,6 +100,43 @@ describe("registro de dispositivo", () => {
   });
 });
 
+describe("última visita del dispositivo", () => {
+  // `lastSeenAt` se refrescaba en CADA petición autenticada: una escritura y su
+  // latencia en todas las llamadas, incluidas las de solo lectura, para un dato que
+  // no lee nadie desde el código. Con precisión de horas cumple igual.
+  it("no se reescribe en cada petición", async () => {
+    const token = await registrar();
+    const auth = { authorization: `Bearer ${token}` };
+
+    await app.inject({ method: "GET", url: "/v1/ai/quota", headers: auth });
+    const [tras1] = await (testDb.current as any).select().from(schema.devices);
+    const primera = tras1.lastSeenAt.getTime();
+
+    for (let i = 0; i < 5; i++) {
+      await app.inject({ method: "GET", url: "/v1/ai/quota", headers: auth });
+    }
+
+    const [tras6] = await (testDb.current as any).select().from(schema.devices);
+    expect(tras6.lastSeenAt.getTime()).toBe(primera);
+  });
+
+  // Pero sigue actualizándose cuando de verdad ha pasado tiempo: si no, el dato
+  // dejaría de servir para lo único que sirve.
+  it("se refresca cuando ya es viejo", async () => {
+    const token = await registrar();
+    const auth = { authorization: `Bearer ${token}` };
+    const db = testDb.current as any;
+
+    const haceDosHoras = new Date(Date.now() - 2 * 60 * 60 * 1000);
+    await db.update(schema.devices).set({ lastSeenAt: haceDosHoras });
+
+    await app.inject({ method: "GET", url: "/v1/ai/quota", headers: auth });
+
+    const [device] = await db.select().from(schema.devices);
+    expect(device.lastSeenAt.getTime()).toBeGreaterThan(haceDosHoras.getTime());
+  });
+});
+
 describe("autenticación", () => {
   it("sin token no se puede analizar", async () => {
     const res = await app.inject({

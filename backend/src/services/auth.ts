@@ -27,6 +27,9 @@ const TOKEN_BYTES = 32;
 // y varias personas tras el mismo router de casa caben de sobra.
 const MAX_REGISTROS_POR_HORA = 10;
 
+// Cada cuánto se refresca `lastSeenAt`. Ver el motivo en `deviceForToken`.
+const REFRESCO_ULTIMA_VISITA_MS = 60 * 60 * 1000;
+
 export interface RegisteredDevice {
   deviceId: string;
   token: string; // en claro, se devuelve UNA sola vez
@@ -87,10 +90,17 @@ export async function deviceForToken(token: string): Promise<Device | null> {
   // ya ha hecho la búsqueda—, deja explícito que un token no se compara con ==.
   if (!sameHash(device.tokenHash, hashToken(token))) return null;
 
-  await db
-    .update(devices)
-    .set({ lastSeenAt: new Date() })
-    .where(eq(devices.id, device.id));
+  // `lastSeenAt` solo sirve para saber, mirando la base de datos, cuándo estuvo
+  // activo un dispositivo. Nadie lo lee desde el código, así que refrescarlo en
+  // CADA petición añadía una escritura y su latencia a todas las llamadas
+  // —incluidas las de solo lectura, como consultar la cuota— para un dato que con
+  // precisión de horas ya cumple. Se refresca como mucho una vez por hora.
+  if (Date.now() - device.lastSeenAt.getTime() > REFRESCO_ULTIMA_VISITA_MS) {
+    await db
+      .update(devices)
+      .set({ lastSeenAt: new Date() })
+      .where(eq(devices.id, device.id));
+  }
 
   return device;
 }
