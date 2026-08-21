@@ -4,6 +4,12 @@ App iOS nativa de seguimiento de rendimiento deportivo. Integra Strava, Apple He
 
 > **Trabajo de Fin de Máster** — Máster en Desarrollo de Software e Inteligencia Artificial.
 > Autor: Diego Álvarez. Repositorio: https://github.com/diegoalvarezf/apex
+>
+> - **Despliegue**: el backend está en producción en Railway —
+>   [`/v1/health`](https://apex-production-cbfa.up.railway.app/v1/health) para comprobarlo.
+>   La app en sí no está publicada en la App Store (exige cuenta de desarrollador de
+>   pago); se instala compilando este repositorio, ver [Configuración](#configuración).
+> - **Slides**: [presentación del proyecto](https://claude.ai/code/artifact/0f2403ca-30f1-4f03-86a0-7b744fc5a89c).
 
 ---
 
